@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Dashboard · Bilyo',
   description: 'Manage quotations, invoices, customers, and payments.',

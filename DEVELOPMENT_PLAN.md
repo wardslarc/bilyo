@@ -842,7 +842,7 @@ an admin session without a verified code reaches nothing**.
   one-line explainer banner.
   *Accept:* the redirect fires once and does not loop after the profile is saved.
 
-- [ ] **M2-T03 · Customers CRUD** (3h)
+- [x] **M2-T03 · Customers CRUD** (3h)
   *Files:* `app/(dashboard)/dashboard/customers/**`, `actions/customers.ts`,
   `lib/validation/customer.ts`
   *Do:* list with search, create, edit, **archive** (never hard-delete — `AGENTS.md` §4).

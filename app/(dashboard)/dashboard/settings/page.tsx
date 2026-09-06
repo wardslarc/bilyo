@@ -1,6 +1,8 @@
 import { getBusinessProfile } from '@/actions/business';
 import { BusinessProfileForm } from '@/components/dashboard/BusinessProfileForm';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Business Profile & Settings · Bilyo',
   description: 'Manage your business details, address, TIN, and VAT settings for invoices and quotations.',
