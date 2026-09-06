@@ -775,7 +775,7 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
   on an already-open session; `requireAdmin()` throws when the role is ADMIN but the email is absent
   from `ADMIN_EMAILS`, and when the email is present but the role is not ADMIN.
 
-- [ ] **M1-T06 · Password reset** (2h)
+- [x] **M1-T06 · Password reset** (2h)
   *Files:* `actions/auth.ts`, `app/(auth)/forgot-password/`, `app/(auth)/reset-password/`
   *Do:* single-use token, hashed at rest, 1-hour expiry, TTL index. Until M9, print the link to the
   server log instead of emailing it.
