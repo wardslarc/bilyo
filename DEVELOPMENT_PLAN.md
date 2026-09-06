@@ -849,7 +849,7 @@ an admin session without a verified code reaches nothing**.
   *Accept:* archiving a customer referenced by a sent document leaves that document intact and still
   rendering the snapshot; archived customers are hidden from the picker but visible under a filter.
 
-- [ ] **M2-T04 · Products CRUD** (2h)
+- [x] **M2-T04 · Products CRUD** (2h)
   *Files:* `app/(dashboard)/dashboard/products/**`, `actions/products.ts`
   *Do:* same shape as customers; price typed in pesos, stored in centavos through `lib/money.ts`.
   *Accept:* entering `1,234.56` stores `123456`; entering `1234.565` is rejected or rounded half-up
