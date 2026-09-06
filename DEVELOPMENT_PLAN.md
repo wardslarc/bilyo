@@ -861,7 +861,7 @@ an admin session without a verified code reaches nothing**.
 
 ### M3 — Quotations + PDF (14–18 hrs) ← *the hard one*
 
-- [ ] **M3-T01 · Line-item builder component** (5h)
+- [x] **M3-T01 · Line-item builder component** (5h)
   *Files:* `components/documents/line-item-builder.tsx`, `components/documents/totals-panel.tsx`
   *Do:* add / remove / reorder rows; pick a product to prefill or type free text; live
   subtotal / discount / VAT / total via `lib/totals.ts`. Client totals are **feedback only** —
