@@ -704,14 +704,14 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
 - [x] **M0-T02 · Repo hygiene** (1h)
   *Accept:* `npm run typecheck && npm run lint` both exit 0.
 
-- [ ] **M0-T03 · MongoDB connection** (2h) — *scaffolded, not yet verified against Atlas*
+- [x] **M0-T03 · MongoDB connection** (2h)
   *Files:* `lib/mongodb.ts`, `app/api/health/route.ts`
   *Do:* global cached-connection pattern so a serverless re-invocation reuses the pool instead of
   opening a new one. Fail loudly at startup if `MONGODB_URI` is missing.
   *Accept:* `GET /api/health` returns `{ db: "ok" }` against a real Atlas cluster; hitting it ten
   times in a row does not grow the connection count in the Atlas metrics view.
 
-- [ ] **M0-T04 · Models + indexes** (3h)
+- [x] **M0-T04 · Models + indexes** (3h)
   *Files:* `models/user.ts`, `business.ts`, `customer.ts`, `product.ts`, `quotation.ts`,
   `invoice.ts`, `counter.ts`, `password-reset-token.ts`, `admin-audit-log.ts`, `types/index.ts`
   *Do:* all nine models exactly per §6, `timestamps: true`, every index declared in the schema.
@@ -722,7 +722,7 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
   *Accept:* `npm run typecheck` passes; a throwaway script inserts and reads one document of each
   type; `db.users.getIndexes()` shows every index from §6.
 
-- [ ] **M0-T05 · Domain utilities + tests** (3h)
+- [x] **M0-T05 · Domain utilities + tests** (3h)
   *Files:* `lib/money.ts`, `lib/totals.ts`, `lib/numbering.ts`, `lib/dates.ts` + tests
   *Do:* §5.1–5.3. `money.ts` converts centavos ⇄ display and parses peso input **without
   `parseFloat`**. `totals.ts` takes items + discount + vatRegistered and returns every stored field.
@@ -735,7 +735,7 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
 
 ### M1 — Authentication (16–18 hrs)
 
-- [ ] **M1-T01 · Auth.js setup** (3h)
+- [x] **M1-T01 · Auth.js setup** (3h)
   *Files:* `lib/auth.ts`, `app/api/auth/[...nextauth]/route.ts`, `types/next-auth.d.ts`
   *Do:* Credentials provider, JWT sessions. Put **`userId` and `role`** on the token and session —
   role must come from the DB at sign-in, never from client input. Export `auth()`, `signIn`,
@@ -743,27 +743,27 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
   *Accept:* `await auth()` in a Server Component returns `{ user: { id, email, role } }`; a signed-in
   user's `role` cannot be changed by anything the browser sends.
 
-- [ ] **M1-T02 · Register** (2h)
+- [x] **M1-T02 · Register** (2h)
   *Files:* `actions/auth.ts`, `lib/validation/auth.ts`, `app/(auth)/register/page.tsx`
   *Do:* zod-validated Server Action; email lowercased and uniqueness-checked; `bcryptjs` cost 10;
   new users get `role: 'USER'`, `plan: 'FREE'`, `planSource: 'DEFAULT'`; auto sign-in on success.
   *Accept:* duplicate email returns a field error, not a 500; the stored hash starts with `$2`; no
   password value ever appears in a log line.
 
-- [ ] **M1-T03 · Login / logout UI** (2h)
+- [x] **M1-T03 · Login / logout UI** (2h)
   *Files:* `app/(auth)/login/page.tsx`, `components/auth/*`
   *Do:* inline field errors, no raw error dumps, `callbackUrl` respected. Set `lastLoginAt`.
   *Accept:* a wrong password and an unknown email produce the **same** message and comparable
   response time.
 
-- [ ] **M1-T04 · Route protection** (2h)
+- [x] **M1-T04 · Route protection** (2h)
   *Files:* `middleware.ts`
   *Do:* guard `/dashboard/*` (session required) **and** `/admin/*` (session + `role === 'ADMIN'`).
   Unauthenticated → `/login?callbackUrl=…`. Non-admin hitting `/admin/*` → **404**, per §5.8 rule 7.
   *Accept:* signed-out `/dashboard` redirects; a normal signed-in user gets a 404 body on `/admin`
   and on `/admin/users`; no admin string appears in the client bundle for a normal user.
 
-- [ ] **M1-T05 · Suspension + role guards** (2h)  ← new in v2
+- [x] **M1-T05 · Suspension + role guards** (2h)  ← new in v2
   *Files:* `lib/auth-guards.ts` (`requireUser()`, `assertNotSuspended()`), `lib/admin/guard.ts`
   (`requireAdmin()`)
   *Do:* `requireUser()` returns the session user or throws `UNAUTHORIZED`. `assertNotSuspended()`
