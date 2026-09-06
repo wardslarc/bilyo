@@ -1,0 +1,87 @@
+import { z } from 'zod';
+import { pesosToCentavos } from '../money.ts';
+
+/**
+ * Line-item schema shared between quotation and invoice validation.
+ * Unit price is typed in pesos, transformed to centavos at the boundary.
+ */
+export const lineItemInputSchema = z.object({
+  description: z
+    .string()
+    .trim()
+    .min(1, 'Description is required')
+    .max(500, 'Description must be 500 characters or fewer'),
+  quantity: z
+    .union([z.string(), z.number()])
+    .transform((val) => {
+      const n = typeof val === 'string' ? Number(val) : val;
+      return n;
+    })
+    .refine((val) => Number.isFinite(val) && val > 0, {
+      message: 'Quantity must be a positive number',
+    }),
+  unitPrice: z
+    .union([z.string(), z.number()])
+    .refine(
+      (val) => {
+        try {
+          const centavos = pesosToCentavos(val);
+          return Number.isInteger(centavos) && centavos >= 0;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Please enter a valid non-negative price (e.g. 1,234.56)' }
+    )
+    .transform((val) => pesosToCentavos(val)),
+});
+
+/**
+ * Quotation creation / update schema.
+ * The server recomputes totals from items — client-supplied totals are ignored (§3.3).
+ */
+export const quotationSchema = z.object({
+  customerId: z
+    .string()
+    .min(1, 'Please select a customer'),
+  items: z
+    .array(lineItemInputSchema)
+    .min(1, 'At least one line item is required'),
+  /** Discount typed in pesos, transformed to centavos */
+  discount: z
+    .union([z.string(), z.number()])
+    .optional()
+    .default('0')
+    .transform((val) => {
+      try {
+        return pesosToCentavos(val);
+      } catch {
+        return 0;
+      }
+    }),
+  issueDate: z
+    .string()
+    .min(1, 'Issue date is required')
+    .refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid issue date' })
+    .transform((val) => new Date(val)),
+  validUntil: z
+    .string()
+    .min(1, 'Valid until date is required')
+    .refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid valid-until date' })
+    .transform((val) => new Date(val)),
+  notes: z
+    .string()
+    .trim()
+    .max(2000, 'Notes must be 2000 characters or fewer')
+    .optional()
+    .default(''),
+  terms: z
+    .string()
+    .trim()
+    .max(2000, 'Terms must be 2000 characters or fewer')
+    .optional()
+    .default(''),
+});
+
+export type QuotationInput = z.input<typeof quotationSchema>;
+export type QuotationData = z.output<typeof quotationSchema>;

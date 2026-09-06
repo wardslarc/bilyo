@@ -869,7 +869,7 @@ an admin session without a verified code reaches nothing**.
   *Accept:* works at 390px as stacked cards; removing the last row leaves a valid empty state;
   a hand-tampered client total is discarded and the server value is rendered back.
 
-- [ ] **M3-T02 · Create / edit quotation** (3h)
+- [x] **M3-T02 · Create / edit quotation** (3h)
   *Files:* `actions/quotations.ts`, `lib/validation/quotation.ts`,
   `app/(dashboard)/dashboard/quotations/new/page.tsx`, `[id]/page.tsx`
   *Do:* Server Action, zod at the boundary, number assigned on first save (§5.3), snapshots written
