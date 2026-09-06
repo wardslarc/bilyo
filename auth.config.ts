@@ -15,6 +15,8 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id;
         token.role = user.role as UserRole;
+        token.mfaVerifiedAt = user.mfaVerifiedAt || null;
+        token.mfaEnabled = Boolean(user.mfaEnabled);
       }
       return token;
     },
@@ -22,6 +24,8 @@ export const authConfig: NextAuthConfig = {
       if (session.user && token.id) {
         session.user.id = token.id as string;
         session.user.role = (token.role as UserRole) || 'USER';
+        session.user.mfaVerifiedAt = (token.mfaVerifiedAt as string) || null;
+        session.user.mfaEnabled = Boolean(token.mfaEnabled);
       }
       return session;
     },

@@ -38,6 +38,11 @@ export async function requireAdmin(): Promise<AuthenticatedUser> {
     throw new AdminGuardError('Not found', 'ADMIN_NOT_FOUND');
   }
 
+  // Third factor (§5.8 rule 2, §5.11 rule 10): session must carry a verified MFA timestamp
+  if (!user.mfaVerifiedAt) {
+    throw new AdminGuardError('Not found', 'ADMIN_NOT_FOUND');
+  }
+
   // Re-read user from DB to verify role and active state
   await dbConnect();
   const dbUser = await User.findById(user.id).select('role suspendedAt deletionRequestedAt');

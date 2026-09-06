@@ -802,7 +802,7 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
   into a real Google Authenticator install produces codes this function accepts. `grep -ri "secret"`
   across the log statements in `lib/` returns nothing that prints one.
 
-- [ ] **M1-T09 · Two-step sign-in + admin enforcement** (3h)  ← new in v2.1
+- [x] **M1-T09 · Two-step sign-in + admin enforcement** (3h)  ← new in v2.1
   *Files:* `lib/auth.ts`, `actions/auth.ts`, `app/(auth)/login/mfa/page.tsx`,
   `app/(onboarding)/onboarding/mfa/page.tsx`, `lib/admin/guard.ts`, `middleware.ts`,
   `scripts/reset-mfa.ts`

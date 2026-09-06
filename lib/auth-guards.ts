@@ -16,6 +16,8 @@ export interface AuthenticatedUser {
   email: string;
   name?: string | null;
   role: 'USER' | 'ADMIN';
+  mfaVerifiedAt?: string | null;
+  mfaEnabled?: boolean;
 }
 
 export type AuthSession = {
@@ -24,6 +26,8 @@ export type AuthSession = {
     email?: string | null;
     name?: string | null;
     role?: string;
+    mfaVerifiedAt?: string | null;
+    mfaEnabled?: boolean;
   } | null;
   expires?: string;
 } | null;
@@ -53,6 +57,8 @@ export async function requireUser(): Promise<AuthenticatedUser> {
     email: session.user.email,
     name: session.user.name,
     role: (session.user.role as 'USER' | 'ADMIN') || 'USER',
+    mfaVerifiedAt: session.user.mfaVerifiedAt || null,
+    mfaEnabled: Boolean(session.user.mfaEnabled),
   };
 }
 

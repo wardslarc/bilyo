@@ -15,6 +15,13 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth?.user;
   const userRole = req.auth?.user?.role;
 
+  // Guard /onboarding/*
+  if (pathname.startsWith('/onboarding')) {
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL('/login', req.nextUrl.origin));
+    }
+  }
+
   // Guard /dashboard/*
   if (pathname.startsWith('/dashboard')) {
     if (!isLoggedIn) {
@@ -25,11 +32,25 @@ export default auth((req) => {
       );
       return NextResponse.redirect(loginUrl);
     }
+
+    // Force admin users without MFA enabled to /onboarding/mfa (§8.9, M1-T09)
+    if (userRole === 'ADMIN' && !req.auth?.user?.mfaEnabled) {
+      return NextResponse.redirect(new URL('/onboarding/mfa', req.nextUrl.origin));
+    }
   }
 
   // Guard /admin/* (§5.8 rule 7: 404, not 403)
   if (pathname.startsWith('/admin')) {
     if (!isLoggedIn || userRole !== 'ADMIN') {
+      return new NextResponse(null, { status: 404 });
+    }
+
+    // Require MFA enrolment and active MFA verification (§5.8 rule 2)
+    if (!req.auth?.user?.mfaEnabled) {
+      return NextResponse.redirect(new URL('/onboarding/mfa', req.nextUrl.origin));
+    }
+
+    if (!req.auth?.user?.mfaVerifiedAt) {
       return new NextResponse(null, { status: 404 });
     }
   }
@@ -38,5 +59,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/onboarding/:path*'],
 };

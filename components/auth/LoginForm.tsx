@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { loginSchema } from '@/lib/validation/auth';
+import { verifyPasswordStep } from '@/actions/mfa';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -53,6 +54,23 @@ export default function LoginForm() {
     setFieldErrors({});
 
     startTransition(async () => {
+      const stepRes = await verifyPasswordStep({
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+      });
+
+      if (!stepRes.ok) {
+        setAuthError(stepRes.error);
+        return;
+      }
+
+      // If user has MFA enabled, challenge cookie was set -> redirect to code challenge step (§8.10)
+      if (stepRes.data.requiresMfa) {
+        router.push(`/login/mfa?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        return;
+      }
+
+      // Otherwise, establish credentials session directly
       const res = await signIn('credentials', {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,

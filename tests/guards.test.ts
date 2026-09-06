@@ -251,6 +251,7 @@ describe('Suspension & Admin Guards (M1-T05)', () => {
         email: adminEmail,
         name: 'Admin User',
         role: 'ADMIN',
+        mfaVerifiedAt: new Date().toISOString(),
       },
     }));
 

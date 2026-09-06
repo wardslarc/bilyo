@@ -9,6 +9,10 @@ export class AccountSuspendedError extends CredentialsSignin {
   code = 'account_suspended';
 }
 
+export class MfaRequiredError extends CredentialsSignin {
+  code = 'mfa_required';
+}
+
 // Valid cost-10 dummy hash for timing attack mitigation when email is unknown (§8.10, M1-T03)
 const DUMMY_HASH = '$2a$10$6iTTYhZTDeaLrFMbocue6.gz2JAFZ6MDEmHW6mdSWBrO5tKKowGoS';
 
@@ -19,9 +23,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        mfaSessionToken: { label: 'MFA Token', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials) {
+          return null;
+        }
+
+        const { verifyMfaSessionToken } = await import('./mfa-challenge');
+
+        // Path A: Authenticating after successful MFA challenge verification (§8.10)
+        if (credentials.mfaSessionToken) {
+          const verified = verifyMfaSessionToken(String(credentials.mfaSessionToken));
+          if (!verified) {
+            return null;
+          }
+
+          await dbConnect();
+          const user = await User.findById(verified.userId);
+          if (!user || user.suspendedAt || user.deletionRequestedAt) {
+            return null;
+          }
+
+          await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            mfaVerifiedAt: verified.mfaVerifiedAt,
+            mfaEnabled: true,
+          };
+        }
+
+        // Path B: Standard email + password authentication
+        if (!credentials.email || !credentials.password) {
           return null;
         }
 
@@ -46,7 +83,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new AccountSuspendedError();
         }
 
-        // Set lastLoginAt (§6, M1-T03)
+        // If user has MFA enabled, they must NOT obtain a session without verifying MFA (§8.10)
+        if (user.mfaEnabledAt) {
+          throw new MfaRequiredError();
+        }
+
+        // Non-MFA user login
         await User.updateOne(
           { _id: user._id },
           { $set: { lastLoginAt: new Date() } }
@@ -58,6 +100,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role,
+          mfaVerifiedAt: null,
+          mfaEnabled: false,
         };
       },
     }),
