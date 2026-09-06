@@ -252,6 +252,14 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                     >
                       {q.status === 'DRAFT' ? 'Edit' : 'View'}
                     </Link>
+                    <a
+                      href={`/api/quotations/${q.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-neutral-600 hover:text-[var(--color-text)] hover:underline"
+                    >
+                      PDF
+                    </a>
                     {q.status === 'DRAFT' && (
                       <button
                         type="button"

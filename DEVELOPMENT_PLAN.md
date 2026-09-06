@@ -889,7 +889,7 @@ an admin session without a verified code reaches nothing**.
   *Accept:* a 30-line document paginates with a repeating header; a missing logo renders a clean gap,
   not a broken image; peso amounts align on the decimal.
 
-- [ ] **M3-T05 · PDF route** (2h)
+- [x] **M3-T05 · PDF route** (2h)
   *Files:* `app/api/quotations/[id]/pdf/route.ts`
   *Do:* ownership-checked via the session, `Content-Disposition: attachment; filename="QUO-000001.pdf"`.
   *Accept:* requesting another user's document id returns 404 (not 403, not the PDF); the response

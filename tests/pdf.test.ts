@@ -24,13 +24,11 @@ describe('PDF Styles and Layout Rules (M3-T04)', () => {
   });
 
   test('Decimal alignment: money columns and totals values are right-aligned', () => {
-    // Both unit price and total amount cells in the table must be right-aligned
     assert.strictEqual(styles.colUnitPrice.textAlign, 'right');
     assert.strictEqual(styles.colAmount.textAlign, 'right');
     assert.strictEqual(styles.totalsValue.textAlign, 'right');
     assert.strictEqual(styles.totalsFinalValue.textAlign, 'right');
 
-    // Verify that formatMoney outputs fixed 2-decimal strings so right-align lines up decimal points
     const sampleAmounts = [0, 50, 100, 123450, 999999900];
     for (const centavos of sampleAmounts) {
       const formatted = formatMoney(centavos);

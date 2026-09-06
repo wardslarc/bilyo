@@ -6,14 +6,14 @@ import { formatDate } from '../dates';
 
 // --- Types ---
 
-interface LineItem {
+export interface LineItem {
   description: string;
   quantity: number;
   unitPriceCentavos: number;
   amountCentavos: number;
 }
 
-interface BusinessInfo {
+export interface BusinessInfo {
   businessName: string;
   address?: string;
   email?: string;
@@ -23,7 +23,7 @@ interface BusinessInfo {
   logoUrl?: string | null;
 }
 
-interface CustomerInfo {
+export interface CustomerInfo {
   name: string;
   email?: string;
   phone?: string;
