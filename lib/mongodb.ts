@@ -7,12 +7,6 @@ declare global {
   } | undefined;
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
-}
-
 let cached = global.mongoose;
 
 if (!cached) {
@@ -20,6 +14,12 @@ if (!cached) {
 }
 
 async function dbConnect() {
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    throw new Error('Please define the MONGODB_URI environment variable');
+  }
+
   if (cached?.conn) {
     return cached.conn;
   }
@@ -27,10 +27,11 @@ async function dbConnect() {
   if (!cached?.promise) {
     const opts = {
       bufferCommands: false,
+      dbName: process.env.MONGODB_DB || 'bilyo',
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
+    cached!.promise = mongoose.connect(uri, opts).then((mongooseInstance) => {
+      return mongooseInstance;
     });
   }
 
