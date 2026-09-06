@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/*
+ * Bilyo brand tokens.
+ * Direction: deep ink ground, warm paper, one brass accent.
+ * Every colour used by the marketing pages and the app comes from here —
+ * do not hardcode a hex in a component.
+ */
+@theme {
+  /* Ink — dark bands, dark cards */
+  --color-ink: #131c2b;
+  --color-ink-deep: #0f1724;
+  --color-ink-raised: #223047;
+
+  /* Paper — page grounds */
+  --color-paper: #fbfaf7;
+  --color-paper-sunk: #f4f1ea;
+  --color-paper-edge: #f8f6f1;
+
+  /* Text */
+  --color-text: #17202e;
+  --color-muted: #5c6779;
+  --color-faint: #8a93a3;
+
+  /* Hairlines */
+  --color-line: #e7e2d9;
+  --color-line-soft: #ede9e1;
+  --color-line-softer: #f4f1eb;
+
+  /* Brass — the single accent */
+  --color-brass: #c08a2e;
+  --color-brass-ink: #7a5514;
+  --color-brass-wash: #f3e7ce;
+
+  /* Jade — status only (accepted / paid) */
+  --color-jade: #2e8f86;
+  --color-jade-light: #6fd0c4;
+
+  --font-display: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-karla), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, Menlo, monospace;
+
+  --shadow-document: 0 30px 70px rgb(5 10 20 / 0.45);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
