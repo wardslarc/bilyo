@@ -881,7 +881,7 @@ an admin session without a verified code reaches nothing**.
   *Do:* filter by status, sort by date, status badges, derived `EXPIRED` when `validUntil < today`.
   *Accept:* the list issues one query, not one per row; empty state has a CTA.
 
-- [ ] **M3-T04 · PDF template** (5h)
+- [x] **M3-T04 · PDF template** (5h)
   *Files:* `lib/pdf/quotation-document.tsx`, `lib/pdf/shared/*`
   *Do:* `@react-pdf/renderer`: logo, business block, customer block, items table, totals, notes and
   terms, and the footer disclaiming that this is not an official sales invoice/receipt
