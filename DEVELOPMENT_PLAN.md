@@ -782,7 +782,7 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
   *Accept:* a used token fails on reuse; an expired token fails; requesting a reset for an unknown
   email returns the same confirmation as a known one.
 
-- [ ] **M1-T07 · Admin bootstrap script** (1h)  ← new in v2
+- [x] **M1-T07 · Admin bootstrap script** (1h)  ← new in v2
   *Files:* `scripts/grant-admin.ts`, `package.json` script `grant-admin`
   *Do:* `npm run grant-admin -- someone@example.com` flips `role` to `ADMIN` and prints the reminder
   that the email must also be added to `ADMIN_EMAILS`. This is the **only** way an admin is created.

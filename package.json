@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --env-file=.env.local --test tests/*.test.ts"
+    "test": "node --env-file=.env.local --test tests/*.test.ts",
+    "grant-admin": "node --env-file=.env.local scripts/grant-admin.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
