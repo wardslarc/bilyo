@@ -877,7 +877,7 @@ an admin session without a verified code reaches nothing**.
   *Accept:* saving a draft twice does not consume a second number; the snapshot does not change after
   the customer record is later edited.
 
-- [ ] **M3-T03 · Quotation list + detail** (2h)
+- [x] **M3-T03 · Quotation list + detail** (2h)
   *Do:* filter by status, sort by date, status badges, derived `EXPIRED` when `validUntil < today`.
   *Accept:* the list issues one query, not one per row; empty state has a CTA.
 
