@@ -789,7 +789,7 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
   *Accept:* running it on a non-existent email exits non-zero with a clear message; running it twice
   is idempotent; there is no code path anywhere in `app/` or `actions/` that writes `role`.
 
-- [ ] **M1-T08 · TOTP core** (3h)  ← new in v2.1
+- [x] **M1-T08 · TOTP core** (3h)  ← new in v2.1
   *Files:* `lib/mfa.ts`, `lib/crypto.ts`, `lib/validation/mfa.ts`
   *Do:* `otpauth` wrappers per §5.11 — `generateSecret()`, `buildOtpauthUri(email, secret)` pinned to
   **SHA-1 / 6 digits / 30s**, `verifyCode(secret, code, lastStep)` returning the accepted step or
