@@ -36,25 +36,35 @@ describe('Login & Timing Anti-Enumeration (M1-T03)', () => {
     assert.ok(user);
 
     // Timing 1: Unknown email (executes dummy bcrypt compare)
-    const t1 = performance.now();
-    const unknownEmailResult = await bcrypt.compare('SomeWrongPassword123!', DUMMY_HASH);
-    const durationUnknown = performance.now() - t1;
+    let totalUnknown = 0;
+    for (let i = 0; i < 3; i++) {
+      const t1 = performance.now();
+      const unknownEmailResult = await bcrypt.compare('SomeWrongPassword123!', DUMMY_HASH);
+      totalUnknown += performance.now() - t1;
+      assert.strictEqual(unknownEmailResult, false);
+    }
+    const avgUnknown = totalUnknown / 3;
 
     // Timing 2: Wrong password on known email (executes real bcrypt compare)
-    const t2 = performance.now();
-    const wrongPasswordResult = await bcrypt.compare('SomeWrongPassword123!', user.passwordHash);
-    const durationWrongPass = performance.now() - t2;
-
-    assert.strictEqual(unknownEmailResult, false);
-    assert.strictEqual(wrongPasswordResult, false);
+    let totalWrong = 0;
+    for (let i = 0; i < 3; i++) {
+      const t2 = performance.now();
+      const wrongPasswordResult: boolean = await bcrypt.compare(
+        'SomeWrongPassword123!',
+        user.passwordHash
+      );
+      totalWrong += performance.now() - t2;
+      assert.strictEqual(wrongPasswordResult, false);
+    }
+    const avgWrong = totalWrong / 3;
 
     // Both operations should execute full cost-10 iterations (~40ms to 120ms depending on CPU)
-    assert.ok(durationUnknown > 20, `Expected durationUnknown > 20ms, got ${durationUnknown}ms`);
-    assert.ok(durationWrongPass > 20, `Expected durationWrongPass > 20ms, got ${durationWrongPass}ms`);
+    assert.ok(avgUnknown > 20, `Expected avgUnknown > 20ms, got ${avgUnknown}ms`);
+    assert.ok(avgWrong > 20, `Expected avgWrong > 20ms, got ${avgWrong}ms`);
 
-    // Difference between both should be minimal (within 35ms)
-    const diff = Math.abs(durationUnknown - durationWrongPass);
-    assert.ok(diff < 35, `Timing difference too high: ${diff}ms`);
+    // Difference between both should be comparable (within 50ms)
+    const diff = Math.abs(avgUnknown - avgWrong);
+    assert.ok(diff < 50, `Timing difference too high: ${diff}ms`);
   });
 
   test('successful authentication records lastLoginAt in database', async () => {

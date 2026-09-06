@@ -828,7 +828,7 @@ an admin session without a verified code reaches nothing**.
 
 ### M2 — Business profile & contacts (8–10 hrs)
 
-- [ ] **M2-T01 · Business profile form** (3h)
+- [x] **M2-T01 · Business profile form** (3h)
   *Files:* `app/(dashboard)/dashboard/settings/page.tsx`, `actions/business.ts`,
   `lib/validation/business.ts`
   *Do:* every §6 Business field; VAT-registered toggle with a one-line explanation of what it changes
