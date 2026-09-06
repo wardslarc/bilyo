@@ -836,7 +836,7 @@ an admin session without a verified code reaches nothing**.
   *Accept:* saving twice updates rather than creating a second business; TIN accepts the PH
   `000-000-000-000` shape and blanks.
 
-- [ ] **M2-T02 · Onboarding gate** (1h)
+- [x] **M2-T02 · Onboarding gate** (1h)
   *Files:* `app/(dashboard)/dashboard/layout.tsx`
   *Do:* a signed-in user with no Business is redirected to `/dashboard/settings?onboarding=1` with a
   one-line explainer banner.
