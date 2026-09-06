@@ -91,7 +91,7 @@ Route Handlers exist only for: Auth.js, PDF streams, public token reads, and web
 Every Server Action begins with `schema.parse(input)` using the zod schema from `lib/validation/`. The same schema drives client-side form validation. One schema, two consumers.
 
 ### 3.6 Small, complete increments
-One task = one coherent change = one commit. A commit that leaves `npm run build` broken is not acceptable, even mid-milestone.
+One task = one coherent change = one commit. A commit that leaves `npm run build` broken is not acceptable, even mid-milestone. Commit each task immediately upon verification before moving to the next task.
 
 ### 3.7 The admin surface is a separate boundary
 `/admin/*` is for platform staff, never for users. It is guarded by `lib/admin/guard.ts →
@@ -208,6 +208,7 @@ Run this checklist and report the result honestly. A failed check reported is us
 - [ ] Renders at 390px
 - [ ] `.env.example` updated if a new variable appeared
 - [ ] The task checkbox in `DEVELOPMENT_PLAN.md` §11 is ticked
+- [ ] Committed with message format: `<type>(<scope>): <summary> [<task-id>]`
 - [ ] Admin work only: behind `requireAdmin()`, audited, 404s for non-admins, writes nothing a user owns
 
 ---
@@ -248,3 +249,13 @@ Never claim a check passed without running it. Never invent a file path, an API 
 | Which task next? | first unchecked box in `DEVELOPMENT_PLAN.md` §11 |
 | Can an admin edit a user's invoice? | no — admin is read-only over user content |
 | Where do cross-user queries live? | `lib/admin/**` and `actions/admin/**`, nowhere else |
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
