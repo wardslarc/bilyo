@@ -44,3 +44,24 @@ export const closeAccountSchema = z.object({
 });
 
 export type CloseAccountInput = z.infer<typeof closeAccountSchema>;
+
+export const regenerateRecoveryCodesSchema = z.object({
+  password: z
+    .string()
+    .min(1, { message: 'Password is required to regenerate recovery codes' }),
+});
+
+export type RegenerateRecoveryCodesInput = z.infer<
+  typeof regenerateRecoveryCodesSchema
+>;
+
+export const confirmDeviceReplacementSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, { message: 'Verification code must be 6 digits' }),
+});
+
+export type ConfirmDeviceReplacementInput = z.infer<
+  typeof confirmDeviceReplacementSchema
+>;

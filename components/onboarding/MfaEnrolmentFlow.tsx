@@ -119,10 +119,10 @@ export default function MfaEnrolmentFlow() {
         <>
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-[var(--color-ink)]">
-              Set Up Authenticator
+              Set Up Two-Factor Authentication
             </h1>
-            <p className="text-sm text-[var(--color-muted)] mt-1">
-              Protect your account with mandatory two-factor authentication (TOTP)
+            <p className="text-sm text-[var(--color-muted)] mt-2 max-w-sm mx-auto leading-relaxed">
+              To protect your business invoicing and customer data, two-factor authentication is required for all accounts.
             </p>
           </div>
 
@@ -141,7 +141,7 @@ export default function MfaEnrolmentFlow() {
             <div className="space-y-6">
               <div className="flex flex-col items-center">
                 {qrDataUrl && (
-                  <div className="p-3 bg-white border border-[var(--color-line)] rounded-xl shadow-inner">
+                  <div className="p-3 bg-white border border-[var(--color-line)] rounded-xl shadow-sm">
                     <Image
                       src={qrDataUrl}
                       alt="MFA QR Code"
@@ -151,26 +151,26 @@ export default function MfaEnrolmentFlow() {
                     />
                   </div>
                 )}
-                <p className="text-xs text-[var(--color-muted)] mt-2 text-center max-w-xs">
-                  Scan this QR code with Google Authenticator, 1Password, or any RFC 6238 app
+                <p className="text-xs text-[var(--color-muted)] mt-2.5 text-center max-w-xs leading-normal">
+                  Scan this QR code using <strong>Google Authenticator</strong> (or another RFC 6238 app like 1Password or Authy).
                 </p>
               </div>
 
               {secretBase32 && (
-                <div className="p-3 bg-[var(--color-paper-edge)] border border-[var(--color-line)] rounded-lg text-center">
-                  <span className="block text-xs uppercase font-semibold text-[var(--color-muted)] mb-1">
-                    Or enter manual key:
+                <div className="p-3.5 bg-[var(--color-paper-edge)] border border-[var(--color-line)] rounded-lg text-center">
+                  <span className="block text-xs font-medium text-[var(--color-muted)] mb-1.5">
+                    Can&apos;t scan? Enter this key manually into Google Authenticator:
                   </span>
-                  <code className="text-xs font-mono font-bold text-[var(--color-ink)] tracking-wider select-all break-all">
+                  <code className="text-xs font-mono font-bold text-[var(--color-ink)] tracking-wider select-all break-all px-2 py-1 bg-white border border-[var(--color-line)] rounded block">
                     {secretBase32}
                   </code>
-                  <div className="mt-2">
+                  <div className="mt-2.5">
                     <button
                       type="button"
                       onClick={handleCopyKey}
-                      className="text-xs text-[var(--color-brass)] hover:underline cursor-pointer font-medium"
+                      className="inline-flex items-center gap-1.5 min-h-[44px] px-4 text-xs text-[var(--color-ink)] bg-white border border-[var(--color-line)] rounded-lg hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer font-medium shadow-xs"
                     >
-                      {copiedKey ? 'Copied to clipboard!' : 'Copy Key'}
+                      {copiedKey ? '✓ Copied to clipboard!' : 'Copy Secret Key'}
                     </button>
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export default function MfaEnrolmentFlow() {
                 <button
                   type="submit"
                   disabled={isPending || code.length !== 6}
-                  className="w-full py-2.5 px-4 rounded-lg bg-[var(--color-ink)] hover:bg-[var(--color-ink-raised)] text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[var(--color-ink)] hover:bg-[var(--color-ink-raised)] text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
                   {isPending ? 'Verifying...' : 'Enable Two-Factor Authentication'}
                 </button>
@@ -247,14 +247,14 @@ export default function MfaEnrolmentFlow() {
             <button
               type="button"
               onClick={handleDownloadCodes}
-              className="flex-1 py-2 px-3 rounded-lg border border-[var(--color-line)] text-xs font-medium text-[var(--color-ink)] hover:bg-[var(--color-paper-edge)] transition-colors cursor-pointer text-center"
+              className="flex-1 min-h-[44px] py-2 px-3 rounded-lg border border-[var(--color-line)] text-xs font-medium text-[var(--color-ink)] hover:bg-[var(--color-paper-edge)] transition-colors cursor-pointer text-center flex items-center justify-center"
             >
               Download (.txt)
             </button>
             <button
               type="button"
               onClick={handleCopyAllCodes}
-              className="flex-1 py-2 px-3 rounded-lg border border-[var(--color-line)] text-xs font-medium text-[var(--color-ink)] hover:bg-[var(--color-paper-edge)] transition-colors cursor-pointer text-center"
+              className="flex-1 min-h-[44px] py-2 px-3 rounded-lg border border-[var(--color-line)] text-xs font-medium text-[var(--color-ink)] hover:bg-[var(--color-paper-edge)] transition-colors cursor-pointer text-center flex items-center justify-center"
             >
               {copiedAllCodes ? 'Copied!' : 'Copy all codes'}
             </button>
@@ -278,7 +278,7 @@ export default function MfaEnrolmentFlow() {
             type="button"
             disabled={!hasSavedCodes}
             onClick={handleFinish}
-            className="w-full py-2.5 px-4 rounded-lg bg-[var(--color-ink)] hover:bg-[var(--color-ink-raised)] text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[var(--color-ink)] hover:bg-[var(--color-ink-raised)] text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center"
           >
             Continue to Dashboard
           </button>

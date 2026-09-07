@@ -1,6 +1,7 @@
 'use server';
 
 import bcrypt from 'bcryptjs';
+import qrcode from 'qrcode';
 import dbConnect from '../lib/mongodb.ts';
 import { User } from '../models/user.ts';
 import { Business } from '../models/business.ts';
@@ -13,7 +14,16 @@ import {
   changePasswordSchema,
   changeEmailSchema,
   closeAccountSchema,
+  regenerateRecoveryCodesSchema,
+  confirmDeviceReplacementSchema,
 } from '../lib/validation/account.ts';
+import {
+  generateSecret,
+  buildOtpauthUri,
+  verifyCode,
+  generateRecoveryCodes,
+} from '../lib/mfa.ts';
+import { encrypt, decrypt } from '../lib/crypto.ts';
 import {
   sanitizeUserExport,
   formatInvoicesCsv,
@@ -327,3 +337,248 @@ export async function closeAccount(
     };
   }
 }
+
+/**
+ * Retrieves the current user's security status (§5.11, M6-T06).
+ */
+export async function getSecurityStatus(): Promise<
+  ActionResult<{
+    mfaEnabled: boolean;
+    mfaEnabledAt: Date | null;
+    remainingRecoveryCodes: number;
+  }>
+> {
+  try {
+    const sessionUser = await requireUser();
+    await assertNotSuspended(sessionUser.id);
+
+    await dbConnect();
+    const user = await User.findById(sessionUser.id).select(
+      'mfaEnabledAt mfaRecoveryCodeHashes'
+    );
+    if (!user) {
+      return { ok: false, error: 'User not found' };
+    }
+
+    return {
+      ok: true,
+      data: {
+        mfaEnabled: Boolean(user.mfaEnabledAt),
+        mfaEnabledAt: user.mfaEnabledAt || null,
+        remainingRecoveryCodes: user.mfaRecoveryCodeHashes?.length || 0,
+      },
+    };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('getSecurityStatus error:', (error as Error).message);
+    return {
+      ok: false,
+      error: 'An unexpected error occurred while loading security status',
+    };
+  }
+}
+
+/**
+ * Regenerates 10 fresh single-use recovery codes (§5.11 rule 6, M6-T06).
+ * Requires account password verification and invalidates all ten previous codes.
+ */
+export async function regenerateRecoveryCodes(
+  input: unknown
+): Promise<
+  ActionResult<{ recoveryCodes: string[]; remainingRecoveryCodes: number }>
+> {
+  try {
+    const sessionUser = await requireUser();
+    await assertNotSuspended(sessionUser.id);
+
+    const parseResult = regenerateRecoveryCodesSchema.safeParse(input);
+    if (!parseResult.success) {
+      return {
+        ok: false,
+        error: 'Password is required to regenerate recovery codes',
+      };
+    }
+
+    await dbConnect();
+    const user = await User.findById(sessionUser.id);
+    if (!user || !user.passwordHash) {
+      return { ok: false, error: 'User account not found' };
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      parseResult.data.password,
+      user.passwordHash
+    );
+    if (!isPasswordValid) {
+      return { ok: false, error: 'Incorrect password' };
+    }
+
+    if (!user.mfaEnabledAt || !user.mfaSecretEncrypted) {
+      return { ok: false, error: 'MFA is not enabled on this account' };
+    }
+
+    // Regenerate 10 fresh recovery codes; replaces/invalidates all existing codes
+    const { plainCodes, hashedCodes } = await generateRecoveryCodes();
+    user.mfaRecoveryCodeHashes = hashedCodes;
+    await user.save();
+
+    return {
+      ok: true,
+      data: {
+        recoveryCodes: plainCodes,
+        remainingRecoveryCodes: 10,
+      },
+    };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('regenerateRecoveryCodes error:', (error as Error).message);
+    return {
+      ok: false,
+      error: 'An unexpected error occurred while regenerating recovery codes',
+    };
+  }
+}
+
+/**
+ * Phase 1 of device replacement (§5.11, M6-T06).
+ * Generates pending secret + QR code. Crucially, the active device remains operational.
+ */
+export async function initiateDeviceReplacement(): Promise<
+  ActionResult<{ qrDataUrl: string; secretBase32: string }>
+> {
+  try {
+    const sessionUser = await requireUser();
+    await assertNotSuspended(sessionUser.id);
+
+    await dbConnect();
+    const user = await User.findById(sessionUser.id);
+    if (!user) {
+      return { ok: false, error: 'User not found' };
+    }
+
+    if (!user.mfaEnabledAt || !user.mfaSecretEncrypted) {
+      return { ok: false, error: 'MFA is not yet enrolled' };
+    }
+
+    const secret = generateSecret();
+    const encryptedSecret = encrypt(secret);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    user.mfaPendingSecretEncrypted = encryptedSecret;
+    user.mfaPendingExpiresAt = expiresAt;
+    await user.save();
+
+    const uri = buildOtpauthUri(user.email, secret);
+    const qrDataUrl = await qrcode.toDataURL(uri, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 256,
+    });
+
+    return {
+      ok: true,
+      data: {
+        qrDataUrl,
+        secretBase32: secret,
+      },
+    };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('initiateDeviceReplacement error:', (error as Error).message);
+    return {
+      ok: false,
+      error: 'Failed to initiate device replacement setup',
+    };
+  }
+}
+
+/**
+ * Phase 2 of device replacement (§5.11, M6-T06).
+ * Confirms code from the NEW device. Only upon success is the pending secret promoted
+ * and the old device dropped. Generates 10 new recovery codes.
+ */
+export async function confirmDeviceReplacement(
+  input: unknown
+): Promise<
+  ActionResult<{ recoveryCodes: string[]; remainingRecoveryCodes: number }>
+> {
+  try {
+    const sessionUser = await requireUser();
+    await assertNotSuspended(sessionUser.id);
+
+    const parseResult = confirmDeviceReplacementSchema.safeParse(input);
+    if (!parseResult.success) {
+      return { ok: false, error: 'Please enter a valid 6-digit verification code' };
+    }
+
+    const { code } = parseResult.data;
+
+    await dbConnect();
+    const user = await User.findById(sessionUser.id);
+    if (!user) {
+      return { ok: false, error: 'User not found' };
+    }
+
+    if (!user.mfaPendingSecretEncrypted || !user.mfaPendingExpiresAt) {
+      return {
+        ok: false,
+        error: 'No pending device replacement session found. Please start over.',
+      };
+    }
+
+    if (user.mfaPendingExpiresAt < new Date()) {
+      return {
+        ok: false,
+        error: 'Device replacement session expired (15 min). Please start over.',
+      };
+    }
+
+    const pendingSecret = decrypt(user.mfaPendingSecretEncrypted);
+    const acceptedStep = verifyCode(pendingSecret, code);
+
+    if (acceptedStep === null) {
+      // Old device remains untouched!
+      return {
+        ok: false,
+        error:
+          'Invalid verification code from your new authenticator app. Your existing device remains active.',
+      };
+    }
+
+    // New device confirmed -> promote secret and generate fresh recovery codes
+    const { plainCodes, hashedCodes } = await generateRecoveryCodes();
+
+    user.mfaSecretEncrypted = user.mfaPendingSecretEncrypted;
+    user.mfaPendingSecretEncrypted = null;
+    user.mfaPendingExpiresAt = null;
+    user.mfaLastUsedStep = acceptedStep;
+    user.mfaRecoveryCodeHashes = hashedCodes;
+    user.mfaFailedAttempts = 0;
+    user.mfaLockedUntil = null;
+    await user.save();
+
+    return {
+      ok: true,
+      data: {
+        recoveryCodes: plainCodes,
+        remainingRecoveryCodes: 10,
+      },
+    };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('confirmDeviceReplacement error:', (error as Error).message);
+    return {
+      ok: false,
+      error: 'An unexpected error occurred while confirming device replacement.',
+    };
+  }
+}
+

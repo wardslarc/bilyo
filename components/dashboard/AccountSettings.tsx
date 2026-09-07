@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
@@ -229,6 +230,38 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Security & Two-Factor Authentication Section */}
+      <div className="bg-white border border-[var(--color-line)] rounded-xl p-6 sm:p-8 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-100 pb-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-neutral-900">
+                Two-Factor Authentication (MFA)
+              </h2>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Mandatory
+              </span>
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">
+              Manage your authenticator app, single-use recovery codes, and replacement devices.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/account/security"
+            className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 text-sm font-medium text-neutral-900 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors cursor-pointer self-start sm:self-auto"
+          >
+            <span>Manage 2FA & Recovery Codes</span>
+            <span>→</span>
+          </Link>
+        </div>
+
+        <p className="text-sm text-neutral-600 leading-relaxed">
+          Your account is secured with time-based one-time password (TOTP) authentication using Google
+          Authenticator or another RFC 6238 app. You can regenerate backup recovery codes or
+          transition your authentication to a replacement device at any time.
+        </p>
       </div>
 
       {/* Change Email Section */}

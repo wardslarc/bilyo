@@ -25,6 +25,11 @@ export default async function DashboardLayout({
     throw error;
   }
 
+  // Mandatory MFA gate (§5.11, M6-T06)
+  if (!user.mfaEnabled) {
+    redirect('/onboarding/mfa');
+  }
+
   // Onboarding gate (DEVELOPMENT_PLAN.md M2-T02):
   // Signed-in user with no Business is redirected to /dashboard/settings?onboarding=1
   // If already on /dashboard/settings, do not redirect to prevent infinite loop.

@@ -20,6 +20,10 @@ export default auth((req) => {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL('/login', req.nextUrl.origin));
     }
+    // If already enrolled in MFA, redirect away from /onboarding/mfa to /dashboard
+    if (pathname === '/onboarding/mfa' && req.auth?.user?.mfaEnabled) {
+      return NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin));
+    }
   }
 
   // Guard /dashboard/*
@@ -33,8 +37,8 @@ export default auth((req) => {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Force admin users without MFA enabled to /onboarding/mfa (§8.9, M1-T09)
-    if (userRole === 'ADMIN' && !req.auth?.user?.mfaEnabled) {
+    // Mandatory MFA for all users (§5.11, M6-T06)
+    if (!req.auth?.user?.mfaEnabled) {
       return NextResponse.redirect(new URL('/onboarding/mfa', req.nextUrl.origin));
     }
   }

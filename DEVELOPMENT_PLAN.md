@@ -992,7 +992,7 @@ nothing beyond that one document.
   *Accept:* the export contains only that user's records — verified with a second seeded account; a
   closed account cannot sign in and its public links still resolve.
 
-- [ ] **M6-T06 · Mandatory MFA for all users** (4h)  ← new in v2.1
+- [x] **M6-T06 · Mandatory MFA for all users** (4h)  ← new in v2.1
   *Files:* `middleware.ts`, `app/(onboarding)/onboarding/mfa/page.tsx`,
   `app/(dashboard)/dashboard/account/security/page.tsx`, `actions/account.ts`
   *Do:* extend the M1-T09 enrolment gate to every account (§5.11), and build the security page:
