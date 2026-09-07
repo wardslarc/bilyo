@@ -1016,7 +1016,7 @@ nothing beyond that one document.
 Build this **after** launch and **before** plan limits: the first real users generate the first
 support tickets, and M8's plan overrides need somewhere to live. Every task here obeys §5.8.
 
-- [ ] **M7-T01 · Admin shell + audit primitive** (3h)
+- [x] **M7-T01 · Admin shell + audit primitive** (3h)
   *Files:* `app/(admin)/layout.tsx`, `lib/admin/guard.ts` (from M1-T05), `lib/admin/audit.ts`,
   `components/admin/*`
   *Do:* a visually distinct admin chrome (different accent, an "ADMIN" badge, the signed-in admin's
