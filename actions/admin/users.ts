@@ -418,3 +418,89 @@ export async function clearPlanOverride(
   }
 }
 
+/**
+ * Reset MFA for a locked-out user (§5.11 rule 9, M7-T08).
+ * Clears all MFA fields and forces fresh enrolment at their next sign-in.
+ * Never reveals, reuses, or regenerates the old secret or recovery codes.
+ * Refuses server-side if target account is an ADMIN, pointing to the CLI.
+ * Requires a typed reason (min 10 characters) and records an append-only audit entry.
+ */
+export async function resetUserMfa(
+  input: unknown
+): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await requireAdmin();
+    const parseResult = adminActionReasonSchema.safeParse(input);
+    if (!parseResult.success) {
+      return {
+        ok: false,
+        error: parseResult.error.issues[0]?.message || 'Invalid input',
+      };
+    }
+
+    const { userId, reason } = parseResult.data;
+    await dbConnect();
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return { ok: false, error: 'User not found' };
+    }
+
+    // §5.11 rule 9 & AGENTS.md §4: Never reset an admin's MFA from the console
+    if (targetUser.role === 'ADMIN') {
+      return {
+        ok: false,
+        error:
+          'Platform administrators cannot have their MFA reset from the web console. Use the CLI: npm run reset-mfa -- <email>',
+      };
+    }
+
+    const wasEnabled = Boolean(targetUser.mfaEnabledAt);
+    const wasLocked = Boolean(
+      targetUser.mfaLockedUntil && targetUser.mfaLockedUntil > new Date()
+    );
+
+    // Sanitize before/after state — radioactive secrets rule (§3.8):
+    // Never include secret, hash, or code values in audit or logs
+    const before = {
+      mfaEnabled: wasEnabled,
+      mfaEnabledAt: targetUser.mfaEnabledAt,
+      mfaFailedAttempts: targetUser.mfaFailedAttempts || 0,
+      mfaLocked: wasLocked,
+    };
+
+    targetUser.mfaSecretEncrypted = null;
+    targetUser.mfaEnabledAt = null;
+    targetUser.mfaPendingSecretEncrypted = null;
+    targetUser.mfaPendingExpiresAt = null;
+    targetUser.mfaRecoveryCodeHashes = [];
+    targetUser.mfaLastUsedStep = null;
+    targetUser.mfaFailedAttempts = 0;
+    targetUser.mfaLockedUntil = null;
+    await targetUser.save();
+
+    await recordAudit({
+      action: 'MFA_RESET',
+      targetUserId: targetUser._id.toString(),
+      targetType: 'User',
+      targetId: targetUser._id.toString(),
+      reason,
+      before,
+      after: {
+        mfaEnabled: false,
+        mfaEnabledAt: null,
+        mfaFailedAttempts: 0,
+        mfaLocked: false,
+      },
+    });
+
+    revalidatePath(`/admin/users/${userId}`);
+    revalidatePath('/admin/users');
+
+    return { ok: true, data: { ok: true } };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to reset MFA';
+    return { ok: false, error: msg };
+  }
+}
+

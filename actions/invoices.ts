@@ -8,6 +8,7 @@ import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-gua
 import { invoiceSchema, type InvoiceInput } from '../lib/validation/invoice.ts';
 import { computeTotals } from '../lib/totals.ts';
 import { nextNumber } from '../lib/numbering.ts';
+import { checkCanCreateInvoice } from '../lib/plan.ts';
 import type { ActionResult } from '../types/index.ts';
 import crypto from 'node:crypto';
 
@@ -67,6 +68,15 @@ export async function createInvoice(
         ok: false,
         error: 'Validation failed',
         fieldErrors: extractFieldErrors(parseResult.error.issues),
+      };
+    }
+
+    // Server-side plan limit check (§5.10, M8-T01)
+    const limitCheck = await checkCanCreateInvoice(user.id);
+    if (!limitCheck.allowed) {
+      return {
+        ok: false,
+        error: limitCheck.error || 'Invoice creation limit reached for your plan',
       };
     }
 

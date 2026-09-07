@@ -4,6 +4,7 @@ import dbConnect from '../lib/mongodb.ts';
 import { Customer } from '../models/customer.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
 import { customerSchema, type CustomerInput } from '../lib/validation/customer.ts';
+import { checkCanCreateCustomer } from '../lib/plan.ts';
 import type { ActionResult } from '../types/index.ts';
 
 export interface SerializedCustomer {
@@ -147,6 +148,15 @@ export async function createCustomer(
       return { ok: false, error: 'Validation failed', fieldErrors };
     }
 
+    // Server-side plan limit check (§5.10, M8-T01)
+    const limitCheck = await checkCanCreateCustomer(user.id);
+    if (!limitCheck.allowed) {
+      return {
+        ok: false,
+        error: limitCheck.error || 'Customer creation limit reached for your plan',
+      };
+    }
+
     const data = parseResult.data;
 
     await dbConnect();
@@ -274,6 +284,16 @@ export async function archiveCustomer(
     await assertNotSuspended(user.id);
 
     await dbConnect();
+    if (!archived) {
+      const limitCheck = await checkCanCreateCustomer(user.id);
+      if (!limitCheck.allowed) {
+        return {
+          ok: false,
+          error: limitCheck.error || 'Customer limit reached for your plan',
+        };
+      }
+    }
+
     const doc = await Customer.findOneAndUpdate(
       { _id: id, userId: user.id },
       { $set: { archived } },

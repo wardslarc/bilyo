@@ -1071,14 +1071,14 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   *Accept:* an override changes the user's effective plan immediately; an expired override falls back
   with no cleanup job; a simulated PayMongo billing update does **not** overwrite a live override.
 
-- [ ] **M7-T07 · Platform metrics** (2h)
+- [x] **M7-T07 · Platform metrics** (2h)
   *Files:* `app/(admin)/admin/page.tsx`, `lib/admin/metrics.ts`
   *Do:* total users; new users 7d / 30d; active users 30d (created a document); documents created 30d
   by kind; paid accounts; MRR; suspended count. One aggregation per tile, cached 5 minutes.
   *Accept:* the page issues a bounded number of queries regardless of user count; every tile has an
   empty state; no tile does a per-user loop.
 
-- [ ] **M7-T08 · MFA reset for locked-out users** (1h)  ← new in v2.1
+- [x] **M7-T08 · MFA reset for locked-out users** (1h)  ← new in v2.1
   *Files:* `actions/admin/users.ts`, `app/(admin)/admin/users/[id]/page.tsx`
   *Do:* an audited `MFA_RESET` per §5.11 rule 9 — typed reason required, confirmation names the
   user's email. It clears MFA and forces fresh enrolment; it never reveals, reuses, or regenerates
@@ -1089,7 +1089,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   reset appears in `/admin/audit` with its reason; no admin screen ever renders a secret or a
   recovery code.
 
-- [ ] **M7-T09 · Audit log viewer** (1h)
+- [x] **M7-T09 · Audit log viewer** (1h)
   *Files:* `app/(admin)/admin/audit/page.tsx`
   *Do:* newest first, paginated, filter by actor, target user, and action.
   *Accept:* read-only — no edit or delete control exists; the page is paginated at the database.
@@ -1102,7 +1102,7 @@ took is visible in `/admin/audit`.
 
 ### M8 — Plan limits (5–6 hrs)
 
-- [ ] **M8-T01 · Limit checks** (3h)
+- [x] **M8-T01 · Limit checks** (3h)
   *Files:* `lib/plan.ts`, called by every create action
   *Do:* FREE = 5 invoices/month, 5 quotations/month, 10 customers. Enforced **server-side in the
   action**, resolved through `effectivePlan()` so an admin override lifts limits instantly. Never
@@ -1110,7 +1110,7 @@ took is visible in `/admin/audit`.
   *Accept:* an over-limit create is rejected by the Server Action even when the UI is bypassed; a
   user with an admin override is not limited; the month boundary uses `Asia/Manila`, not UTC.
 
-- [ ] **M8-T02 · Upgrade prompts** (2h)
+- [x] **M8-T02 · Upgrade prompts** (2h)
   *Accept:* a blocked action explains which limit was hit, shows current usage, and links to pricing.
 
 ---

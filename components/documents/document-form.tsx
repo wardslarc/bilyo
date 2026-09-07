@@ -10,6 +10,7 @@ import {
   type LineItemRow,
 } from '@/components/documents/line-item-builder';
 import { TotalsPanel } from '@/components/documents/totals-panel';
+import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 import { centavosToPesos } from '@/lib/money';
 import type { ComputedTotals } from '@/lib/totals';
 import {
@@ -290,14 +291,12 @@ export function DocumentForm({
         </div>
       )}
 
-      {/* General error */}
+      {/* General error / Plan limit upgrade prompt */}
       {generalError && (
-        <div
-          role="alert"
-          className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg"
-        >
-          {generalError}
-        </div>
+        <PlanLimitAlert
+          error={generalError}
+          onDismiss={() => setGeneralError(null)}
+        />
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">

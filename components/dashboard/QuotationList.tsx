@@ -13,6 +13,7 @@ import {
 } from '@/actions/quotations';
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
+import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 
 // --- Status helpers ---
 
@@ -154,11 +155,12 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
 
   return (
     <div className="space-y-5">
-      {/* Action error */}
+      {/* Action error / Plan limit upgrade prompt */}
       {actionError && (
-        <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-          {actionError}
-        </div>
+        <PlanLimitAlert
+          error={actionError}
+          onDismiss={() => setActionError(null)}
+        />
       )}
 
       {/* Toolbar */}
