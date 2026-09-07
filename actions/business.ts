@@ -4,6 +4,12 @@ import dbConnect from '../lib/mongodb.ts';
 import { Business } from '../models/business.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
 import { businessProfileSchema, type BusinessProfileInput } from '../lib/validation/business.ts';
+import {
+  validateImageBuffer,
+  uploadBusinessLogo,
+  deleteBusinessLogo,
+  MAX_LOGO_SIZE_BYTES,
+} from '../lib/blob.ts';
 import type { ActionResult } from '../types/index.ts';
 
 export interface SerializedBusiness {
@@ -160,3 +166,120 @@ export async function saveBusinessProfile(
     return { ok: false, error: 'An unexpected error occurred while saving your business profile.' };
   }
 }
+
+/**
+ * Upload business logo image (M6-T01).
+ * Validates 2MB cap, content type, and genuine PNG/JPEG/WebP magic bytes.
+ * Rejects renamed executables (.exe), scripts, or corrupted files.
+ */
+export async function uploadLogo(
+  formData: FormData
+): Promise<ActionResult<{ logoUrl: string }>> {
+  try {
+    const user = await requireUser();
+    await assertNotSuspended(user.id);
+
+    const fileEntry = formData.get('file');
+    if (!fileEntry || !(fileEntry instanceof File) || fileEntry.size === 0) {
+      return { ok: false, error: 'No image file was provided.' };
+    }
+
+    if (fileEntry.size > MAX_LOGO_SIZE_BYTES) {
+      return {
+        ok: false,
+        error: `Image exceeds the 2MB limit (received ${(fileEntry.size / (1024 * 1024)).toFixed(2)}MB).`,
+      };
+    }
+
+    const arrayBuffer = await fileEntry.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Validate binary magic bytes and format
+    const validation = validateImageBuffer(buffer, fileEntry.type, fileEntry.size);
+    if (!validation.ok || !validation.mimeType || !validation.extension) {
+      return {
+        ok: false,
+        error: validation.error || 'Invalid image file. Only genuine PNG, JPEG, and WebP images are allowed.',
+      };
+    }
+
+    await dbConnect();
+
+    // Check if business has an existing logo to delete after replacement
+    const existingBusiness = await Business.findOne({ userId: user.id }).lean();
+    const oldLogoUrl = existingBusiness?.logoUrl;
+
+    const logoUrl = await uploadBusinessLogo(
+      user.id,
+      buffer,
+      fileEntry.name,
+      validation.mimeType,
+      validation.extension
+    );
+
+    await Business.findOneAndUpdate(
+      { userId: user.id },
+      {
+        $set: { logoUrl },
+        $setOnInsert: {
+          businessName: 'My Business',
+          address: '',
+          email: user.email || '',
+          phone: '',
+          tin: '',
+          vatRegistered: false,
+        },
+      },
+      { returnDocument: 'after', upsert: true, runValidators: true }
+    );
+
+    // Clean up old logo if different
+    if (oldLogoUrl && oldLogoUrl !== logoUrl) {
+      await deleteBusinessLogo(oldLogoUrl);
+    }
+
+    await safeRevalidate('/dashboard/settings');
+    await safeRevalidate('/dashboard');
+
+    return { ok: true, data: { logoUrl } };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('uploadLogo error:', (error as Error).message);
+    return { ok: false, error: 'Failed to upload logo image.' };
+  }
+}
+
+/**
+ * Remove business logo image (M6-T01).
+ * Resets logoUrl to null and cleans up storage.
+ */
+export async function removeLogo(): Promise<ActionResult<{ success: boolean }>> {
+  try {
+    const user = await requireUser();
+    await assertNotSuspended(user.id);
+
+    await dbConnect();
+    const existing = await Business.findOne({ userId: user.id });
+
+    if (existing?.logoUrl) {
+      const oldLogoUrl = existing.logoUrl;
+      existing.logoUrl = null;
+      await existing.save();
+      await deleteBusinessLogo(oldLogoUrl);
+    }
+
+    await safeRevalidate('/dashboard/settings');
+    await safeRevalidate('/dashboard');
+
+    return { ok: true, data: { success: true } };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('removeLogo error:', (error as Error).message);
+    return { ok: false, error: 'Failed to remove logo image.' };
+  }
+}
+

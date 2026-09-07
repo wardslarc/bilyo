@@ -961,7 +961,7 @@ nothing beyond that one document.
 
 ### M6 — Ship it (12–14 hrs)
 
-- [ ] **M6-T01 · Logo upload** (2h)
+- [x] **M6-T01 · Logo upload** (2h)
   *Do:* Vercel Blob, 2MB cap, png/jpg/webp only, validated server-side by content type **and** magic
   bytes, not just the file extension.
   *Accept:* a renamed `.exe` is rejected; the stored URL renders in both the app and the PDF.

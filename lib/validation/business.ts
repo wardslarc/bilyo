@@ -45,7 +45,7 @@ export const businessProfileSchema = z.object({
     .string()
     .trim()
     .refine(
-      (val) => val === '' || z.string().url().safeParse(val).success,
+      (val) => val === '' || val.startsWith('/') || z.string().url().safeParse(val).success,
       {
         message: 'Please enter a valid URL for the logo',
       }

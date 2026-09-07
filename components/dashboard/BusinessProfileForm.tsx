@@ -1,8 +1,13 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { saveBusinessProfile, type SerializedBusiness } from '@/actions/business';
+import {
+  saveBusinessProfile,
+  uploadLogo,
+  removeLogo,
+  type SerializedBusiness,
+} from '@/actions/business';
 import type { BusinessProfileInput } from '@/lib/validation/business';
 
 interface BusinessProfileFormProps {
@@ -30,6 +35,96 @@ export function BusinessProfileForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoFile = async (file: File) => {
+    setLogoUploadError(null);
+    setGeneralError(null);
+
+    // Client-side quick checks
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoUploadError(`File exceeds the 2MB limit (selected ${(file.size / (1024 * 1024)).toFixed(2)}MB).`);
+      return;
+    }
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setLogoUploadError('Only PNG, JPG, and WebP images are allowed.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const data = new FormData();
+      data.append('file', file);
+
+      const res = await uploadLogo(data);
+      if (!res.ok) {
+        setLogoUploadError(res.error);
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, logoUrl: res.data.logoUrl }));
+      setSuccessMessage('Logo uploaded and saved successfully.');
+    } catch {
+      setLogoUploadError('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    setLogoUploadError(null);
+    setGeneralError(null);
+    setIsUploadingLogo(true);
+    try {
+      const res = await removeLogo();
+      if (!res.ok) {
+        setLogoUploadError(res.error);
+        return;
+      }
+      setFormData((prev) => ({ ...prev, logoUrl: '' }));
+      setSuccessMessage('Logo removed successfully.');
+    } catch {
+      setLogoUploadError('Failed to remove logo.');
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile) {
+        handleLogoFile(droppedFile);
+      }
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -272,25 +367,126 @@ export function BusinessProfileForm({
           )}
         </div>
 
-        {/* Logo URL */}
-        <div>
-          <label htmlFor="logoUrl" className="block text-xs font-medium text-neutral-700 mb-1">
-            Business Logo Image URL
-          </label>
+        {/* Business Logo Upload */}
+        <div className="space-y-3 pt-2">
+          <div>
+            <label className="block text-sm font-medium text-neutral-900">
+              Business Logo
+            </label>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Upload your company logo to appear on outgoing quotations, invoices, and downloadable PDFs.
+            </p>
+          </div>
+
           <input
-            id="logoUrl"
-            name="logoUrl"
-            type="url"
-            value={formData.logoUrl || ''}
-            onChange={handleChange}
-            placeholder="https://example.com/logo.png"
-            className={`w-full px-3.5 py-2.5 text-sm rounded-lg border ${
-              fieldErrors.logoUrl ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
-            } focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                const file = e.target.files[0];
+                if (file) handleLogoFile(file);
+              }
+            }}
           />
-          <p className="mt-1 text-xs text-neutral-400">
-            Direct web link to your business logo (PNG, JPG, or WebP). Cloud file upload will be added in M6.
-          </p>
+
+          {logoUploadError && (
+            <div
+              role="alert"
+              className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2"
+            >
+              <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{logoUploadError}</span>
+            </div>
+          )}
+
+          {formData.logoUrl ? (
+            <div className="p-4 border border-[var(--color-line)] rounded-xl bg-neutral-50/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-24 h-24 rounded-lg border border-[var(--color-line)] bg-white p-2 flex items-center justify-center overflow-hidden shadow-xs shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={formData.logoUrl}
+                    alt="Uploaded business logo"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+                <div>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 mb-1">
+                    Active Logo
+                  </span>
+                  <p className="text-xs text-neutral-500 max-w-xs break-all truncate">
+                    {formData.logoUrl}
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Renders on headers of outgoing documents and PDFs.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  disabled={isUploadingLogo || isPending}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 sm:flex-none px-3.5 py-2 text-xs font-medium text-neutral-700 bg-white border border-[var(--color-line)] hover:bg-neutral-50 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] inline-flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {isUploadingLogo ? 'Uploading...' : 'Replace'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isUploadingLogo || isPending}
+                  onClick={handleRemoveLogo}
+                  className="flex-1 sm:flex-none px-3.5 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] inline-flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`p-6 border-2 border-dashed rounded-xl cursor-pointer text-center transition-all ${
+                isDragging
+                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[0.99]'
+                  : 'border-[var(--color-line)] bg-neutral-50/50 hover:bg-neutral-50 hover:border-neutral-400'
+              }`}
+            >
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600">
+                  {isUploadingLogo ? (
+                    <svg className="animate-spin w-5 h-5 text-[var(--color-primary)]" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="text-sm font-medium text-neutral-800">
+                  {isUploadingLogo ? 'Uploading and validating image...' : 'Click to upload or drag & drop'}
+                </div>
+                <p className="text-xs text-neutral-500">
+                  PNG, JPG, or WebP only (up to 2MB). Magic bytes verified server-side.
+                </p>
+              </div>
+            </div>
+          )}
+
           {fieldErrors.logoUrl && (
             <p className="mt-1 text-xs text-red-600">{fieldErrors.logoUrl}</p>
           )}
