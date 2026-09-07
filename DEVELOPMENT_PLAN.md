@@ -1078,7 +1078,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   *Accept:* the page issues a bounded number of queries regardless of user count; every tile has an
   empty state; no tile does a per-user loop.
 
-- [ ] **M7-T08 · MFA reset for locked-out users** (1h)  ← new in v2.1
+- [x] **M7-T08 · MFA reset for locked-out users** (1h)  ← new in v2.1
   *Files:* `actions/admin/users.ts`, `app/(admin)/admin/users/[id]/page.tsx`
   *Do:* an audited `MFA_RESET` per §5.11 rule 9 — typed reason required, confirmation names the
   user's email. It clears MFA and forces fresh enrolment; it never reveals, reuses, or regenerates

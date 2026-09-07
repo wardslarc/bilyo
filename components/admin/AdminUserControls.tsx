@@ -9,6 +9,7 @@ import {
   enableUserPublicLinks,
   setPlanOverride,
   clearPlanOverride,
+  resetUserMfa,
 } from '@/actions/admin/users';
 import { formatDate } from '@/lib/dates';
 import type { Plan } from '@/types';
@@ -28,6 +29,8 @@ interface AdminUserControlsProps {
     suspendedAt: Date | null;
     suspendedReason?: string | null;
     publicLinksDisabledAt?: Date | null;
+    mfaEnabled?: boolean;
+    mfaEnabledAt?: Date | null;
   };
 }
 
@@ -38,6 +41,7 @@ type ModalType =
   | 'enable-links'
   | 'set-plan'
   | 'clear-plan'
+  | 'mfa-reset'
   | null;
 
 export function AdminUserControls({ user }: AdminUserControlsProps) {
@@ -98,6 +102,8 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
         });
       } else if (activeModal === 'clear-plan') {
         res = await clearPlanOverride({ userId: user.id, reason: trimmed });
+      } else if (activeModal === 'mfa-reset') {
+        res = await resetUserMfa({ userId: user.id, reason: trimmed });
       }
 
       if (res && !res.ok) {
@@ -115,7 +121,9 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                   ? 'Public links have been re-enabled for this user.'
                   : activeModal === 'set-plan'
                     ? `Plan override to ${overridePlan} set for ${overrideDays} days.`
-                    : 'Plan override has been cleared.'
+                    : activeModal === 'clear-plan'
+                      ? 'Plan override has been cleared.'
+                      : 'MFA has been reset. The user must enrol a new authenticator device on next sign-in.'
         );
         router.refresh();
       }
@@ -165,7 +173,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {/* Plan & Subscription Card (§5.10) */}
         <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
           <div className="flex items-start justify-between">
@@ -317,6 +325,51 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
             </button>
           )}
         </div>
+
+        {/* Multi-Factor Authentication Card (§5.11, M7-T08) */}
+        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Multi-Factor Auth (MFA)
+              </span>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {user.mfaEnabled
+                  ? user.mfaEnabledAt
+                    ? `Enrolled on ${formatDate(user.mfaEnabledAt)}`
+                    : 'TOTP 2FA active on account.'
+                  : 'MFA not enrolled or reset. Required at next login.'}
+              </p>
+            </div>
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
+                user.mfaEnabled
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {user.mfaEnabled ? 'ENROLLED' : 'NOT ENROLLED'}
+            </span>
+          </div>
+
+          {isAdmin ? (
+            <p className="text-xs text-slate-400 italic">
+              Admin MFA cannot be reset from console (CLI: npm run reset-mfa).
+            </p>
+          ) : user.mfaEnabled ? (
+            <button
+              id="btn-reset-mfa"
+              onClick={() => openModal('mfa-reset')}
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-xs bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+            >
+              Reset MFA...
+            </button>
+          ) : (
+            <span className="text-xs text-slate-400 italic">
+              User will enrol upon next sign-in.
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Confirmation Modals */}
@@ -332,7 +385,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                       ? 'bg-rose-100 text-rose-700'
                       : activeModal === 'unsuspend'
                         ? 'bg-emerald-100 text-emerald-700'
-                        : activeModal === 'disable-links'
+                        : activeModal === 'disable-links' || activeModal === 'mfa-reset'
                           ? 'bg-amber-100 text-amber-700'
                           : activeModal === 'enable-links'
                             ? 'bg-indigo-100 text-indigo-700'
@@ -356,6 +409,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                     {activeModal === 'enable-links' && 'Re-enable Public Document Links'}
                     {activeModal === 'set-plan' && 'Set Administrative Plan Override'}
                     {activeModal === 'clear-plan' && 'Clear Administrative Plan Override'}
+                    {activeModal === 'mfa-reset' && 'Reset Multi-Factor Authentication (MFA)'}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Target account:{' '}
@@ -456,6 +510,18 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                   immediately.
                 </span>
               )}
+              {activeModal === 'mfa-reset' && (
+                <span>
+                  <strong>Locked-out account recovery (§5.11 rule 9):</strong> Resetting MFA for{' '}
+                  <strong className="font-mono">{user.email}</strong> will immediately clear all enrolled
+                  secrets, replay counters, and recovery codes. The user will be required to configure a new
+                  authenticator app from scratch upon their next sign-in.
+                  <br /><br />
+                  <span className="text-slate-500 italic">
+                    Note: Per security guidelines (§3.8), previous secrets and recovery codes are permanently deleted and never revealed.
+                  </span>
+                </span>
+              )}
             </div>
 
             {/* Error banner */}
@@ -520,7 +586,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                     ? 'bg-rose-600 hover:bg-rose-700'
                     : activeModal === 'unsuspend'
                       ? 'bg-emerald-600 hover:bg-emerald-700'
-                      : activeModal === 'disable-links'
+                      : activeModal === 'disable-links' || activeModal === 'mfa-reset'
                         ? 'bg-amber-600 hover:bg-amber-700'
                         : activeModal === 'set-plan'
                           ? 'bg-purple-600 hover:bg-purple-700'
@@ -540,6 +606,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                   {activeModal === 'enable-links' && 'Confirm Link Re-enablement'}
                   {activeModal === 'set-plan' && 'Apply Plan Override'}
                   {activeModal === 'clear-plan' && 'Clear Plan Override'}
+                  {activeModal === 'mfa-reset' && 'Confirm MFA Reset'}
                 </span>
               </button>
             </div>
