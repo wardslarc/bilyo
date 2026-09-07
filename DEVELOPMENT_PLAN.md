@@ -966,12 +966,12 @@ nothing beyond that one document.
   bytes, not just the file extension.
   *Accept:* a renamed `.exe` is rejected; the stored URL renders in both the app and the PDF.
 
-- [ ] **M6-T02 · Deploy to Vercel** (2h)
+- [x] **M6-T02 · Deploy to Vercel** (2h)
   *Do:* env vars set (§14), Atlas network access configured, custom domain, `ADMIN_EMAILS` set in
   production only.
   *Accept:* a preview deploy and production both boot; `/api/health` is green in production.
 
-- [ ] **M6-T03 · Security pass** (2h)
+- [x] **M6-T03 · Security pass** (2h)
   *Do:* walk **every** Server Action and confirm session-derived `userId` scoping (§5.5); rate-limit
   login, register, and password reset; confirm no secret is imported into a client component;
   confirm `/admin/*` 404s for a normal user in the production build.
@@ -984,7 +984,7 @@ nothing beyond that one document.
   admin — so the M7 screens have something to render.
   *Accept:* `npm run seed` twice is idempotent or clearly refuses.
 
-- [ ] **M6-T05 · Account page** (2h)  ← new in v2
+- [x] **M6-T05 · Account page** (2h)  ← new in v2
   *Files:* `app/(dashboard)/dashboard/account/page.tsx`, `actions/account.ts`
   *Do:* change password (current password required), change email (uniqueness re-checked,
   `emailVerifiedAt` cleared), export my data (JSON + CSV — PH Data Privacy Act portability), close

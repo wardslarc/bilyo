@@ -47,6 +47,7 @@ export default async function DashboardLayout({
     { label: 'Customers', href: '/dashboard/customers' },
     { label: 'Products', href: '/dashboard/products' },
     { label: 'Settings', href: '/dashboard/settings' },
+    { label: 'Account', href: '/dashboard/account' },
   ];
 
   return (
@@ -75,12 +76,15 @@ export default async function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden sm:block text-right">
+            <Link
+              href="/dashboard/account"
+              className="hidden sm:block text-right hover:opacity-80 transition-opacity"
+            >
               <p className="text-xs font-medium text-neutral-900 leading-tight">
                 {user.name || user.email}
               </p>
               <p className="text-[11px] text-neutral-500 leading-tight">{user.email}</p>
-            </div>
+            </Link>
             <div className="h-6 w-px bg-neutral-200 hidden sm:block" />
             <SignOutButton className="text-xs font-medium text-neutral-500 hover:text-neutral-900 px-2.5 py-1.5 rounded-md hover:bg-neutral-100 transition-colors" />
           </div>
