@@ -948,7 +948,7 @@ nothing beyond that one document.
 - [x] **M5-T02 · Recent documents + empty states** (2h)
   *Accept:* a brand-new account sees a guided empty state with one clear CTA, never a grid of zeroes.
 
-- [ ] **M5-T03 · Loading, error, and 404 boundaries** (2h)
+- [x] **M5-T03 · Loading, error, and 404 boundaries** (2h)
   *Files:* `loading.tsx` / `error.tsx` / `not-found.tsx` per route group
   *Accept:* every screen in §9 shows its `L`, `X`, and `D` states; an error boundary shows a message
   a customer could read, with the real error logged server-side only.
