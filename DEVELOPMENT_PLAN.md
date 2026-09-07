@@ -917,7 +917,7 @@ and opens correctly on desktop and on a phone.**
   *Accept:* a Server Action that tries to edit a `PAID` invoice's items is rejected server-side, not
   just hidden in the UI.
 
-- [ ] **M4-T04 · Public link pages** (4h)
+- [x] **M4-T04 · Public link pages** (4h)
   *Files:* `app/i/[token]/page.tsx`, `app/q/[token]/page.tsx`,
   `app/api/public/i/[token]/pdf/route.ts`, `lib/public-projection.ts`
   *Do:* clean read-only view, Download PDF, no app chrome, `noindex`. **Hand-written minimal
