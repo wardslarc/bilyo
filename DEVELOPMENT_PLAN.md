@@ -1036,7 +1036,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   renders in under a second against 10,000 seeded users; searching `""` returns page 1, not
   everything.
 
-- [ ] **M7-T03 · User detail + read-only documents** (3h)
+- [x] **M7-T03 · User detail + read-only documents** (3h)
   *Files:* `app/(admin)/admin/users/[id]/page.tsx`, `[id]/documents/page.tsx`,
   `app/(admin)/admin/documents/[kind]/[id]/page.tsx`
   *Do:* profile, business, plan with its source and expiry, counts by document type and status,

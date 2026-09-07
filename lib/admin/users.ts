@@ -1,9 +1,12 @@
 import dbConnect from '../mongodb.ts';
 import { User } from '../../models/user.ts';
 import { Business } from '../../models/business.ts';
+import { Customer } from '../../models/customer.ts';
 import { Invoice } from '../../models/invoice.ts';
 import { Quotation } from '../../models/quotation.ts';
+import { AdminAuditLog } from '../../models/admin-audit-log.ts';
 import { requireAdmin } from './guard.ts';
+import { isInvoiceOverdue } from '../dates.ts';
 
 
 export interface GetAdminUsersParams {
@@ -215,4 +218,480 @@ export async function getAdminUsersList(
     totalPages: Math.ceil(total / limit) || 1,
     limit,
   };
+}
+
+export interface AdminUserDetail {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: 'USER' | 'ADMIN';
+    plan: 'FREE' | 'FREELANCER' | 'BUSINESS';
+    planSource: 'DEFAULT' | 'BILLING' | 'ADMIN';
+    isPlanOverridden: boolean;
+    planOverrideExpiresAt: Date | null;
+    planOverrideReason: string | null;
+    billingCustomerId: string | null;
+    suspendedAt: Date | null;
+    suspendedReason: string | null;
+    suspendedByUserId: string | null;
+    deletionRequestedAt: Date | null;
+    publicLinksDisabledAt: Date | null;
+    mfaEnabled: boolean;
+    mfaEnabledAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    lastLoginAt: Date | null;
+    lastActiveAt: Date | null;
+  };
+  business: {
+    businessName: string;
+    address: string;
+    email: string;
+    phone: string;
+    tin: string;
+    vatRegistered: boolean;
+    logoUrl: string | null;
+    createdAt: Date;
+  } | null;
+  counts: {
+    invoices: {
+      total: number;
+      draft: number;
+      sent: number;
+      paid: number;
+      overdue: number;
+      cancelled: number;
+    };
+    quotations: {
+      total: number;
+      draft: number;
+      sent: number;
+      accepted: number;
+      declined: number;
+      expired: number;
+    };
+  };
+  recentAudits: Array<{
+    id: string;
+    action: string;
+    actorEmail: string;
+    reason: string | null;
+    createdAt: Date;
+  }>;
+}
+
+/**
+ * Loads detailed account profile, business settings, document breakdown,
+ * and recent audit logs for an identified user (AGENTS.md §3.7, M7-T03).
+ */
+export async function getAdminUserDetail(
+  userId: string
+): Promise<AdminUserDetail | null> {
+  await requireAdmin();
+  await dbConnect();
+
+  const [dbUser, business, invoices, quotations, recentAudits] =
+    await Promise.all([
+      User.findById(userId).lean(),
+      Business.findOne({ userId }).lean(),
+      Invoice.find({ userId }).select('status dueDate').lean(),
+      Quotation.find({ userId }).select('status validUntil').lean(),
+      AdminAuditLog.find({ targetUserId: userId })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+  if (!dbUser) {
+    return null;
+  }
+
+  // Calculate invoice counts
+  const now = new Date();
+  let invDraft = 0;
+  let invSent = 0;
+  let invPaid = 0;
+  let invOverdue = 0;
+  let invCancelled = 0;
+
+  for (const inv of invoices) {
+    if (inv.status === 'PAID') invPaid++;
+    else if (inv.status === 'CANCELLED') invCancelled++;
+    else if (inv.status === 'DRAFT') invDraft++;
+    else if (inv.status === 'SENT') {
+      if (inv.dueDate && isInvoiceOverdue(inv.dueDate, inv.status)) {
+        invOverdue++;
+      } else {
+        invSent++;
+      }
+    }
+  }
+
+  // Calculate quotation counts
+  let quoDraft = 0;
+  let quoSent = 0;
+  let quoAccepted = 0;
+  let quoDeclined = 0;
+  let quoExpired = 0;
+
+  for (const quo of quotations) {
+    if (quo.status === 'ACCEPTED') quoAccepted++;
+    else if (quo.status === 'DECLINED') quoDeclined++;
+    else if (quo.status === 'EXPIRED' || (quo.validUntil && new Date(quo.validUntil) < now)) {
+      quoExpired++;
+    } else if (quo.status === 'SENT') quoSent++;
+    else if (quo.status === 'DRAFT') quoDraft++;
+  }
+
+  return {
+    user: {
+      id: dbUser._id.toString(),
+      name: dbUser.name,
+      email: dbUser.email,
+      role: dbUser.role || 'USER',
+      plan: dbUser.plan || 'FREE',
+      planSource: dbUser.planSource || 'DEFAULT',
+      isPlanOverridden: dbUser.planSource === 'ADMIN',
+      planOverrideExpiresAt: dbUser.planOverrideExpiresAt || null,
+      planOverrideReason: dbUser.planOverrideReason || null,
+      billingCustomerId: dbUser.billingCustomerId || null,
+      suspendedAt: dbUser.suspendedAt || null,
+      suspendedReason: dbUser.suspendedReason || null,
+      suspendedByUserId: dbUser.suspendedByUserId || null,
+      deletionRequestedAt: dbUser.deletionRequestedAt || null,
+      publicLinksDisabledAt: dbUser.publicLinksDisabledAt || null,
+      mfaEnabled: Boolean(dbUser.mfaEnabledAt),
+      mfaEnabledAt: dbUser.mfaEnabledAt || null,
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt,
+      lastLoginAt: dbUser.lastLoginAt || null,
+      lastActiveAt: dbUser.lastActiveAt || null,
+    },
+    business: business
+      ? {
+          businessName: business.businessName,
+          address: business.address || '',
+          email: business.email || '',
+          phone: business.phone || '',
+          tin: business.tin || '',
+          vatRegistered: Boolean(business.vatRegistered),
+          logoUrl: business.logoUrl || null,
+          createdAt: business.createdAt,
+        }
+      : null,
+    counts: {
+      invoices: {
+        total: invoices.length,
+        draft: invDraft,
+        sent: invSent,
+        paid: invPaid,
+        overdue: invOverdue,
+        cancelled: invCancelled,
+      },
+      quotations: {
+        total: quotations.length,
+        draft: quoDraft,
+        sent: quoSent,
+        accepted: quoAccepted,
+        declined: quoDeclined,
+        expired: quoExpired,
+      },
+    },
+    recentAudits: recentAudits.map((a) => ({
+      id: a._id.toString(),
+      action: a.action,
+      actorEmail: a.actorEmail,
+      reason: a.reason || null,
+      createdAt: a.createdAt,
+    })),
+  };
+}
+
+export interface AdminUserDocumentListItem {
+  id: string;
+  number: string;
+  kind: 'invoice' | 'quotation';
+  customerName: string;
+  issueDate: Date;
+  dueDateOrValidUntil: Date | null;
+  status: string;
+  totalCentavos: number;
+  publicToken: string;
+  createdAt: Date;
+}
+
+/**
+ * Loads all invoices and quotations for an identified user (AGENTS.md §3.7, M7-T03).
+ */
+export async function getAdminUserDocuments(
+  userId: string
+): Promise<{ user: { id: string; name: string; email: string }; documents: AdminUserDocumentListItem[] } | null> {
+  await requireAdmin();
+  await dbConnect();
+
+  const user = await User.findById(userId).select('_id name email').lean();
+  if (!user) {
+    return null;
+  }
+
+  const [invoices, quotations] = await Promise.all([
+    Invoice.find({ userId }).sort({ createdAt: -1 }).lean(),
+    Quotation.find({ userId }).sort({ createdAt: -1 }).lean(),
+  ]);
+
+  // Collect customer IDs for documents without snapshot names
+  const customerIds = new Set<string>();
+  for (const inv of invoices) {
+    if (!inv.customerSnapshot?.name && inv.customerId) {
+      customerIds.add(inv.customerId.toString());
+    }
+  }
+  for (const quo of quotations) {
+    if (!quo.customerSnapshot?.name && quo.customerId) {
+      customerIds.add(quo.customerId.toString());
+    }
+  }
+
+  const customerMap = new Map<string, string>();
+  if (customerIds.size > 0) {
+    const customers = await Customer.find({ _id: { $in: Array.from(customerIds) } })
+      .select('_id name')
+      .lean();
+    for (const c of customers) {
+      customerMap.set(c._id.toString(), c.name);
+    }
+  }
+
+  const docList: AdminUserDocumentListItem[] = [];
+
+  for (const inv of invoices) {
+    const cust = inv.customerSnapshot as { name?: string } | undefined;
+    const customerName = cust?.name || customerMap.get(inv.customerId?.toString()) || '—';
+    docList.push({
+      id: inv._id.toString(),
+      number: inv.number,
+      kind: 'invoice',
+      customerName,
+      issueDate: inv.issueDate,
+      dueDateOrValidUntil: inv.dueDate || null,
+      status: inv.status,
+      totalCentavos: inv.totalCentavos,
+      publicToken: inv.publicToken || '',
+      createdAt: inv.createdAt,
+    });
+  }
+
+  for (const quo of quotations) {
+    const cust = quo.customerSnapshot as { name?: string } | undefined;
+    const customerName = cust?.name || customerMap.get(quo.customerId?.toString()) || '—';
+    docList.push({
+      id: quo._id.toString(),
+      number: quo.number,
+      kind: 'quotation',
+      customerName,
+      issueDate: quo.issueDate,
+      dueDateOrValidUntil: quo.validUntil || null,
+      status: quo.status,
+      totalCentavos: quo.totalCentavos,
+      publicToken: quo.publicToken || '',
+      createdAt: quo.createdAt,
+    });
+  }
+
+  // Sort unified documents newest first
+  docList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return {
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+    },
+    documents: docList,
+  };
+}
+
+export interface AdminDocumentDetail {
+  id: string;
+  kind: 'invoice' | 'quotation';
+  number: string;
+  status: string;
+  issueDate: Date;
+  dueDateOrValidUntil: Date | null;
+  paidAt?: Date | null;
+  userId: string;
+  business: {
+    businessName: string;
+    address: string;
+    email: string;
+    phone: string;
+    tin: string;
+    vatRegistered: boolean;
+    logoUrl: string | null;
+  };
+  customer: {
+    name: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    taxId?: string;
+  };
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPriceCentavos: number;
+    amountCentavos: number;
+  }>;
+  subtotalCentavos: number;
+  discountCentavos: number;
+  vatCentavos: number;
+  totalCentavos: number;
+  notes?: string;
+  terms?: string;
+  publicToken: string;
+  publicTokenRevokedAt?: Date | null;
+  createdAt: Date;
+}
+
+/**
+ * Loads full document content for platform staff inspection (AGENTS.md §3.7, M7-T03).
+ * Crucially, displays document content even if public link is revoked or disabled.
+ */
+export async function getAdminDocument(
+  kind: 'invoice' | 'quotation',
+  id: string
+): Promise<AdminDocumentDetail | null> {
+  await requireAdmin();
+  await dbConnect();
+
+  if (kind === 'invoice') {
+    const invoice = await Invoice.findById(id).lean();
+    if (!invoice) return null;
+
+    let bSnap = invoice.businessSnapshot as Record<string, unknown> | undefined;
+    if (!bSnap?.businessName) {
+      const liveBiz = await Business.findOne({ userId: invoice.userId }).lean();
+      if (liveBiz) {
+        bSnap = liveBiz as unknown as Record<string, unknown>;
+      }
+    }
+
+    let cSnap = invoice.customerSnapshot as Record<string, unknown> | undefined;
+    if (!cSnap?.name && invoice.customerId) {
+      const liveCust = await Customer.findById(invoice.customerId).lean();
+      if (liveCust) {
+        cSnap = liveCust as unknown as Record<string, unknown>;
+      }
+    }
+
+    return {
+      id: invoice._id.toString(),
+      kind: 'invoice',
+      number: invoice.number,
+      status: invoice.status,
+      issueDate: invoice.issueDate,
+      dueDateOrValidUntil: invoice.dueDate || null,
+      paidAt: invoice.paidAt || null,
+      userId: invoice.userId.toString(),
+      business: {
+        businessName: (bSnap?.businessName as string) || '—',
+        address: (bSnap?.address as string) || '',
+        email: (bSnap?.email as string) || '',
+        phone: (bSnap?.phone as string) || '',
+        tin: (bSnap?.tin as string) || '',
+        vatRegistered: Boolean(bSnap?.vatRegistered),
+        logoUrl: (bSnap?.logoUrl as string) || null,
+      },
+      customer: {
+        name: (cSnap?.name as string) || '—',
+        company: (cSnap?.company as string) || undefined,
+        email: (cSnap?.email as string) || undefined,
+        phone: (cSnap?.phone as string) || undefined,
+        address: (cSnap?.address as string) || undefined,
+        taxId: (cSnap?.tin as string) || (cSnap?.taxId as string) || undefined,
+      },
+      items: invoice.items.map((it) => ({
+        description: it.description,
+        quantity: it.quantity,
+        unitPriceCentavos: it.unitPriceCentavos,
+        amountCentavos: it.amountCentavos,
+      })),
+      subtotalCentavos: invoice.subtotalCentavos,
+      discountCentavos: invoice.discountCentavos,
+      vatCentavos: invoice.vatCentavos,
+      totalCentavos: invoice.totalCentavos,
+      notes: invoice.notes,
+      terms: invoice.terms,
+      publicToken: invoice.publicToken || '',
+      publicTokenRevokedAt: invoice.publicTokenRevokedAt || null,
+      createdAt: invoice.createdAt,
+    };
+  }
+
+  if (kind === 'quotation') {
+    const quotation = await Quotation.findById(id).lean();
+    if (!quotation) return null;
+
+    let bSnap = quotation.businessSnapshot as Record<string, unknown> | undefined;
+    if (!bSnap?.businessName) {
+      const liveBiz = await Business.findOne({ userId: quotation.userId }).lean();
+      if (liveBiz) {
+        bSnap = liveBiz as unknown as Record<string, unknown>;
+      }
+    }
+
+    let cSnap = quotation.customerSnapshot as Record<string, unknown> | undefined;
+    if (!cSnap?.name && quotation.customerId) {
+      const liveCust = await Customer.findById(quotation.customerId).lean();
+      if (liveCust) {
+        cSnap = liveCust as unknown as Record<string, unknown>;
+      }
+    }
+
+    return {
+      id: quotation._id.toString(),
+      kind: 'quotation',
+      number: quotation.number,
+      status: quotation.status,
+      issueDate: quotation.issueDate,
+      dueDateOrValidUntil: quotation.validUntil || null,
+      userId: quotation.userId.toString(),
+      business: {
+        businessName: (bSnap?.businessName as string) || '—',
+        address: (bSnap?.address as string) || '',
+        email: (bSnap?.email as string) || '',
+        phone: (bSnap?.phone as string) || '',
+        tin: (bSnap?.tin as string) || '',
+        vatRegistered: Boolean(bSnap?.vatRegistered),
+        logoUrl: (bSnap?.logoUrl as string) || null,
+      },
+      customer: {
+        name: (cSnap?.name as string) || '—',
+        company: (cSnap?.company as string) || undefined,
+        email: (cSnap?.email as string) || undefined,
+        phone: (cSnap?.phone as string) || undefined,
+        address: (cSnap?.address as string) || undefined,
+        taxId: (cSnap?.tin as string) || (cSnap?.taxId as string) || undefined,
+      },
+      items: quotation.items.map((it) => ({
+        description: it.description,
+        quantity: it.quantity,
+        unitPriceCentavos: it.unitPriceCentavos,
+        amountCentavos: it.amountCentavos,
+      })),
+      subtotalCentavos: quotation.subtotalCentavos,
+      discountCentavos: quotation.discountCentavos,
+      vatCentavos: quotation.vatCentavos,
+      totalCentavos: quotation.totalCentavos,
+      notes: quotation.notes,
+      terms: quotation.terms,
+      publicToken: quotation.publicToken || '',
+      publicTokenRevokedAt: quotation.publicTokenRevokedAt || null,
+      createdAt: quotation.createdAt,
+    };
+  }
+
+  return null;
 }
