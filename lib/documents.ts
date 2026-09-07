@@ -181,3 +181,124 @@ export function getDocumentPdfDisclaimer(kind: DocumentKind): string {
   }
   return 'This document is an invoice and is not an official sales invoice or receipt under BIR regulations. It is not valid for claiming input tax.';
 }
+
+export interface SerializedLineItem {
+  description: string;
+  quantity: number;
+  unitPriceCentavos: number;
+  amountCentavos: number;
+}
+
+export interface SerializedInvoice {
+  id: string;
+  userId: string;
+  customerId: string;
+  number: string;
+  items: SerializedLineItem[];
+  subtotalCentavos: number;
+  discountCentavos: number;
+  vatRatePercent: number;
+  vatCentavos: number;
+  totalCentavos: number;
+  status: string;
+  issueDate: string;
+  dueDate: string;
+  paidAt: string | null;
+  notes: string;
+  terms: string;
+  publicToken: string | null;
+  customerSnapshot: {
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    tin?: string;
+  } | null;
+  businessSnapshot: {
+    businessName: string;
+    address?: string;
+    email?: string;
+    phone?: string;
+    tin?: string;
+    vatRegistered: boolean;
+    logoUrl?: string | null;
+  } | null;
+  sourceQuotationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function serializeInvoice(doc: any): SerializedInvoice {
+  const items = (doc.items as Array<Record<string, unknown>> | undefined) ?? [];
+  const customerSnapshot = doc.customerSnapshot as Record<string, unknown> | null | undefined;
+  const businessSnapshot = doc.businessSnapshot as Record<string, unknown> | null | undefined;
+
+  // Derive OVERDUE at read time (§5.4): status === 'SENT' && dueDate < today
+  let displayStatus = String(doc.status ?? 'DRAFT');
+  if (displayStatus === 'SENT' && doc.dueDate) {
+    const due = new Date(doc.dueDate);
+    const now = new Date();
+    if (due.getTime() < now.getTime()) {
+      displayStatus = 'OVERDUE';
+    }
+  }
+
+  return {
+    id: String(doc._id),
+    userId: String(doc.userId),
+    customerId: String(doc.customerId),
+    number: String(doc.number ?? ''),
+    items: items.map((item) => ({
+      description: String(item.description ?? ''),
+      quantity: Number(item.quantity ?? 0),
+      unitPriceCentavos: Number(item.unitPriceCentavos ?? 0),
+      amountCentavos: Number(item.amountCentavos ?? 0),
+    })),
+    subtotalCentavos: Number(doc.subtotalCentavos ?? 0),
+    discountCentavos: Number(doc.discountCentavos ?? 0),
+    vatRatePercent: Number(doc.vatRatePercent ?? 12),
+    vatCentavos: Number(doc.vatCentavos ?? 0),
+    totalCentavos: Number(doc.totalCentavos ?? 0),
+    status: displayStatus,
+    issueDate: doc.issueDate
+      ? new Date(doc.issueDate as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    dueDate: doc.dueDate
+      ? new Date(doc.dueDate as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    paidAt: doc.paidAt
+      ? new Date(doc.paidAt as string | number | Date).toISOString()
+      : null,
+    notes: String(doc.notes ?? ''),
+    terms: String(doc.terms ?? ''),
+    publicToken: doc.publicToken ? String(doc.publicToken) : null,
+    customerSnapshot: customerSnapshot
+      ? {
+          name: String(customerSnapshot.name ?? ''),
+          email: customerSnapshot.email ? String(customerSnapshot.email) : undefined,
+          phone: customerSnapshot.phone ? String(customerSnapshot.phone) : undefined,
+          address: customerSnapshot.address ? String(customerSnapshot.address) : undefined,
+          tin: customerSnapshot.tin ? String(customerSnapshot.tin) : undefined,
+        }
+      : null,
+    businessSnapshot: businessSnapshot
+      ? {
+          businessName: String(businessSnapshot.businessName ?? ''),
+          address: businessSnapshot.address ? String(businessSnapshot.address) : undefined,
+          email: businessSnapshot.email ? String(businessSnapshot.email) : undefined,
+          phone: businessSnapshot.phone ? String(businessSnapshot.phone) : undefined,
+          tin: businessSnapshot.tin ? String(businessSnapshot.tin) : undefined,
+          vatRegistered: Boolean(businessSnapshot.vatRegistered),
+          logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
+        }
+      : null,
+    sourceQuotationId: doc.sourceQuotationId ? String(doc.sourceQuotationId) : null,
+    createdAt: doc.createdAt
+      ? new Date(doc.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    updatedAt: doc.updatedAt
+      ? new Date(doc.updatedAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
+  };
+}

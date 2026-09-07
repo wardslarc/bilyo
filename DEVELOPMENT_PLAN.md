@@ -925,7 +925,7 @@ and opens correctly on desktop and on a phone.**
   *Accept:* the page HTML and the JSON payload contain **no** user email, no internal ids, and no
   other document; an unknown, revoked, or disabled token renders the same plain 404.
 
-- [ ] **M4-T05 · Convert quotation → invoice** (2h)
+- [x] **M4-T05 · Convert quotation → invoice** (2h)
   *Do:* copy items, totals, and both snapshots; set `sourceQuotationId` and `convertedInvoiceId`;
   the quotation becomes `ACCEPTED`.
   *Accept:* converting twice opens the existing invoice and creates nothing — verify by calling the

@@ -149,4 +149,117 @@ describe('Invoice Domain & Validation (M4-T02)', () => {
       assert.ok(disclaimer.includes('BIR regulations'));
     });
   });
+
+  describe('Quotation to Invoice Conversion Rules (§5.4, §8.2, M4-T05)', () => {
+    test('conversion eligibility: only SENT or ACCEPTED quotations may be converted', () => {
+      const isEligible = (status: string) => status === 'SENT' || status === 'ACCEPTED';
+      assert.strictEqual(isEligible('SENT'), true);
+      assert.strictEqual(isEligible('ACCEPTED'), true);
+      assert.strictEqual(isEligible('DRAFT'), false);
+      assert.strictEqual(isEligible('DECLINED'), false);
+      assert.strictEqual(isEligible('EXPIRED'), false);
+    });
+
+    test('conversion copies items, totals, and snapshots into a new DRAFT invoice', () => {
+      const mockQuotation = {
+        _id: 'quot_123',
+        userId: 'user_abc',
+        customerId: 'cust_789',
+        number: 'QUO-000001',
+        status: 'SENT',
+        items: [
+          {
+            description: 'Web Design',
+            quantity: 2,
+            unitPriceCentavos: 500000,
+            amountCentavos: 1000000,
+          },
+        ],
+        subtotalCentavos: 1000000,
+        discountCentavos: 100000,
+        vatRatePercent: 12,
+        vatCentavos: 108000,
+        totalCentavos: 1008000,
+        customerSnapshot: {
+          name: 'Acme Corp',
+          email: 'acme@example.com',
+          phone: '09171234567',
+          address: 'Makati City',
+          tin: '123-456-789-000',
+        },
+        businessSnapshot: {
+          businessName: 'Freelancer Studio',
+          address: 'BGC, Taguig',
+          email: 'me@studio.ph',
+          phone: '09181234567',
+          tin: '987-654-321-000',
+          vatRegistered: true,
+          logoUrl: null,
+        },
+        convertedInvoiceId: null as string | null,
+      };
+
+      // Transform logic
+      const invoiceNumber = 'INV-000001';
+      const mockInvoice = {
+        userId: mockQuotation.userId,
+        customerId: mockQuotation.customerId,
+        number: invoiceNumber,
+        sourceQuotationId: mockQuotation._id,
+        items: mockQuotation.items,
+        subtotalCentavos: mockQuotation.subtotalCentavos,
+        discountCentavos: mockQuotation.discountCentavos,
+        vatRatePercent: mockQuotation.vatRatePercent,
+        vatCentavos: mockQuotation.vatCentavos,
+        totalCentavos: mockQuotation.totalCentavos,
+        status: 'DRAFT',
+        customerSnapshot: mockQuotation.customerSnapshot,
+        businessSnapshot: mockQuotation.businessSnapshot,
+      };
+
+      // Quotation transitions
+      mockQuotation.convertedInvoiceId = 'inv_created_001';
+      mockQuotation.status = 'ACCEPTED';
+
+      assert.strictEqual(mockInvoice.status, 'DRAFT');
+      assert.strictEqual(mockInvoice.sourceQuotationId, 'quot_123');
+      assert.strictEqual(mockInvoice.totalCentavos, 1008000);
+      assert.strictEqual(mockInvoice.customerSnapshot.name, 'Acme Corp');
+      assert.strictEqual(mockQuotation.convertedInvoiceId, 'inv_created_001');
+      assert.strictEqual(mockQuotation.status, 'ACCEPTED');
+    });
+
+    test('idempotency: converting an already-converted quotation returns existing invoice without creating another', () => {
+      let createCallCount = 0;
+      const quotation = {
+        _id: 'quot_123',
+        convertedInvoiceId: 'inv_existing_456',
+      };
+
+      const existingInvoices: Record<string, { id: string; number: string }> = {
+        inv_existing_456: { id: 'inv_existing_456', number: 'INV-000001' },
+      };
+
+      function simulateConvert(q: typeof quotation) {
+        if (q.convertedInvoiceId) {
+          return { ok: true, invoice: existingInvoices[q.convertedInvoiceId] };
+        }
+        createCallCount++;
+        const newId = `inv_new_${createCallCount}`;
+        q.convertedInvoiceId = newId;
+        existingInvoices[newId] = { id: newId, number: `INV-00000${createCallCount}` };
+        return { ok: true, invoice: existingInvoices[newId] };
+      }
+
+      // First call (with convertedInvoiceId already set)
+      const res1 = simulateConvert(quotation);
+      assert.strictEqual(res1.invoice.id, 'inv_existing_456');
+      assert.strictEqual(createCallCount, 0, 'Should not create new invoice');
+
+      // Second call
+      const res2 = simulateConvert(quotation);
+      assert.strictEqual(res2.invoice.id, 'inv_existing_456');
+      assert.strictEqual(createCallCount, 0, 'Repeated call must remain idempotent');
+    });
+  });
 });

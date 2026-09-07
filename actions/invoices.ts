@@ -11,53 +11,13 @@ import { nextNumber } from '../lib/numbering.ts';
 import type { ActionResult } from '../types/index.ts';
 import crypto from 'node:crypto';
 
-// --- Serialized types for client transport ---
+import {
+  serializeInvoice,
+  type SerializedInvoice,
+  type SerializedLineItem,
+} from '../lib/documents.ts';
 
-export interface SerializedLineItem {
-  description: string;
-  quantity: number;
-  unitPriceCentavos: number;
-  amountCentavos: number;
-}
-
-export interface SerializedInvoice {
-  id: string;
-  userId: string;
-  customerId: string;
-  number: string;
-  items: SerializedLineItem[];
-  subtotalCentavos: number;
-  discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
-  totalCentavos: number;
-  status: string;
-  issueDate: string;
-  dueDate: string;
-  paidAt: string | null;
-  notes: string;
-  terms: string;
-  publicToken: string | null;
-  customerSnapshot: {
-    name: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    tin?: string;
-  } | null;
-  businessSnapshot: {
-    businessName: string;
-    address?: string;
-    email?: string;
-    phone?: string;
-    tin?: string;
-    vatRegistered: boolean;
-    logoUrl?: string | null;
-  } | null;
-  sourceQuotationId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type { SerializedInvoice, SerializedLineItem };
 
 // --- Helpers ---
 
@@ -68,82 +28,6 @@ async function safeRevalidate(path: string) {
   } catch {
     // Ignore outside Next runtime
   }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function serializeInvoice(doc: any): SerializedInvoice {
-  const items = (doc.items as Array<Record<string, unknown>> | undefined) ?? [];
-  const customerSnapshot = doc.customerSnapshot as Record<string, unknown> | null | undefined;
-  const businessSnapshot = doc.businessSnapshot as Record<string, unknown> | null | undefined;
-
-  // Derive OVERDUE at read time (§5.4): status === 'SENT' && dueDate < today
-  let displayStatus = String(doc.status ?? 'DRAFT');
-  if (displayStatus === 'SENT' && doc.dueDate) {
-    const due = new Date(doc.dueDate);
-    const now = new Date();
-    // Compare date boundary
-    if (due.getTime() < now.getTime()) {
-      displayStatus = 'OVERDUE';
-    }
-  }
-
-  return {
-    id: String(doc._id),
-    userId: String(doc.userId),
-    customerId: String(doc.customerId),
-    number: String(doc.number ?? ''),
-    items: items.map((item) => ({
-      description: String(item.description ?? ''),
-      quantity: Number(item.quantity ?? 0),
-      unitPriceCentavos: Number(item.unitPriceCentavos ?? 0),
-      amountCentavos: Number(item.amountCentavos ?? 0),
-    })),
-    subtotalCentavos: Number(doc.subtotalCentavos ?? 0),
-    discountCentavos: Number(doc.discountCentavos ?? 0),
-    vatRatePercent: Number(doc.vatRatePercent ?? 12),
-    vatCentavos: Number(doc.vatCentavos ?? 0),
-    totalCentavos: Number(doc.totalCentavos ?? 0),
-    status: displayStatus,
-    issueDate: doc.issueDate
-      ? new Date(doc.issueDate as string | number | Date).toISOString()
-      : new Date().toISOString(),
-    dueDate: doc.dueDate
-      ? new Date(doc.dueDate as string | number | Date).toISOString()
-      : new Date().toISOString(),
-    paidAt: doc.paidAt
-      ? new Date(doc.paidAt as string | number | Date).toISOString()
-      : null,
-    notes: String(doc.notes ?? ''),
-    terms: String(doc.terms ?? ''),
-    publicToken: doc.publicToken ? String(doc.publicToken) : null,
-    customerSnapshot: customerSnapshot
-      ? {
-          name: String(customerSnapshot.name ?? ''),
-          email: String(customerSnapshot.email ?? ''),
-          phone: String(customerSnapshot.phone ?? ''),
-          address: String(customerSnapshot.address ?? ''),
-          tin: String(customerSnapshot.tin ?? ''),
-        }
-      : null,
-    businessSnapshot: businessSnapshot
-      ? {
-          businessName: String(businessSnapshot.businessName ?? ''),
-          address: String(businessSnapshot.address ?? ''),
-          email: String(businessSnapshot.email ?? ''),
-          phone: String(businessSnapshot.phone ?? ''),
-          tin: String(businessSnapshot.tin ?? ''),
-          vatRegistered: Boolean(businessSnapshot.vatRegistered),
-          logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
-        }
-      : null,
-    sourceQuotationId: doc.sourceQuotationId ? String(doc.sourceQuotationId) : null,
-    createdAt: doc.createdAt
-      ? new Date(doc.createdAt as string | number | Date).toISOString()
-      : new Date().toISOString(),
-    updatedAt: doc.updatedAt
-      ? new Date(doc.updatedAt as string | number | Date).toISOString()
-      : new Date().toISOString(),
-  };
 }
 
 function extractFieldErrors(

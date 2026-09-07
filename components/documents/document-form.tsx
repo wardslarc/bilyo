@@ -80,6 +80,8 @@ export interface DocumentFormProps {
   pdfUrl?: string;
   backHref: string;
   onSuccess?: (savedId: string) => void;
+  headerBanner?: React.ReactNode;
+  extraActions?: React.ReactNode;
 }
 
 export function DocumentForm({
@@ -90,6 +92,8 @@ export function DocumentForm({
   pdfUrl,
   backHref,
   onSuccess,
+  headerBanner,
+  extraActions,
 }: DocumentFormProps) {
   const config = DOCUMENT_CONFIG[kind];
   const [isPending, startTransition] = useTransition();
@@ -265,6 +269,7 @@ export function DocumentForm({
               Download PDF
             </a>
           )}
+          {extraActions}
           <Link
             href={backHref}
             className="text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
@@ -273,6 +278,9 @@ export function DocumentForm({
           </Link>
         </div>
       </div>
+
+      {/* Custom header banner */}
+      {headerBanner}
 
       {/* Locked banner */}
       {isLocked && (

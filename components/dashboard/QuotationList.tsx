@@ -2,7 +2,15 @@
 
 import React, { useState, useTransition, useCallback } from 'react';
 import Link from 'next/link';
-import { getQuotations, sendQuotation, acceptQuotation, declineQuotation, type SerializedQuotation } from '@/actions/quotations';
+import { useRouter } from 'next/navigation';
+import {
+  getQuotations,
+  sendQuotation,
+  acceptQuotation,
+  declineQuotation,
+  convertQuotationToInvoice,
+  type SerializedQuotation,
+} from '@/actions/quotations';
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
 
@@ -60,6 +68,7 @@ interface QuotationListProps {
 // --- Component ---
 
 export function QuotationList({ initialQuotations }: QuotationListProps) {
+  const router = useRouter();
   const [quotations, setQuotations] = useState<SerializedQuotation[]>(initialQuotations);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -128,6 +137,18 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
       }
       setActionError(null);
       refreshList();
+    });
+  };
+
+  const handleConvert = (id: string) => {
+    startTransition(async () => {
+      const res = await convertQuotationToInvoice(id);
+      if (!res.ok) {
+        setActionError(res.error);
+        return;
+      }
+      setActionError(null);
+      router.push(`/dashboard/invoices/${res.data.id}`);
     });
   };
 
@@ -289,6 +310,25 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                           Decline
                         </button>
                       </>
+                    )}
+                    {q.convertedInvoiceId ? (
+                      <Link
+                        href={`/dashboard/invoices/${q.convertedInvoiceId}`}
+                        className="text-xs font-medium text-emerald-600 hover:underline flex items-center gap-0.5"
+                      >
+                        Invoice →
+                      </Link>
+                    ) : (
+                      (q.status === 'SENT' || q.status === 'ACCEPTED') && (
+                        <button
+                          type="button"
+                          onClick={() => handleConvert(q.id)}
+                          disabled={isPending}
+                          className="text-xs font-medium text-purple-600 hover:underline disabled:opacity-40"
+                        >
+                          Convert to Invoice
+                        </button>
+                      )
                     )}
                   </div>
                 </div>
