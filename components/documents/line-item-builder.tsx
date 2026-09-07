@@ -4,19 +4,10 @@ import React, { useState, useCallback, useEffect, useId } from 'react';
 import { type SerializedProduct, getProducts } from '@/actions/products';
 import { centavosToPesos, formatMoney, pesosToCentavos } from '@/lib/money';
 
-// --- Types ---
+import { type LineItemRow } from '@/lib/documents';
 
-export interface LineItemRow {
-  /** Client-side key for React reconciliation */
-  id: string;
-  description: string;
-  /** Raw string from the input — converted to number only at compute time */
-  quantity: string;
-  /** Raw peso string from the input — converted to centavos only at compute time */
-  unitPrice: string;
-  /** If prefilled from a product, track it for UX but not for storage */
-  productId?: string;
-}
+// Re-export for backward compatibility
+export type { LineItemRow };
 
 export interface LineItemBuilderProps {
   /** Controlled value */

@@ -902,7 +902,7 @@ and opens correctly on desktop and on a phone.**
 
 ### M4 — Invoices + public links (12–14 hrs)
 
-- [ ] **M4-T01 · Extract the shared document engine** (4h)
+- [x] **M4-T01 · Extract the shared document engine** (4h)
   *Files:* `components/documents/*`, `lib/pdf/shared/*`, `lib/documents.ts`
   *Do:* factor the builder, totals, and PDF layout so invoices reuse them. Differences are
   `dueDate`, `paidAt`, and the status set. **No copy-paste of the M3 files.**
