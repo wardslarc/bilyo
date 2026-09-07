@@ -143,7 +143,10 @@ export async function requestPasswordReset(
     });
 
     // Until M9 (Resend integration), print link to server log
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl =
+      process.env.APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'http://localhost:3000';
     const resetUrl = `${appUrl}/reset-password?token=${token}`;
     console.log(`[PASSWORD_RESET] Link for ${email}: ${resetUrl}`);
 

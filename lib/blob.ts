@@ -157,7 +157,10 @@ export async function uploadBusinessLogo(
   const filePath = path.join(uploadsDir, fileName);
   await fs.writeFile(filePath, buffer);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl =
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'http://localhost:3000';
   return `${baseUrl}/uploads/logos/${fileName}`;
 }
 
