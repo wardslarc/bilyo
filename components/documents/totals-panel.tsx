@@ -126,28 +126,28 @@ export function TotalsPanel({
       </div>
 
       {/* Rows */}
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {/* Subtotal */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-[var(--color-muted)]">Subtotal</span>
-          <span className="font-medium text-[var(--color-text)]">
+        <div className="flex items-center justify-between text-sm gap-2">
+          <span className="text-[var(--color-muted)] shrink-0">Subtotal</span>
+          <span className="font-medium font-mono text-[var(--color-text)] text-right truncate">
             {formatMoney(totals.subtotalCentavos)}
           </span>
         </div>
 
         {/* Discount (editable) */}
         <div className="flex items-center justify-between text-sm gap-3">
-          <label htmlFor="totals-discount" className="text-[var(--color-muted)] whitespace-nowrap">
+          <label htmlFor="totals-discount" className="text-[var(--color-muted)] shrink-0 whitespace-nowrap">
             Discount
           </label>
           <div className="flex items-center gap-2">
             {isServerOverride ? (
-              <span className="font-medium text-[var(--color-text)]">
+              <span className="font-medium font-mono text-[var(--color-text)] text-right truncate">
                 {totals.discountCentavos > 0 ? `−${formatMoney(totals.discountCentavos)}` : formatMoney(0)}
               </span>
             ) : (
-              <div className="relative w-32">
-                <span className="absolute left-2.5 top-1.5 text-[var(--color-faint)] text-sm">₱</span>
+              <div className="relative w-36 sm:w-40">
+                <span className="absolute left-2.5 top-2.5 text-[var(--color-faint)] text-sm">₱</span>
                 <input
                   id="totals-discount"
                   type="text"
@@ -156,7 +156,7 @@ export function TotalsPanel({
                   disabled={disabled}
                   onChange={(e) => onDiscountChange(e.target.value)}
                   placeholder="0.00"
-                  className="w-full pl-7 pr-2.5 py-1.5 text-sm text-right rounded-md border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
+                  className="w-full pl-7 pr-3 py-2 min-h-[44px] text-sm text-right rounded-lg border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
                 />
               </div>
             )}
@@ -165,11 +165,11 @@ export function TotalsPanel({
 
         {/* Applied discount preview (only in edit mode when there's a valid discount) */}
         {!isServerOverride && totals.discountCentavos > 0 && (
-          <div className="flex items-center justify-between text-xs pl-4">
-            <span className="text-[var(--color-faint)]">
+          <div className="flex items-center justify-between text-xs gap-2 pl-4">
+            <span className="text-[var(--color-faint)] shrink-0 truncate">
               Applied{discountPreview ? ` (${discountPreview})` : ''}
             </span>
-            <span className="text-red-600 font-medium">
+            <span className="text-red-600 font-medium font-mono text-right shrink-0">
               −{formatMoney(totals.discountCentavos)}
             </span>
           </div>
@@ -177,11 +177,11 @@ export function TotalsPanel({
 
         {/* VAT — only when business is VAT-registered (§5.2) */}
         {vatRegistered && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-[var(--color-muted)]">
+          <div className="flex items-center justify-between text-sm gap-2">
+            <span className="text-[var(--color-muted)] shrink-0">
               VAT ({totals.vatRatePercent}%)
             </span>
-            <span className="font-medium text-[var(--color-text)]">
+            <span className="font-medium font-mono text-[var(--color-text)] text-right truncate">
               {formatMoney(totals.vatCentavos)}
             </span>
           </div>
@@ -191,9 +191,9 @@ export function TotalsPanel({
         <div className="border-t border-[var(--color-line)]" />
 
         {/* Total */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-[var(--color-text)]">Total</span>
-          <span className="text-lg font-bold text-[var(--color-text)]">
+        <div className="flex items-center justify-between gap-3 pt-0.5">
+          <span className="text-sm sm:text-base font-semibold text-[var(--color-text)] shrink-0">Total</span>
+          <span className="text-lg sm:text-xl font-bold font-mono text-[var(--color-text)] text-right truncate">
             {formatMoney(totals.totalCentavos)}
           </span>
         </div>

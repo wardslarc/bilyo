@@ -82,7 +82,7 @@ function ProductPicker({
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-brass)] hover:text-[var(--color-brass-ink)] transition-colors disabled:opacity-40"
+        className="min-h-[44px] inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[var(--color-brass)] hover:text-[var(--color-brass-ink)] transition-colors disabled:opacity-40 rounded-md"
         aria-expanded={open}
         aria-controls={pickerId}
       >
@@ -189,13 +189,13 @@ function LineItemRowCard({
           />
         </div>
 
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           {/* Reorder buttons */}
           <button
             type="button"
             disabled={disabled || index === 0}
             onClick={() => onMoveUp(index)}
-            className="p-1 rounded text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-paper-sunk)] disabled:opacity-30 transition-colors"
+            className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-lg text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-paper-sunk)] disabled:opacity-30 transition-colors"
             aria-label="Move up"
             title="Move up"
           >
@@ -207,7 +207,7 @@ function LineItemRowCard({
             type="button"
             disabled={disabled || index === total - 1}
             onClick={() => onMoveDown(index)}
-            className="p-1 rounded text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-paper-sunk)] disabled:opacity-30 transition-colors"
+            className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-lg text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-paper-sunk)] disabled:opacity-30 transition-colors"
             aria-label="Move down"
             title="Move down"
           >
@@ -221,7 +221,7 @@ function LineItemRowCard({
             type="button"
             disabled={disabled}
             onClick={() => onRemove(row.id)}
-            className="p-1 rounded text-[var(--color-muted)] hover:text-red-500 hover:bg-red-50 disabled:opacity-30 transition-colors ml-1"
+            className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-lg text-[var(--color-muted)] hover:text-red-500 hover:bg-red-50 disabled:opacity-30 transition-colors ml-1"
             aria-label="Remove line item"
             title="Remove"
           >
@@ -241,12 +241,12 @@ function LineItemRowCard({
           disabled={disabled}
           onChange={(e) => onUpdate(row.id, 'description', e.target.value)}
           placeholder="Item description"
-          className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
+          className="w-full px-3.5 py-2.5 min-h-[44px] text-sm rounded-lg border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
         />
       </div>
 
-      {/* Qty / Price / Amount — responsive grid */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Qty / Price / Amount — responsive grid, stacked on 390px mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         <div>
           <label className="block text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider mb-1">
             Qty
@@ -258,7 +258,7 @@ function LineItemRowCard({
             disabled={disabled}
             onChange={(e) => onUpdate(row.id, 'quantity', e.target.value)}
             placeholder="1"
-            className="w-full px-2.5 py-1.5 text-sm text-right rounded-md border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 min-h-[44px] text-sm text-right rounded-lg border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
           />
         </div>
         <div>
@@ -266,7 +266,7 @@ function LineItemRowCard({
             Unit Price
           </label>
           <div className="relative">
-            <span className="absolute left-2 top-1.5 text-[var(--color-faint)] text-sm">₱</span>
+            <span className="absolute left-2.5 top-2.5 text-[var(--color-faint)] text-sm">₱</span>
             <input
               type="text"
               inputMode="decimal"
@@ -274,7 +274,7 @@ function LineItemRowCard({
               disabled={disabled}
               onChange={(e) => onUpdate(row.id, 'unitPrice', e.target.value)}
               placeholder="0.00"
-              className="w-full pl-6 pr-2 py-1.5 text-sm text-right rounded-md border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
+              className="w-full pl-7 pr-3 py-2 min-h-[44px] text-sm text-right rounded-lg border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -282,7 +282,7 @@ function LineItemRowCard({
           <label className="block text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider mb-1">
             Amount
           </label>
-          <div className="px-2.5 py-1.5 text-sm text-right rounded-md bg-[var(--color-paper-sunk)] border border-[var(--color-line-soft)] text-[var(--color-text)] font-medium">
+          <div className="px-3 py-2 min-h-[44px] text-sm text-right rounded-lg bg-[var(--color-paper-sunk)] border border-[var(--color-line-soft)] text-[var(--color-text)] font-mono font-medium flex items-center justify-end">
             {lineAmount}
           </div>
         </div>
@@ -311,7 +311,7 @@ function EmptyState({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean
         type="button"
         disabled={disabled}
         onClick={onAdd}
-        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[var(--color-brass)] hover:opacity-90 rounded-lg transition-opacity disabled:opacity-40"
+        className="min-h-[44px] inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-white bg-[var(--color-brass)] hover:opacity-90 rounded-lg transition-opacity disabled:opacity-40"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -439,7 +439,7 @@ export function LineItemBuilder({ items, onChange, disabled }: LineItemBuilderPr
         type="button"
         disabled={disabled}
         onClick={handleAdd}
-        className="w-full flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium text-[var(--color-brass)] border border-dashed border-[var(--color-line)] rounded-lg hover:bg-[var(--color-brass-wash)]/40 hover:border-[var(--color-brass)] transition-colors disabled:opacity-40"
+        className="w-full min-h-[44px] flex items-center justify-center gap-1.5 py-3 px-4 text-sm font-medium text-[var(--color-brass)] border border-dashed border-[var(--color-line)] rounded-lg hover:bg-[var(--color-brass-wash)]/40 hover:border-[var(--color-brass)] transition-colors disabled:opacity-40"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

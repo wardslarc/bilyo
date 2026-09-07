@@ -245,13 +245,13 @@ export function DocumentForm({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {isEditing && pdfUrl && (
             <a
               href={pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors border border-neutral-200"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors border border-neutral-200"
             >
               <svg
                 className="w-3.5 h-3.5"
@@ -272,7 +272,7 @@ export function DocumentForm({
           {extraActions}
           <Link
             href={backHref}
-            className="text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+            className="min-h-[44px] inline-flex items-center px-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
           >
             ← Back to {config.title.toLowerCase()}s
           </Link>
@@ -477,17 +477,17 @@ export function DocumentForm({
 
         {/* Actions */}
         {!isLocked && (
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
             <Link
               href={backHref}
-              className="px-4 py-2.5 text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] rounded-lg transition-colors"
+              className="min-h-[44px] flex items-center justify-center px-4 py-2.5 text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] rounded-lg transition-colors border border-[var(--color-line)] sm:border-transparent"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={isPending}
-              className="px-6 py-2.5 bg-[var(--color-brass)] hover:opacity-90 text-white font-medium text-sm rounded-lg transition-opacity disabled:opacity-50"
+              className="min-h-[44px] flex items-center justify-center px-6 py-2.5 bg-[var(--color-brass)] hover:opacity-90 text-white font-medium text-sm rounded-lg transition-opacity disabled:opacity-50"
             >
               {isPending
                 ? 'Saving…'

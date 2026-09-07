@@ -953,7 +953,7 @@ nothing beyond that one document.
   *Accept:* every screen in §9 shows its `L`, `X`, and `D` states; an error boundary shows a message
   a customer could read, with the real error logged server-side only.
 
-- [ ] **M5-T04 · Mobile pass** (2h)
+- [x] **M5-T04 · Mobile pass** (2h)
   *Accept:* the builder is usable at 390px — no horizontal scroll, no tap target under 44px, no
   overlapped totals.
 
