@@ -87,8 +87,10 @@ export default function LoginForm() {
         return;
       }
 
-      // Successful login -> navigate to callbackUrl
-      router.push(res.url || callbackUrl);
+      // Successful login -> navigate to callbackUrl (guard against localhost URL on remote deployments)
+      const destUrl =
+        res?.url && !res.url.startsWith('http://localhost') ? res.url : callbackUrl;
+      router.push(destUrl);
       router.refresh();
     });
   };

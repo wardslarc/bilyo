@@ -251,9 +251,8 @@ async function handleFailedAttempt(user: InstanceType<typeof User>) {
 export async function initiateMfaEnrolment(): Promise<
   ActionResult<{ qrDataUrl: string; secretBase32: string }>
 > {
-  const sessionUser = await requireUser();
-
   try {
+    const sessionUser = await requireUser();
     await dbConnect();
     const user = await User.findById(sessionUser.id);
     if (!user) {
@@ -286,7 +285,7 @@ export async function initiateMfaEnrolment(): Promise<
     console.error('Initiate MFA enrolment error:', (error as Error).message);
     return {
       ok: false,
-      error: 'Failed to initiate MFA setup. Please try again.',
+      error: 'Failed to initiate MFA setup. Please check your session or try again.',
     };
   }
 }
@@ -299,13 +298,12 @@ export async function initiateMfaEnrolment(): Promise<
 export async function confirmMfaEnrolment(
   code: string
 ): Promise<ActionResult<{ recoveryCodes: string[] }>> {
-  const sessionUser = await requireUser();
-
   if (!code || !/^\d{6}$/.test(code.trim())) {
     return { ok: false, error: 'Please enter a valid 6-digit code' };
   }
 
   try {
+    const sessionUser = await requireUser();
     await dbConnect();
     const user = await User.findById(sessionUser.id);
     if (!user) {

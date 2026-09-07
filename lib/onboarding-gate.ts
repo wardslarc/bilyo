@@ -15,8 +15,8 @@ export async function checkOnboardingGate(
   userId: string,
   pathname: string
 ): Promise<OnboardingGateResult> {
-  // If already visiting settings (including ?onboarding=1), do not redirect
-  if (pathname.startsWith('/dashboard/settings')) {
+  // If already visiting settings (including ?onboarding=1) or if pathname is unknown, do not redirect
+  if (!pathname || pathname.startsWith('/dashboard/settings') || pathname.includes('/dashboard/settings')) {
     return { shouldRedirect: false };
   }
 

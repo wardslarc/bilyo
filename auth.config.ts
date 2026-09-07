@@ -2,6 +2,7 @@ import type { NextAuthConfig } from 'next-auth';
 import type { UserRole } from '@/types';
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   session: { strategy: 'jwt' },
   secret:
     process.env.AUTH_SECRET ||

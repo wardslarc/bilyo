@@ -60,7 +60,11 @@ export default function MfaChallengeForm() {
         return;
       }
 
-      router.push(signInRes.url || callbackUrl);
+      const destUrl =
+        signInRes?.url && !signInRes.url.startsWith('http://localhost')
+          ? signInRes.url
+          : callbackUrl;
+      router.push(destUrl);
       router.refresh();
     });
   };

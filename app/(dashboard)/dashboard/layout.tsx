@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { requireUser, assertNotSuspended } from '@/lib/auth-guards';
+import { requireUser, assertNotSuspended, AuthGuardError } from '@/lib/auth-guards';
 import { checkOnboardingGate } from '@/lib/onboarding-gate';
 import SignOutButton from '@/components/auth/SignOutButton';
 
@@ -11,14 +11,30 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireUser();
-  await assertNotSuspended(user.id);
+  let user;
+  try {
+    user = await requireUser();
+    await assertNotSuspended(user.id);
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      if (error.code === 'ACCOUNT_SUSPENDED') {
+        redirect('/login?error=suspended');
+      }
+      redirect('/login');
+    }
+    throw error;
+  }
 
   // Onboarding gate (DEVELOPMENT_PLAN.md M2-T02):
   // Signed-in user with no Business is redirected to /dashboard/settings?onboarding=1
   // If already on /dashboard/settings, do not redirect to prevent infinite loop.
   const headerList = await headers();
-  const currentPath = headerList.get('x-pathname') || '';
+  const currentPath =
+    headerList.get('x-pathname') ||
+    headerList.get('next-url') ||
+    headerList.get('x-invoke-path') ||
+    headerList.get('x-matched-path') ||
+    '';
 
   const gate = await checkOnboardingGate(user.id, currentPath);
   if (gate.shouldRedirect && gate.targetUrl) {
