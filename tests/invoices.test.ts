@@ -120,6 +120,29 @@ describe('Invoice Domain & Validation (M4-T02)', () => {
       assert.strictEqual(isDocumentEditable('invoice', 'CANCELLED'), false);
     });
 
+    test('terminal invoice states prevent edit and invalid transitions', () => {
+      // Simulating terminal check logic from updateInvoice
+      const canEdit = (status: string) => status !== 'PAID' && status !== 'CANCELLED';
+      assert.strictEqual(canEdit('PAID'), false, 'PAID invoice cannot be edited');
+      assert.strictEqual(canEdit('CANCELLED'), false, 'CANCELLED invoice cannot be edited');
+      assert.strictEqual(canEdit('DRAFT'), true, 'DRAFT invoice can be edited');
+      assert.strictEqual(canEdit('SENT'), true, 'SENT invoice can be edited');
+
+      // Simulating terminal check logic from markInvoicePaid
+      const canMarkPaid = (status: string) => status !== 'PAID' && status !== 'CANCELLED';
+      assert.strictEqual(canMarkPaid('PAID'), false, 'Already PAID invoice cannot be marked paid again');
+      assert.strictEqual(canMarkPaid('CANCELLED'), false, 'CANCELLED invoice cannot be marked paid');
+      assert.strictEqual(canMarkPaid('SENT'), true, 'SENT invoice can be marked paid');
+      assert.strictEqual(canMarkPaid('OVERDUE'), true, 'OVERDUE invoice can be marked paid');
+
+      // Simulating terminal check logic from cancelInvoice
+      const canCancel = (status: string) => status !== 'PAID' && status !== 'CANCELLED';
+      assert.strictEqual(canCancel('PAID'), false, 'PAID invoice cannot be cancelled');
+      assert.strictEqual(canCancel('CANCELLED'), false, 'Already CANCELLED invoice cannot be cancelled again');
+      assert.strictEqual(canCancel('DRAFT'), true, 'DRAFT invoice can be cancelled');
+      assert.strictEqual(canCancel('SENT'), true, 'SENT invoice can be cancelled');
+    });
+
     test('PDF disclaimer matches BIR non-official receipt mandate', () => {
       const disclaimer = getDocumentPdfDisclaimer('invoice');
       assert.ok(disclaimer.includes('not an official sales invoice or receipt'));

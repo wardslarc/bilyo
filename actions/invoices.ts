@@ -504,3 +504,129 @@ export async function getInvoiceById(
     return { ok: false, error: 'Failed to load invoice.' };
   }
 }
+
+/**
+ * Mark an invoice as PAID (§5.4).
+ * Sets paidAt to current time, locks line items and totals permanently.
+ * Terminal status.
+ */
+export async function markInvoicePaid(
+  id: string
+): Promise<ActionResult<SerializedInvoice>> {
+  try {
+    const user = await requireUser();
+    await assertNotSuspended(user.id);
+
+    await dbConnect();
+
+    const invoice = await Invoice.findOne({ _id: id, userId: user.id });
+    if (!invoice) {
+      return { ok: false, error: 'Invoice not found' };
+    }
+
+    if (invoice.status === 'PAID') {
+      return { ok: false, error: 'Invoice is already marked as paid.' };
+    }
+
+    if (invoice.status === 'CANCELLED') {
+      return { ok: false, error: 'Cannot mark a cancelled invoice as paid.' };
+    }
+
+    // Freeze snapshots if not already snapshotted (§3.9)
+    if (!invoice.customerSnapshot) {
+      const customer = await Customer.findOne({
+        _id: invoice.customerId,
+        userId: user.id,
+      }).lean();
+
+      if (customer) {
+        invoice.customerSnapshot = {
+          name: customer.name,
+          email: customer.email ?? '',
+          phone: customer.phone ?? '',
+          address: customer.address ?? '',
+          tin: customer.tin ?? '',
+        };
+      }
+    }
+
+    if (!invoice.businessSnapshot) {
+      const business = await Business.findOne({ userId: user.id }).lean();
+      if (business) {
+        invoice.businessSnapshot = {
+          businessName: business.businessName,
+          address: business.address ?? '',
+          email: business.email ?? '',
+          phone: business.phone ?? '',
+          tin: business.tin ?? '',
+          vatRegistered: business.vatRegistered,
+          logoUrl: business.logoUrl ?? null,
+        };
+      }
+    }
+
+    invoice.status = 'PAID';
+    invoice.paidAt = new Date();
+    await invoice.save();
+
+    await safeRevalidate('/dashboard/invoices');
+    await safeRevalidate(`/dashboard/invoices/${id}`);
+
+    return {
+      ok: true,
+      data: serializeInvoice(invoice),
+    };
+  } catch (err) {
+    if (err instanceof AuthGuardError) {
+      return { ok: false, error: err.message };
+    }
+    console.error('Failed to mark invoice as paid:', err);
+    return { ok: false, error: 'Failed to mark invoice as paid. Please try again.' };
+  }
+}
+
+/**
+ * Cancel an invoice (§5.4).
+ * Allowed only from DRAFT, SENT, or OVERDUE.
+ * Terminal status.
+ */
+export async function cancelInvoice(
+  id: string
+): Promise<ActionResult<SerializedInvoice>> {
+  try {
+    const user = await requireUser();
+    await assertNotSuspended(user.id);
+
+    await dbConnect();
+
+    const invoice = await Invoice.findOne({ _id: id, userId: user.id });
+    if (!invoice) {
+      return { ok: false, error: 'Invoice not found' };
+    }
+
+    if (invoice.status === 'PAID') {
+      return { ok: false, error: 'Cannot cancel an invoice that has already been paid.' };
+    }
+
+    if (invoice.status === 'CANCELLED') {
+      return { ok: false, error: 'Invoice is already cancelled.' };
+    }
+
+    invoice.status = 'CANCELLED';
+    await invoice.save();
+
+    await safeRevalidate('/dashboard/invoices');
+    await safeRevalidate(`/dashboard/invoices/${id}`);
+
+    return {
+      ok: true,
+      data: serializeInvoice(invoice),
+    };
+  } catch (err) {
+    if (err instanceof AuthGuardError) {
+      return { ok: false, error: err.message };
+    }
+    console.error('Failed to cancel invoice:', err);
+    return { ok: false, error: 'Failed to cancel invoice. Please try again.' };
+  }
+}

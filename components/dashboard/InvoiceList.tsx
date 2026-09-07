@@ -2,7 +2,13 @@
 
 import React, { useState, useTransition, useCallback } from 'react';
 import Link from 'next/link';
-import { getInvoices, sendInvoice, type SerializedInvoice } from '@/actions/invoices';
+import {
+  getInvoices,
+  sendInvoice,
+  markInvoicePaid,
+  cancelInvoice,
+  type SerializedInvoice,
+} from '@/actions/invoices';
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
 import { getStatusBadgeConfig, type DocumentStatus } from '@/lib/documents';
@@ -62,6 +68,42 @@ export function InvoiceList({ initialInvoices }: InvoiceListProps) {
       return;
     startTransition(async () => {
       const res = await sendInvoice(id);
+      if (!res.ok) {
+        setActionError(res.error);
+      } else {
+        setActionError(null);
+        refreshList();
+      }
+    });
+  };
+
+  const handleMarkPaid = (id: string) => {
+    if (
+      !confirm(
+        'Mark this invoice as paid? Line items and totals will be permanently locked.'
+      )
+    )
+      return;
+    startTransition(async () => {
+      const res = await markInvoicePaid(id);
+      if (!res.ok) {
+        setActionError(res.error);
+      } else {
+        setActionError(null);
+        refreshList();
+      }
+    });
+  };
+
+  const handleCancel = (id: string) => {
+    if (
+      !confirm(
+        'Cancel this invoice? This action is permanent.'
+      )
+    )
+      return;
+    startTransition(async () => {
+      const res = await cancelInvoice(id);
       if (!res.ok) {
         setActionError(res.error);
       } else {
@@ -223,6 +265,26 @@ export function InvoiceList({ initialInvoices }: InvoiceListProps) {
                               Send
                             </button>
                           )}
+                          {(inv.status === 'SENT' || inv.status === 'OVERDUE') && (
+                            <button
+                              type="button"
+                              disabled={isPending}
+                              onClick={() => handleMarkPaid(inv.id)}
+                              className="px-2 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded transition-colors disabled:opacity-50"
+                            >
+                              Mark Paid
+                            </button>
+                          )}
+                          {(inv.status === 'DRAFT' || inv.status === 'SENT' || inv.status === 'OVERDUE') && (
+                            <button
+                              type="button"
+                              disabled={isPending}
+                              onClick={() => handleCancel(inv.id)}
+                              className="px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          )}
                           <a
                             href={`/api/invoices/${inv.id}/pdf`}
                             target="_blank"
@@ -286,6 +348,26 @@ export function InvoiceList({ initialInvoices }: InvoiceListProps) {
                         className="px-2.5 py-1 text-[11px] font-medium text-blue-700 bg-blue-50 rounded"
                       >
                         Send
+                      </button>
+                    )}
+                    {(inv.status === 'SENT' || inv.status === 'OVERDUE') && (
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => handleMarkPaid(inv.id)}
+                        className="px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 rounded"
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                    {(inv.status === 'DRAFT' || inv.status === 'SENT' || inv.status === 'OVERDUE') && (
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => handleCancel(inv.id)}
+                        className="px-2.5 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 rounded"
+                      >
+                        Cancel
                       </button>
                     )}
                     <a

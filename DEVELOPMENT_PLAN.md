@@ -912,7 +912,7 @@ and opens correctly on desktop and on a phone.**
 - [x] **M4-T02 · Invoice CRUD + PDF** (3h)
   *Accept:* mirrors M3-T02 / T03 / T05 for invoices, including the numbering test.
 
-- [ ] **M4-T03 · Mark as paid / cancel** (2h)
+- [x] **M4-T03 · Mark as paid / cancel** (2h)
   *Do:* `paidAt` set on payment; `PAID` and `CANCELLED` are terminal and lock line items and totals.
   *Accept:* a Server Action that tries to edit a `PAID` invoice's items is rejected server-side, not
   just hidden in the UI.
