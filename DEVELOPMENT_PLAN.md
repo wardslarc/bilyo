@@ -1089,7 +1089,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   reset appears in `/admin/audit` with its reason; no admin screen ever renders a secret or a
   recovery code.
 
-- [ ] **M7-T09 · Audit log viewer** (1h)
+- [x] **M7-T09 · Audit log viewer** (1h)
   *Files:* `app/(admin)/admin/audit/page.tsx`
   *Do:* newest first, paginated, filter by actor, target user, and action.
   *Accept:* read-only — no edit or delete control exists; the page is paginated at the database.
