@@ -7,6 +7,7 @@ import {
   archiveCustomer,
   type SerializedCustomer,
 } from '@/actions/customers';
+import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 
 interface CustomerListProps {
   initialCustomers: SerializedCustomer[];
@@ -70,8 +71,9 @@ export function CustomerList({ initialCustomers }: CustomerListProps) {
             .map((c) => (c.id === customer.id ? res.data : c))
             .filter((c) => (showArchived ? true : !c.archived))
         );
+        setError(null);
       } else {
-        alert(res.error);
+        setError(res.error);
       }
     });
   };
@@ -123,14 +125,12 @@ export function CustomerList({ initialCustomers }: CustomerListProps) {
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Error / Plan limit upgrade prompt */}
       {error && (
-        <div
-          role="alert"
-          className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl"
-        >
-          {error}
-        </div>
+        <PlanLimitAlert
+          error={error}
+          onDismiss={() => setError(null)}
+        />
       )}
 
       {/* Loading state */}

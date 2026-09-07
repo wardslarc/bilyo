@@ -1110,7 +1110,7 @@ took is visible in `/admin/audit`.
   *Accept:* an over-limit create is rejected by the Server Action even when the UI is bypassed; a
   user with an admin override is not limited; the month boundary uses `Asia/Manila`, not UTC.
 
-- [ ] **M8-T02 · Upgrade prompts** (2h)
+- [x] **M8-T02 · Upgrade prompts** (2h)
   *Accept:* a blocked action explains which limit was hit, shows current usage, and links to pricing.
 
 ---

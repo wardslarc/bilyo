@@ -14,6 +14,7 @@ import {
   DocumentForm,
   type DocumentFormPayload,
 } from '@/components/documents/document-form';
+import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 import type { DocumentStatus } from '@/lib/documents';
 
 export interface QuotationFormProps {
@@ -84,12 +85,10 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
   const headerBanner = (
     <>
       {convertError && (
-        <div
-          role="alert"
-          className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg"
-        >
-          {convertError}
-        </div>
+        <PlanLimitAlert
+          error={convertError}
+          onDismiss={() => setConvertError(null)}
+        />
       )}
       {initialQuotation?.convertedInvoiceId && (
         <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg flex items-center justify-between gap-2">

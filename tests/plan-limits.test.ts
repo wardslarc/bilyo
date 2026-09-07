@@ -164,4 +164,36 @@ describe('Plan Limits & Enforcement (M8-T01)', () => {
       assert.strictEqual(PLAN_LIMITS.BUSINESS.maxCustomers, Infinity);
     });
   });
+
+  describe('Upgrade Prompts & Limit Messages (M8-T02)', () => {
+    test('invoice limit explains limit hit, shows monthly usage, and suggests upgrading', () => {
+      const res = evaluateResourceLimit('INVOICES', 5, 'FREE');
+      assert.strictEqual(res.allowed, false);
+      assert.ok(res.error);
+      // Explains which limit was hit
+      assert.ok(res.error.includes('limit of 5 invoices'));
+      // Shows current usage
+      assert.ok(res.error.includes('5/5 used this month'));
+      // Suggests upgrade
+      assert.ok(res.error.includes('Upgrade to Freelancer or Business for unlimited invoices'));
+    });
+
+    test('quotation limit explains limit hit, shows monthly usage, and suggests upgrading', () => {
+      const res = evaluateResourceLimit('QUOTATIONS', 5, 'FREE');
+      assert.strictEqual(res.allowed, false);
+      assert.ok(res.error);
+      assert.ok(res.error.includes('limit of 5 quotations'));
+      assert.ok(res.error.includes('5/5 used this month'));
+      assert.ok(res.error.includes('Upgrade to Freelancer or Business for unlimited quotations'));
+    });
+
+    test('customer limit explains limit hit, shows total usage, and suggests upgrading', () => {
+      const res = evaluateResourceLimit('CUSTOMERS', 10, 'FREE');
+      assert.strictEqual(res.allowed, false);
+      assert.ok(res.error);
+      assert.ok(res.error.includes('limit of 10 customers'));
+      assert.ok(res.error.includes('10/10 used'));
+      assert.ok(res.error.includes('Upgrade to Freelancer or Business for unlimited customers'));
+    });
+  });
 });
