@@ -1071,7 +1071,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   *Accept:* an override changes the user's effective plan immediately; an expired override falls back
   with no cleanup job; a simulated PayMongo billing update does **not** overwrite a live override.
 
-- [ ] **M7-T07 · Platform metrics** (2h)
+- [x] **M7-T07 · Platform metrics** (2h)
   *Files:* `app/(admin)/admin/page.tsx`, `lib/admin/metrics.ts`
   *Do:* total users; new users 7d / 30d; active users 30d (created a document); documents created 30d
   by kind; paid accounts; MRR; suspended count. One aggregation per tile, cached 5 minutes.
