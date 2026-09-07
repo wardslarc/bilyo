@@ -909,7 +909,7 @@ and opens correctly on desktop and on a phone.**
   *Accept:* a change to the totals panel shows up in both document types with one edit; the
   quotation flow still passes its M3 acceptance criteria afterwards.
 
-- [ ] **M4-T02 · Invoice CRUD + PDF** (3h)
+- [x] **M4-T02 · Invoice CRUD + PDF** (3h)
   *Accept:* mirrors M3-T02 / T03 / T05 for invoices, including the numbering test.
 
 - [ ] **M4-T03 · Mark as paid / cancel** (2h)
