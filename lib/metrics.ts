@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dbConnect from './mongodb.ts';
 import { Invoice } from '../models/invoice.ts';
-import { getManilaStartOfDay, getManilaMonthRange } from './dates.ts';
+import { getManilaStartOfDay, getManilaMonthRange, isInvoiceOverdue } from './dates.ts';
 
 export interface DashboardMetrics {
   currentMonthRevenueCentavos: number;
@@ -316,4 +316,63 @@ export async function getDashboardMetrics(
     draftCentavos: Number(row.draftCentavos || 0),
     totalInvoiceCount: Number(row.totalInvoiceCount || 0),
   };
+}
+
+export interface RecentInvoiceItem {
+  id: string;
+  number: string;
+  customerName: string;
+  totalCentavos: number;
+  status: string;
+  issueDate: string;
+  dueDate: string;
+  createdAt: string;
+}
+
+/**
+ * Fetch top recent invoices for the dashboard activity feed (§5.4, M5-T02).
+ * Strictly scoped by userId.
+ */
+export async function getRecentInvoices(
+  userId: string,
+  limit: number = 5
+): Promise<RecentInvoiceItem[]> {
+  await dbConnect();
+
+  const userObjectId =
+    mongoose.Types.ObjectId.isValid(userId) && typeof userId === 'string'
+      ? new mongoose.Types.ObjectId(userId)
+      : userId;
+
+  const docs = await Invoice.find({
+    userId: userObjectId,
+  })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .select('number status customerSnapshot totalCentavos issueDate dueDate createdAt')
+    .lean();
+
+  const now = new Date();
+
+  return docs.map((doc) => {
+    let displayStatus = String(doc.status ?? 'DRAFT');
+    if (displayStatus === 'SENT' && doc.dueDate) {
+      if (isInvoiceOverdue(doc.dueDate, 'SENT', now)) {
+        displayStatus = 'OVERDUE';
+      }
+    }
+
+    const customerSnapshot = doc.customerSnapshot as { name?: string } | undefined;
+
+    return {
+      id: String(doc._id),
+      number: String(doc.number ?? ''),
+      customerName: customerSnapshot?.name ? String(customerSnapshot.name) : 'Unnamed Customer',
+      totalCentavos: Number(doc.totalCentavos ?? 0),
+      status: displayStatus,
+      issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : new Date().toISOString(),
+      dueDate: doc.dueDate ? new Date(doc.dueDate).toISOString() : new Date().toISOString(),
+      createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+    };
+  });
 }

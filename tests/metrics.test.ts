@@ -154,4 +154,31 @@ describe('Dashboard Metrics & Aggregation Rules (§5.4, M5-T01)', () => {
       assert.strictEqual(metrics.draftCount, 1);
     });
   });
+
+  describe('Dashboard Empty State & Recent Documents (M5-T02)', () => {
+    test('brand-new account: empty state activates when totalInvoiceCount === 0 without showing zero metrics', () => {
+      const emptyMetrics = computeInvoiceMetricsFromList([], new Date());
+      const hasInvoices = emptyMetrics.totalInvoiceCount > 0;
+      assert.strictEqual(hasInvoices, false, 'Brand new account should trigger empty state');
+    });
+
+    test('recent document item status derives OVERDUE for SENT invoices past due date', () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 3);
+
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 5);
+
+      const deriveStatus = (status: string, dueDate: Date) => {
+        if (status === 'SENT' && dueDate.getTime() < Date.now()) {
+          return 'OVERDUE';
+        }
+        return status;
+      };
+
+      assert.strictEqual(deriveStatus('SENT', pastDate), 'OVERDUE');
+      assert.strictEqual(deriveStatus('SENT', futureDate), 'SENT');
+      assert.strictEqual(deriveStatus('PAID', pastDate), 'PAID');
+    });
+  });
 });

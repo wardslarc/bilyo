@@ -1,8 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth-guards';
-import { getDashboardMetrics } from '@/lib/metrics';
+import { getDashboardMetrics, getRecentInvoices } from '@/lib/metrics';
 import { formatMoney } from '@/lib/money';
+import { RecentDocuments } from '@/components/dashboard/RecentDocuments';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,7 @@ export default async function DashboardPage() {
   const metrics = await getDashboardMetrics(user.id);
 
   const hasInvoices = metrics.totalInvoiceCount > 0;
+  const recentInvoices = hasInvoices ? await getRecentInvoices(user.id, 5) : [];
 
   return (
     <div className="py-6 px-4 sm:px-6 max-w-6xl mx-auto space-y-8">
@@ -222,6 +224,9 @@ export default async function DashboardPage() {
               </Link>
             </div>
           )}
+
+          {/* Recent Invoices list / activity feed (M5-T02) */}
+          <RecentDocuments invoices={recentInvoices} />
 
           {/* Fast Navigation links */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">

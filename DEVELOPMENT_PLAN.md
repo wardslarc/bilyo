@@ -945,7 +945,7 @@ nothing beyond that one document.
   *Accept:* the dashboard issues ≤ 3 database round-trips total; the numbers match a hand count on
   the seed data.
 
-- [ ] **M5-T02 · Recent documents + empty states** (2h)
+- [x] **M5-T02 · Recent documents + empty states** (2h)
   *Accept:* a brand-new account sees a guided empty state with one clear CTA, never a grid of zeroes.
 
 - [ ] **M5-T03 · Loading, error, and 404 boundaries** (2h)
