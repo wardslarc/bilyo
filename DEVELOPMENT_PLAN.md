@@ -938,7 +938,7 @@ nothing beyond that one document.
 
 ### M5 — Dashboard & polish (8–10 hrs)
 
-- [ ] **M5-T01 · Metrics** (3h)
+- [x] **M5-T01 · Metrics** (3h)
   *Files:* `lib/metrics.ts`, `app/(dashboard)/dashboard/page.tsx`
   *Do:* current-month revenue, outstanding, paid, overdue — **one aggregation pipeline**, not N
   queries. Overdue is derived (§5.4).

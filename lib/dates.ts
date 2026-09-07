@@ -82,3 +82,26 @@ export function isInvoiceOverdue(
 
   return d.getTime() < todayManila.getTime();
 }
+
+/**
+ * Gets the start and end Date of the calendar month in Asia/Manila (UTC+8).
+ * Returned Dates are in UTC, spanning midnight of the 1st to 23:59:59.999 of the last day.
+ */
+export function getManilaMonthRange(refDate: Date = new Date()): {
+  startOfMonth: Date;
+  endOfMonth: Date;
+} {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MANILA_TZ,
+    year: 'numeric',
+    month: 'numeric',
+  }).formatToParts(refDate);
+
+  const year = Number.parseInt(parts.find((p) => p.type === 'year')?.value || '1970', 10);
+  const month = Number.parseInt(parts.find((p) => p.type === 'month')?.value || '1', 10) - 1;
+
+  const startOfMonth = new Date(Date.UTC(year, month, 1, -8, 0, 0, 0));
+  const endOfMonth = new Date(Date.UTC(year, month + 1, 1, -8, 0, 0, -1));
+
+  return { startOfMonth, endOfMonth };
+}
