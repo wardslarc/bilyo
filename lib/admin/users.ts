@@ -7,6 +7,7 @@ import { Quotation } from '../../models/quotation.ts';
 import { AdminAuditLog } from '../../models/admin-audit-log.ts';
 import { requireAdmin } from './guard.ts';
 import { isInvoiceOverdue } from '../dates.ts';
+import { effectivePlan, isPlanOverrideActive } from '../plan.ts';
 
 
 export interface GetAdminUsersParams {
@@ -199,9 +200,9 @@ export async function getAdminUsersList(
       name: u.name,
       email: u.email,
       businessName: businessMap.get(uid) || '—',
-      plan: u.plan || 'FREE',
+      plan: effectivePlan(u),
       planSource: u.planSource || 'DEFAULT',
-      isPlanOverridden: u.planSource === 'ADMIN',
+      isPlanOverridden: isPlanOverrideActive(u),
       documentsCount: invCount + quoCount,
       invoicesCount: invCount,
       quotationsCount: quoCount,
@@ -232,6 +233,7 @@ export interface AdminUserDetail {
     planOverrideExpiresAt: Date | null;
     planOverrideReason: string | null;
     billingCustomerId: string | null;
+    billingPlan: 'FREE' | 'FREELANCER' | 'BUSINESS' | null;
     suspendedAt: Date | null;
     suspendedReason: string | null;
     suspendedByUserId: string | null;
@@ -350,12 +352,13 @@ export async function getAdminUserDetail(
       name: dbUser.name,
       email: dbUser.email,
       role: dbUser.role || 'USER',
-      plan: dbUser.plan || 'FREE',
+      plan: effectivePlan(dbUser),
       planSource: dbUser.planSource || 'DEFAULT',
-      isPlanOverridden: dbUser.planSource === 'ADMIN',
+      isPlanOverridden: isPlanOverrideActive(dbUser),
       planOverrideExpiresAt: dbUser.planOverrideExpiresAt || null,
       planOverrideReason: dbUser.planOverrideReason || null,
       billingCustomerId: dbUser.billingCustomerId || null,
+      billingPlan: dbUser.billingPlan || null,
       suspendedAt: dbUser.suspendedAt || null,
       suspendedReason: dbUser.suspendedReason || null,
       suspendedByUserId: dbUser.suspendedByUserId || null,

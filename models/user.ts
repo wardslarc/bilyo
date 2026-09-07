@@ -49,6 +49,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: null,
     },
+    billingPlan: {
+      type: String,
+      enum: ['FREE', 'FREELANCER', 'BUSINESS'],
+      default: null,
+    },
 
     // MFA (§5.11)
     mfaEnabledAt: {

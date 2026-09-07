@@ -7,8 +7,11 @@ import {
   unsuspendUser,
   disableUserPublicLinks,
   enableUserPublicLinks,
+  setPlanOverride,
+  clearPlanOverride,
 } from '@/actions/admin/users';
 import { formatDate } from '@/lib/dates';
+import type { Plan } from '@/types';
 
 interface AdminUserControlsProps {
   user: {
@@ -16,17 +19,32 @@ interface AdminUserControlsProps {
     email: string;
     name: string;
     role: 'USER' | 'ADMIN';
+    plan: 'FREE' | 'FREELANCER' | 'BUSINESS';
+    planSource: 'DEFAULT' | 'BILLING' | 'ADMIN';
+    isPlanOverridden: boolean;
+    planOverrideExpiresAt?: Date | null;
+    planOverrideReason?: string | null;
+    billingPlan?: 'FREE' | 'FREELANCER' | 'BUSINESS' | null;
     suspendedAt: Date | null;
     suspendedReason?: string | null;
     publicLinksDisabledAt?: Date | null;
   };
 }
 
-type ModalType = 'suspend' | 'unsuspend' | 'disable-links' | 'enable-links' | null;
+type ModalType =
+  | 'suspend'
+  | 'unsuspend'
+  | 'disable-links'
+  | 'enable-links'
+  | 'set-plan'
+  | 'clear-plan'
+  | null;
 
 export function AdminUserControls({ user }: AdminUserControlsProps) {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [reason, setReason] = useState('');
+  const [overridePlan, setOverridePlan] = useState<Plan>('BUSINESS');
+  const [overrideDays, setOverrideDays] = useState<number>(90);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -40,6 +58,10 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
     setActiveModal(type);
     setReason('');
     setError(null);
+    if (type === 'set-plan') {
+      setOverridePlan(user.plan === 'FREE' ? 'BUSINESS' : user.plan);
+      setOverrideDays(90);
+    }
   };
 
   const closeModal = () => {
@@ -67,6 +89,15 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
         res = await disableUserPublicLinks({ userId: user.id, reason: trimmed });
       } else if (activeModal === 'enable-links') {
         res = await enableUserPublicLinks({ userId: user.id, reason: trimmed });
+      } else if (activeModal === 'set-plan') {
+        res = await setPlanOverride({
+          userId: user.id,
+          plan: overridePlan,
+          reason: trimmed,
+          days: overrideDays,
+        });
+      } else if (activeModal === 'clear-plan') {
+        res = await clearPlanOverride({ userId: user.id, reason: trimmed });
       }
 
       if (res && !res.ok) {
@@ -80,7 +111,11 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
               ? 'Account has been unsuspended.'
               : activeModal === 'disable-links'
                 ? 'Public links have been disabled for this user.'
-                : 'Public links have been re-enabled for this user.'
+                : activeModal === 'enable-links'
+                  ? 'Public links have been re-enabled for this user.'
+                  : activeModal === 'set-plan'
+                    ? `Plan override to ${overridePlan} set for ${overrideDays} days.`
+                    : 'Plan override has been cleared.'
         );
         router.refresh();
       }
@@ -110,7 +145,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
             Account & Security Controls
           </h2>
         </div>
-        <span className="text-xs text-slate-400 font-medium">Audited Actions (§5.9)</span>
+        <span className="text-xs text-slate-400 font-medium">Audited Actions (§5.8, §5.9, §5.10)</span>
       </div>
 
       {success && (
@@ -130,8 +165,70 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Suspension Control Box */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Plan & Subscription Card (§5.10) */}
+        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Subscription Tier
+              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="font-mono font-bold text-sm text-slate-900">
+                  {user.plan}
+                </span>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${
+                    user.isPlanOverridden
+                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                      : user.planSource === 'BILLING'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {user.isPlanOverridden
+                    ? 'ADMIN OVERRIDE'
+                    : user.planSource === 'BILLING'
+                      ? 'BILLING'
+                      : 'DEFAULT'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {user.isPlanOverridden && user.planOverrideExpiresAt
+                  ? `Override expires ${formatDate(user.planOverrideExpiresAt)}`
+                  : user.billingPlan
+                    ? `Billing plan: ${user.billingPlan}`
+                    : 'Standard free tier.'}
+              </p>
+              {user.isPlanOverridden && user.planOverrideReason && (
+                <p className="text-[11px] text-purple-700 mt-0.5 italic">
+                  &ldquo;{user.planOverrideReason}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              id="btn-override-plan"
+              onClick={() => openModal('set-plan')}
+              className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-md shadow-xs bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+            >
+              {user.isPlanOverridden ? 'Update Override...' : 'Override Plan...'}
+            </button>
+            {user.isPlanOverridden && (
+              <button
+                id="btn-clear-plan-override"
+                onClick={() => openModal('clear-plan')}
+                className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                Clear Override
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Suspension Control Box (§5.9) */}
         <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
           <div className="flex items-start justify-between">
             <div>
@@ -163,7 +260,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
             <button
               id="btn-unsuspend-user"
               onClick={() => openModal('unsuspend')}
-              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold rounded-md shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
             >
               Unsuspend Account
             </button>
@@ -171,14 +268,14 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
             <button
               id="btn-suspend-user"
               onClick={() => openModal('suspend')}
-              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold rounded-md shadow-xs bg-rose-600 hover:bg-rose-700 text-white transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-xs bg-rose-600 hover:bg-rose-700 text-white transition-colors"
             >
               Suspend Account...
             </button>
           )}
         </div>
 
-        {/* Public Link Control Box */}
+        {/* Public Link Control Box (§5.9) */}
         <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
           <div className="flex items-start justify-between">
             <div>
@@ -206,7 +303,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
             <button
               id="btn-enable-links"
               onClick={() => openModal('enable-links')}
-              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold rounded-md shadow-xs bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-xs bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
             >
               Re-enable Public Links
             </button>
@@ -214,7 +311,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
             <button
               id="btn-disable-links"
               onClick={() => openModal('disable-links')}
-              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold rounded-md shadow-xs bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-xs bg-amber-600 hover:bg-amber-700 text-white transition-colors"
             >
               Disable All Public Links...
             </button>
@@ -222,7 +319,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modals */}
       {activeModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scaleUp">
@@ -237,7 +334,9 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                         ? 'bg-emerald-100 text-emerald-700'
                         : activeModal === 'disable-links'
                           ? 'bg-amber-100 text-amber-700'
-                          : 'bg-indigo-100 text-indigo-700'
+                          : activeModal === 'enable-links'
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : 'bg-purple-100 text-purple-700'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,6 +354,8 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                     {activeModal === 'unsuspend' && 'Confirm Account Unsuspension'}
                     {activeModal === 'disable-links' && 'Disable All Public Links (Abuse Containment)'}
                     {activeModal === 'enable-links' && 'Re-enable Public Document Links'}
+                    {activeModal === 'set-plan' && 'Set Administrative Plan Override'}
+                    {activeModal === 'clear-plan' && 'Clear Administrative Plan Override'}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Target account:{' '}
@@ -272,6 +373,46 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                 </svg>
               </button>
             </div>
+
+            {/* Plan override specific fields */}
+            {activeModal === 'set-plan' && (
+              <div className="space-y-4 pt-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Override Plan Tier
+                    </label>
+                    <select
+                      id="select-override-plan"
+                      value={overridePlan}
+                      onChange={(e) => setOverridePlan(e.target.value as Plan)}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 font-semibold"
+                    >
+                      <option value="FREELANCER">FREELANCER (₱299/mo)</option>
+                      <option value="BUSINESS">BUSINESS (₱599/mo)</option>
+                      <option value="FREE">FREE</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Duration (Days)
+                    </label>
+                    <select
+                      id="select-override-days"
+                      value={overrideDays}
+                      onChange={(e) => setOverrideDays(Number(e.target.value))}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                    >
+                      <option value={30}>30 Days (1 Month)</option>
+                      <option value={60}>60 Days (2 Months)</option>
+                      <option value={90}>90 Days (Default / Quarter)</option>
+                      <option value={180}>180 Days (Half Year)</option>
+                      <option value={365}>365 Days (1 Year)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Explanatory notice */}
             <div className="text-xs text-slate-600 bg-slate-50 p-3.5 rounded-lg border border-slate-200 leading-relaxed">
@@ -302,6 +443,19 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                   and quotation views will resolve normally again.
                 </span>
               )}
+              {activeModal === 'set-plan' && (
+                <span>
+                  An administrative override takes effect immediately and lifts plan limits instantly (§5.10).
+                  When the duration expires, the account falls back gracefully to billing or FREE with zero
+                  background cleanup jobs.
+                </span>
+              )}
+              {activeModal === 'clear-plan' && (
+                <span>
+                  Clearing the override restores the user to their underlying billing plan (or FREE default)
+                  immediately.
+                </span>
+              )}
             </div>
 
             {/* Error banner */}
@@ -314,7 +468,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
               </div>
             )}
 
-            {/* Reason Textarea (M7-T05: requires min 10 chars before button enables) */}
+            {/* Reason Textarea (M7-T06: requires min 10 chars before button enables) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <label htmlFor="action-reason-input" className="font-semibold text-slate-700">
@@ -368,7 +522,9 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                       ? 'bg-emerald-600 hover:bg-emerald-700'
                       : activeModal === 'disable-links'
                         ? 'bg-amber-600 hover:bg-amber-700'
-                        : 'bg-indigo-600 hover:bg-indigo-700'
+                        : activeModal === 'set-plan'
+                          ? 'bg-purple-600 hover:bg-purple-700'
+                          : 'bg-indigo-600 hover:bg-indigo-700'
                 }`}
               >
                 {isPending && (
@@ -382,6 +538,8 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                   {activeModal === 'unsuspend' && 'Confirm Unsuspension'}
                   {activeModal === 'disable-links' && 'Confirm Link Disablement'}
                   {activeModal === 'enable-links' && 'Confirm Link Re-enablement'}
+                  {activeModal === 'set-plan' && 'Apply Plan Override'}
+                  {activeModal === 'clear-plan' && 'Clear Plan Override'}
                 </span>
               </button>
             </div>

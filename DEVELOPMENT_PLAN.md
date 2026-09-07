@@ -1064,7 +1064,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   their public links alive; disabling links 404s `/i/*` and `/q/*` for that user only; all four
   actions appear in `/admin/audit` with the reason.
 
-- [ ] **M7-T06 · Plan override** (2h)
+- [x] **M7-T06 · Plan override** (2h)
   *Files:* `actions/admin/users.ts`, `lib/plan.ts`
   *Do:* set and clear an override per §5.10 — plan, reason, expiry (default 90 days).
   `effectivePlan(user)` becomes the single source of truth and every limit check calls it.

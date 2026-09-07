@@ -18,6 +18,7 @@ export interface IUser {
   planOverrideExpiresAt?: Date | null;
   planOverrideReason?: string | null;
   billingCustomerId?: string | null;
+  billingPlan?: Plan | null;
 
   // MFA (§5.11)
   mfaEnabledAt?: Date | null;
