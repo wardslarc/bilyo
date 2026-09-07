@@ -9,13 +9,24 @@ export async function GET() {
     await dbConnect();
     const state = mongoose.connection.readyState;
     if (state === 1) {
-      return NextResponse.json({ db: "ok" });
+      return NextResponse.json({
+        status: "healthy",
+        db: "ok",
+        timestamp: new Date().toISOString(),
+      });
     } else {
-      return NextResponse.json({ db: "error", state }, { status: 500 });
+      return NextResponse.json(
+        { status: "unhealthy", db: "error", state },
+        { status: 500 }
+      );
     }
   } catch (error) {
     return NextResponse.json(
-      { db: "error", error: String(error) },
+      {
+        status: "unhealthy",
+        db: "error",
+        error: (error as Error).message || String(error),
+      },
       { status: 500 },
     );
   }
