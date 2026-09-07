@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/admin/guard';
 import { recordAudit } from '@/lib/admin/audit';
 import { getAdminUserDetail } from '@/lib/admin/users';
 import { formatDate } from '@/lib/dates';
+import { AdminUserControls } from '@/components/admin/AdminUserControls';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,6 +167,31 @@ export default async function AdminUserDetailPage({
           </div>
         </div>
       )}
+
+      {user.publicLinksDisabledAt && (
+        <div className="p-4 rounded-lg bg-rose-50 border border-rose-200 flex items-start gap-3">
+          <svg
+            className="w-5 h-5 text-rose-600 shrink-0 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"
+            />
+          </svg>
+          <div className="text-sm text-rose-800">
+            <span className="font-semibold">Public Document Links Disabled:</span> Customer links
+            (/i/*, /q/*) returning 404 since {formatDate(user.publicLinksDisabledAt)} (abuse mitigation).
+          </div>
+        </div>
+      )}
+
+      {/* Audited Account & Link Controls (M7-T05) */}
+      <AdminUserControls user={user} />
 
       {/* Read-only Invariant Banner */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600 flex items-center justify-between">

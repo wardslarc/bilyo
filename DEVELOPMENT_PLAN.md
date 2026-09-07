@@ -1055,7 +1055,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   *Accept:* an unknown value returns a clean "not found", never an error; the lookup is audited; a
   bare `INV-` prefix does not dump every invoice in the platform.
 
-- [ ] **M7-T05 · Suspend / unsuspend + link controls** (2h)
+- [x] **M7-T05 · Suspend / unsuspend + link controls** (2h)
   *Files:* `actions/admin/users.ts`
   *Do:* four audited actions per §5.9: suspend, unsuspend, disable public links, enable public links.
   Each requires a typed reason (min 10 characters) before its button enables, and each shows a
