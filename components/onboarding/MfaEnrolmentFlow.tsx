@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { initiateMfaEnrolment, confirmMfaEnrolment } from '@/actions/mfa';
 
 export default function MfaEnrolmentFlow() {
@@ -19,8 +20,10 @@ export default function MfaEnrolmentFlow() {
   // Phase 2 states
   const [isCompleted, setIsCompleted] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [mfaSessionToken, setMfaSessionToken] = useState<string | null>(null);
   const [hasSavedCodes, setHasSavedCodes] = useState(false);
   const [copiedAllCodes, setCopiedAllCodes] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const [isPending, startTransition] = useTransition();
 
@@ -40,6 +43,21 @@ export default function MfaEnrolmentFlow() {
         return;
       }
 
+      // If already enrolled, immediately refresh session and proceed to dashboard
+      if (res.data.alreadyEnrolled && res.data.mfaSessionToken) {
+        try {
+          await signIn('credentials', {
+            mfaSessionToken: res.data.mfaSessionToken,
+            redirect: false,
+          });
+        } catch {
+          // ignore
+        }
+        router.push('/dashboard');
+        router.refresh();
+        return;
+      }
+
       setQrDataUrl(res.data.qrDataUrl);
       setSecretBase32(res.data.secretBase32);
       setLoadingQr(false);
@@ -50,7 +68,7 @@ export default function MfaEnrolmentFlow() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [router]);
 
   const handleCopyKey = () => {
     if (!secretBase32) return;
@@ -62,6 +80,7 @@ export default function MfaEnrolmentFlow() {
   const handleCopyAllCodes = () => {
     navigator.clipboard.writeText(recoveryCodes.join('\n'));
     setCopiedAllCodes(true);
+    setHasSavedCodes(true);
     setTimeout(() => setCopiedAllCodes(false), 2000);
   };
 
@@ -85,6 +104,7 @@ export default function MfaEnrolmentFlow() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setHasSavedCodes(true);
   };
 
   const handleVerify = (e: React.FormEvent) => {
@@ -104,13 +124,36 @@ export default function MfaEnrolmentFlow() {
       }
 
       setRecoveryCodes(res.data.recoveryCodes);
+      setMfaSessionToken(res.data.mfaSessionToken);
       setIsCompleted(true);
+
+      // Eagerly update the session cookie in the background with mfaEnabled: true
+      if (res.data.mfaSessionToken) {
+        signIn('credentials', {
+          mfaSessionToken: res.data.mfaSessionToken,
+          redirect: false,
+        }).catch((err) => {
+          console.error('Failed to eagerly refresh session:', err);
+        });
+      }
     });
   };
 
-  const handleFinish = () => {
-    router.push('/dashboard');
-    router.refresh();
+  const handleFinish = async () => {
+    setIsFinishing(true);
+    try {
+      if (mfaSessionToken) {
+        await signIn('credentials', {
+          mfaSessionToken,
+          redirect: false,
+        });
+      }
+      router.push('/dashboard');
+      router.refresh();
+    } catch {
+      router.push('/dashboard');
+      router.refresh();
+    }
   };
 
   return (
@@ -276,11 +319,18 @@ export default function MfaEnrolmentFlow() {
 
           <button
             type="button"
-            disabled={!hasSavedCodes}
+            disabled={!hasSavedCodes || isFinishing}
             onClick={handleFinish}
-            className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[var(--color-ink)] hover:bg-[var(--color-ink-raised)] text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[var(--color-ink)] hover:bg-[var(--color-ink-raised)] text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Continue to Dashboard
+            {isFinishing ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                <span>Redirecting to Dashboard...</span>
+              </>
+            ) : (
+              'Continue to Dashboard'
+            )}
           </button>
         </div>
       )}

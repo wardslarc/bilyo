@@ -131,5 +131,18 @@ describe('Mandatory MFA & Security Page (M6-T06)', () => {
       assert.notStrictEqual(decrypt(activeSecretEncrypted), originalActive);
       assert.strictEqual(pendingSecretEncrypted, null);
     });
+
+    test('issues valid mfaSessionToken to upgrade session on enrolment completion', async () => {
+      const { signMfaSessionToken, verifyMfaSessionToken } = await import('../lib/mfa-challenge.ts');
+      const userId = '507f1f77bcf86cd799439011';
+      const mfaVerifiedAt = new Date().toISOString();
+
+      const token = signMfaSessionToken(userId, mfaVerifiedAt);
+      const verified = verifyMfaSessionToken(token);
+
+      assert.ok(verified);
+      assert.strictEqual(verified.userId, userId);
+      assert.strictEqual(verified.mfaVerifiedAt, mfaVerifiedAt);
+    });
   });
 });

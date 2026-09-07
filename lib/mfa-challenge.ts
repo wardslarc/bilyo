@@ -197,7 +197,7 @@ export function signMfaSessionToken(userId: string, mfaVerifiedAt: string): stri
   const payload: MfaSessionTokenPayload = {
     userId,
     mfaVerifiedAt,
-    expiresAt: Date.now() + 60 * 1000,
+    expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes (§8.10)
   };
 
   const jsonStr = JSON.stringify(payload);

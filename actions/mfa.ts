@@ -249,7 +249,12 @@ async function handleFailedAttempt(user: InstanceType<typeof User>) {
  * and renders server-side QR data URL (zero secrets leave server).
  */
 export async function initiateMfaEnrolment(): Promise<
-  ActionResult<{ qrDataUrl: string; secretBase32: string }>
+  ActionResult<{
+    qrDataUrl: string;
+    secretBase32: string;
+    alreadyEnrolled?: boolean;
+    mfaSessionToken?: string;
+  }>
 > {
   try {
     const sessionUser = await requireUser();
@@ -257,6 +262,22 @@ export async function initiateMfaEnrolment(): Promise<
     const user = await User.findById(sessionUser.id);
     if (!user) {
       return { ok: false, error: 'User not found' };
+    }
+
+    // If already enrolled in MFA, do not overwrite active secret.
+    // Return single-use session token so client can refresh its session and enter dashboard.
+    if (user.mfaEnabledAt && user.mfaSecretEncrypted) {
+      const mfaVerifiedAt = new Date().toISOString();
+      const mfaSessionToken = signMfaSessionToken(user._id.toString(), mfaVerifiedAt);
+      return {
+        ok: true,
+        data: {
+          qrDataUrl: '',
+          secretBase32: '',
+          alreadyEnrolled: true,
+          mfaSessionToken,
+        },
+      };
     }
 
     const secret = generateSecret();
@@ -294,10 +315,11 @@ export async function initiateMfaEnrolment(): Promise<
  * Phase 2 of MFA enrolment (§8.9):
  * Confirms code against pending secret, promotes to active mfaSecretEncrypted,
  * sets mfaEnabledAt, and generates 10 single-use recovery codes.
+ * Issues single-use mfaSessionToken to upgrade user session to mfaEnabled: true.
  */
 export async function confirmMfaEnrolment(
   code: string
-): Promise<ActionResult<{ recoveryCodes: string[] }>> {
+): Promise<ActionResult<{ recoveryCodes: string[]; mfaSessionToken: string }>> {
   if (!code || !/^\d{6}$/.test(code.trim())) {
     return { ok: false, error: 'Please enter a valid 6-digit code' };
   }
@@ -343,10 +365,15 @@ export async function confirmMfaEnrolment(
 
     await user.save();
 
+    // Issue mfaSessionToken so client can establish authenticated session with mfaEnabled: true
+    const mfaVerifiedAt = new Date().toISOString();
+    const mfaSessionToken = signMfaSessionToken(user._id.toString(), mfaVerifiedAt);
+
     return {
       ok: true,
       data: {
         recoveryCodes: plainCodes,
+        mfaSessionToken,
       },
     };
   } catch (error) {
