@@ -27,6 +27,7 @@ const AdminAuditLogSchema = new Schema<IAdminAuditLog>(
         'PUBLIC_LINKS_DISABLE',
         'PUBLIC_LINKS_ENABLE',
         'MFA_RESET',
+        'SUPPORT_LOOKUP',
       ],
       required: true,
     },

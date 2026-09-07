@@ -202,7 +202,8 @@ export type AdminAuditAction =
   | 'PUBLIC_LINK_REVOKE'
   | 'PUBLIC_LINKS_DISABLE'
   | 'PUBLIC_LINKS_ENABLE'
-  | 'MFA_RESET';
+  | 'MFA_RESET'
+  | 'SUPPORT_LOOKUP';
 
 // Admin Audit Log (Append-only)
 export interface IAdminAuditLog {

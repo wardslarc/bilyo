@@ -1048,7 +1048,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   quotation, invoice, customer, product, or business; opening the page appends exactly one audit
   entry, not one per component render.
 
-- [ ] **M7-T04 · Support lookup** (2h)
+- [x] **M7-T04 · Support lookup** (2h)
   *Files:* `app/(admin)/admin/lookup/page.tsx`, `lib/admin/lookup.ts`
   *Do:* one input that resolves a document **number** (`INV-000042`) or a **public token** across all
   users, and jumps to the read-only view. Require ≥ 4 characters.
