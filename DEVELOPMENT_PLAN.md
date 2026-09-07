@@ -1027,7 +1027,7 @@ support tickets, and M8's plan overrides need somewhere to live. Every task here
   writes one document per call; `AdminAuditLog` has no update or delete code path anywhere in the
   repo.
 
-- [ ] **M7-T02 · User list** (3h)
+- [x] **M7-T02 · User list** (3h)
   *Files:* `app/(admin)/admin/users/page.tsx`, `lib/admin/users.ts`
   *Do:* server-side pagination (25/page) and search by email or business name. Columns: email,
   business, plan (+ `ADMIN` badge when overridden), documents count, signed up, last active, status.
