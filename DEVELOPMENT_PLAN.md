@@ -1102,7 +1102,7 @@ took is visible in `/admin/audit`.
 
 ### M8 — Plan limits (5–6 hrs)
 
-- [ ] **M8-T01 · Limit checks** (3h)
+- [x] **M8-T01 · Limit checks** (3h)
   *Files:* `lib/plan.ts`, called by every create action
   *Do:* FREE = 5 invoices/month, 5 quotations/month, 10 customers. Enforced **server-side in the
   action**, resolved through `effectivePlan()` so an admin override lifts limits instantly. Never
