@@ -225,35 +225,11 @@ export function BusinessProfileForm({
         onSubmit={handleSubmit}
         className="bg-white border border-[var(--color-line)] rounded-xl shadow-sm p-6 sm:p-8 space-y-6"
       >
-        <div className="border-b border-[var(--color-line)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Business Details</h2>
-            <p className="text-xs text-neutral-500 mt-1">
-              This information will be stamped on your outgoing quotations and invoices.
-            </p>
-          </div>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="self-start sm:self-auto px-5 py-2 min-h-[40px] bg-[var(--color-brass)] hover:opacity-90 text-white font-medium text-sm rounded-lg shadow-sm transition-opacity disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shrink-0"
-          >
-            {isPending ? (
-              <>
-                <svg className="animate-spin -ml-0.5 mr-1.5 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                Saving...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                {initialBusiness ? 'Save Changes' : 'Save & Continue'}
-              </>
-            )}
-          </button>
+        <div className="border-b border-[var(--color-line)] pb-4">
+          <h2 className="text-lg font-semibold text-neutral-900">Business Details</h2>
+          <p className="text-xs text-neutral-500 mt-1">
+            This information will be stamped on your outgoing quotations and invoices.
+          </p>
         </div>
 
         {/* Business Name */}
