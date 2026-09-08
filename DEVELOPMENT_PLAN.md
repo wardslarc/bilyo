@@ -1,8 +1,13 @@
 # Bilyo Web App — Development Plan
 
-> **Status:** v2.0 · Living document. Agents tick checkboxes here as tasks complete.
+> **Status:** v2.2 · Living document. Agents tick checkboxes here as tasks complete.
 > **Read with:** `AGENTS.md` (rules of engagement — *how*) and `GEMINI.md`.
 > **This file wins on *what* to build. `AGENTS.md` wins on *how*.**
+>
+> **v2.2 changes:** M9 rewritten as a full monetization design — prepaid 30-day terms bought through
+> PayMongo Checkout Sessions (§5.12), a seven-day grace period, two new collections
+> (`billingCheckouts`, `billingEvents`), a reconcile job, and a hard rule that the webhook is the
+> only writer of billing fields. Resend split out of the payment path. Nothing already ticked moved.
 >
 > **v2.1 changes:** mandatory TOTP two-factor auth for every account (§5.11), admin MFA landing in
 > M1 as a hard prerequisite of the admin console, user enrolment gate at M6, `MFA_RESET` added to the
@@ -152,8 +157,8 @@ models/  types/  components/
 | UI | Tailwind CSS + a small local `components/ui` | no heavy component library |
 | PDF | `@react-pdf/renderer` | rendered in a Route Handler; **no Puppeteer** |
 | File upload (logo) | Vercel Blob | M6, not before |
-| Payments | PayMongo | M9, not before |
-| Email | Resend | M9, not before |
+| Payments | PayMongo Checkout Sessions (hosted, no SDK) | M9, not before — see §5.12 |
+| Email | Resend | M10, not before |
 | Rate limiting | in-memory per-instance counter in v1 | good enough at this scale; note the limitation |
 | Deploy | Vercel | preview per branch, one prod env |
 
@@ -250,10 +255,14 @@ Invoice:    DRAFT → SENT → PAID | OVERDUE | CANCELLED
 - Fields: `plan`, `planSource: 'DEFAULT' | 'BILLING' | 'ADMIN'`, `planOverrideExpiresAt`,
   `planOverrideReason`.
 - `lib/plan.ts → effectivePlan(user)` resolves in this order: an unexpired `ADMIN` override wins,
-  else the `BILLING` plan, else `FREE`.
+  else a **billing term that has not passed its grace date**, else `FREE`. A paid plan is never
+  open-ended — see §5.12.
 - **The PayMongo webhook must never clobber an active admin override.** The webhook writes billing
   fields; `effectivePlan()` decides. This is what lets you comp a user without billing undoing it
   on the next renewal.
+- **Both expiries are self-clearing.** An override ends at `planOverrideExpiresAt`, a paid term at
+  `billingGraceUntil`. Neither needs a cron job to demote anyone, and `effectivePlan()` stays a pure
+  synchronous function of one user document — which is what makes it cheap to unit-test.
 - An admin override always requires a reason and an expiry (default 90 days). Comps that never
   expire become invisible revenue leaks.
 
@@ -303,16 +312,65 @@ my device".
     — are notable security events. Log them server-side from M1; email them to the account owner from
     M9 when Resend exists.
 
+### 5.12 Billing semantics  ← new in v2.2
+
+Bilyo sells **prepaid 30-day terms**, not auto-renewing subscriptions. PayMongo's Subscriptions API
+is card-only and has to be enabled on the account by PayMongo on request; card-only billing would
+shut out GCash and Maya, which is most of this market. So M9 charges through a **Checkout Session
+per term** and the plan carries an expiry date. Auto-renewal is a later upgrade (§12), and the design
+below is shaped so it can land without changing `lib/plan.ts` or the billing page.
+
+1. **Prices live on the server, in one table.** `lib/billing/plans.ts` maps `FREELANCER → 29900` and
+   `BUSINESS → 59900` centavos. The client sends a plan *name*; it never sends an amount. An amount
+   that arrives from a form is a free upgrade waiting to happen.
+2. **A term is `billingPlan` + `billingPaidUntil` + `billingGraceUntil`.** A paid checkout sets
+   `billingPaidUntil = max(now, existing billingPaidUntil) + 30 days`, snapped to 23:59:59
+   `Asia/Manila`, and `billingGraceUntil = billingPaidUntil + 7 days`. Renewing early **stacks** onto
+   the remaining term; it never truncates it. Paying twice by accident buys two terms, not one.
+3. **Grace is seven days and it is visible.** Between `billingPaidUntil` and `billingGraceUntil` the
+   plan still works and the dashboard shows a renewal banner with the exact end date. After
+   `billingGraceUntil`, `effectivePlan()` returns `FREE` on its own.
+4. **Lapsing never destroys anything.** Documents, customers and public links stay exactly as they
+   are. Only *new* creates meet the FREE limits again. A user who lapses holding 40 customers keeps
+   all 40 and simply cannot add a 41st.
+5. **There is nothing to cancel.** Nothing is ever charged automatically, so the billing page states
+   when the plan ends instead of offering a cancel button. A cancel action appears only if
+   auto-renewal is ever added.
+6. **The redirect is not the payment.** `success_url` is a UI convenience and proves nothing — a user
+   can type it. **The webhook is the only writer of billing fields.** The success page reads the
+   checkout record and, while it is still pending, says "confirming your payment" and offers a
+   re-check. Granting a plan because a browser reached a URL is the standard way to give this product
+   away for free.
+7. **The webhook writes an allowlist and nothing else:** `billingPlan`, `billingPaidUntil`,
+   `billingGraceUntil`, `billingCustomerId`, `billingLastPaymentAt`. It must never write `plan`,
+   `planSource`, `planOverrideExpiresAt` or `planOverrideReason`. That is §5.10 made mechanical: the
+   update object is a literal with five keys, and a test asserts it.
+8. **Idempotency is a unique index, not an `if`.** Every received event is inserted into
+   `billingEvents` keyed by PayMongo's event id, and the duplicate-key error *is* the "already
+   handled" branch. The grant is then a conditional update guarded on `status: 'PENDING'`, so two
+   concurrent deliveries of the same event still grant exactly one term.
+9. **Assume webhooks get lost.** PayMongo retries a failing endpoint 12 times and disables it after
+   three events exhaust their retries, so a bad deploy can silently cost a day of payments. A daily
+   reconcile job and a per-checkout "Re-check payment" button both re-fetch the session from PayMongo
+   and run the same grant path. Because the grant is idempotent, replaying it is free. This is the
+   fix behind the runbook's "I was charged but I'm still on FREE".
+10. **Refunds happen in the PayMongo dashboard, never in Bilyo.** A `payment.refunded` event is
+    recorded and surfaced to admin; it does **not** automatically revoke a term. Clawing back access
+    is a judgement call, so it is an audited admin action, not a webhook side effect.
+11. **Money is centavos, integers, everywhere** — same rule as `lib/money.ts`. The amount charged is
+    stored on the checkout row, so a future price change never rewrites what someone actually paid.
+
 ---
 
 ## 6. Data model
 
-One database. Seven collections plus `counters` and `adminAuditLogs`. Mongoose models in `models/`,
-one file per collection, `timestamps: true` on all of them.
+One database. Seven collections plus `counters`, `adminAuditLogs` and the two billing collections.
+Mongoose models in `models/`, one file per collection, `timestamps: true` on all of them.
 
 ```
 users · businesses · customers · products · quotations · invoices
 counters · passwordResetTokens · adminAuditLogs
+billingCheckouts · billingEvents                      ← M9
 ```
 
 ```ts
@@ -325,7 +383,13 @@ counters · passwordResetTokens · adminAuditLogs
   plan: 'FREE' | 'FREELANCER' | 'BUSINESS',
   planSource: 'DEFAULT' | 'BILLING' | 'ADMIN',
   planOverrideExpiresAt, planOverrideReason,
-  billingCustomerId,                     // PayMongo, M9
+
+  // billing (§5.12) — written only by the webhook and the reconcile job, M9
+  billingPlan,                           // the tier the term bought; null if never paid
+  billingPaidUntil,                      // end of the paid term, 23:59:59 Asia/Manila
+  billingGraceUntil,                     // = billingPaidUntil + 7d; this is the field effectivePlan() reads
+  billingLastPaymentAt,
+  billingCustomerId,                     // PayMongo customer id — reserved for the auto-renewal upgrade
 
   // MFA (§5.11) — mandatory for every account
   mfaEnabledAt,
@@ -373,6 +437,34 @@ counters · passwordResetTokens · adminAuditLogs
 //   number "QUO-000001", validUntil instead of dueDate,
 //   no paidAt, plus convertedInvoiceId
 
+// BillingCheckout  — one row per Checkout Session we create. The intent record. (§5.12, M9)
+// This, not the webhook payload, is the authority on which plan a payment bought.
+{ _id, userId,
+  plan: 'FREELANCER' | 'BUSINESS',
+  amountCentavos,                         // snapshot of the price at purchase time
+  termDays,                               // 30 — snapshotted so changing the term never rewrites history
+  checkoutSessionId,                      // PayMongo "cs_..."  — unique
+  referenceNumber,                        // our own id, echoed to PayMongo — unique
+  checkoutUrl,
+  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED',
+  paidAt, paymentId,                      // PayMongo "pay_..."
+  grantedTermStart, grantedTermEnd,       // what this payment actually bought, after stacking
+  refundedAt,                             // set from payment.refunded; does NOT revoke the term (§5.12.10)
+  createdAt, updatedAt }
+
+// BillingEvent  — one row per webhook delivery. Append-only; the audit trail for money. (§5.12, M9)
+// The unique index on eventId IS the idempotency mechanism — a duplicate key means "already done".
+{ _id,
+  eventId,                                // PayMongo event id — unique, this is the whole design
+  type,                                   // 'checkout_session.payment.paid' | 'payment.paid' |
+                                          // 'payment.failed' | 'payment.refunded'
+  source: 'WEBHOOK' | 'RECONCILE' | 'MANUAL_RECHECK',
+  checkoutId, userId,                     // resolved if we recognised the session; null otherwise
+  outcome: 'GRANTED' | 'DUPLICATE' | 'UNKNOWN_SESSION' | 'IGNORED' | 'ERROR',
+  outcomeNote,
+  payload,                                // the event body, trimmed — never card data, never a raw key
+  receivedAt, processedAt }
+
 // Counter
 { _id, userId, kind: 'INVOICE' | 'QUOTATION', seq }
 
@@ -417,6 +509,13 @@ quotations:          same shape as invoices
 counters:            { userId: 1, kind: 1 } unique
 passwordResetTokens: { tokenHash: 1 } unique, { expiresAt: 1 } TTL
 adminAuditLogs:      { createdAt: -1 }, { targetUserId: 1, createdAt: -1 }, { actorUserId: 1, createdAt: -1 }
+billingCheckouts:    { checkoutSessionId: 1 } unique
+                     { referenceNumber: 1 } unique
+                     { userId: 1, createdAt: -1 }   // billing page + admin billing view
+                     { status: 1, createdAt: 1 }    // the reconcile job's only query
+billingEvents:       { eventId: 1 } unique          // load-bearing: this is what makes replay a no-op
+                     { userId: 1, receivedAt: -1 }
+                     { receivedAt: -1 }
 ```
 
 ---
@@ -439,12 +538,14 @@ adminAuditLogs:      { createdAt: -1 }, { targetUserId: 1, createdAt: -1 }, { ac
 | `/dashboard/invoices` `/new` `/[id]` | page | user | Invoice builder |
 | `/dashboard/settings` | page | user | Business profile |
 | `/dashboard/account` | page | user | Password, email, export, close account |
-| `/dashboard/billing` | page | user | Plan + invoices (M9) |
+| `/dashboard/billing` | page | user | Current term, end date, renew / upgrade, payment history (M9) |
+| `/dashboard/billing/return` | page | user | PayMongo `success_url` — reads the checkout row, never grants (§5.12.6) |
 | `/i/[token]` `/q/[token]` | page | public | Customer-facing document |
 | `/api/auth/[...nextauth]` | handler | public | Auth.js |
 | `/api/invoices/[id]/pdf` `/api/quotations/[id]/pdf` | handler | user | PDF stream, ownership-checked |
 | `/api/public/i/[token]/pdf` `/api/public/q/[token]/pdf` | handler | public | PDF via token |
-| `/api/webhooks/paymongo` | handler | signed | M9 |
+| `/api/webhooks/paymongo` | handler | **signature only, no session** | M9 — the only writer of billing fields |
+| `/api/cron/billing-reconcile` | handler | `CRON_SECRET` bearer | M9 — daily sweep for lost webhooks (§5.12.9) |
 
 ### 7.2 Admin surface  ← new in v2
 
@@ -626,6 +727,30 @@ Admin, has recovery codes → same as a user
 Admin, no recovery codes  → npm run reset-mfa -- <email>, from a machine with DB access
                           ⟂ the console offers no button for this. Ever. (§5.11 rule 9)
 ```
+
+### 8.12 User: buying and renewing a plan  ← new in v2.2
+
+```
+/dashboard/billing  (or an M8 upgrade prompt)  → "Freelancer ₱299 / 30 days"
+  → startCheckout('FREELANCER')  → server prices it, writes a PENDING billingCheckouts row
+  → PayMongo hosted page → GCash / Maya / GrabPay / card
+  → PayMongo redirects to /dashboard/billing/return?ref=...
+       this page GRANTS NOTHING — it reads the row (§5.12.6)
+  → webhook checkout_session.payment.paid arrives (usually before the redirect, sometimes after)
+       → billingEvents insert (unique eventId)
+       → row PENDING→PAID  → billingPaidUntil += 30d, billingGraceUntil = +7d
+  → return page now shows "Freelancer until 7 Oct 2026"
+  ⟂ user closes the tab mid-payment  → row stays PENDING → reconcile grants it, or 24h → EXPIRED
+  ⟂ payment fails in the simulator   → cancel_url → /dashboard/billing, plan unchanged, row FAILED
+  ⟂ webhook never arrives            → return page still says "confirming" → Re-check payment
+                                       → same grant path → granted. Nightly job is the backstop
+  ⟂ webhook arrives twice            → duplicate eventId → 200, nothing changes (§5.12.8)
+  ⟂ user renews on day 12 of 30      → new term stacks: ends day 42, not day 30 (§5.12.2)
+  ⟂ user has a live admin override   → billing fields still update, effectivePlan() still returns
+                                       the override, billing page says the plan is comped
+  ⟂ term ends, nobody renews         → 7 days of grace with a banner → then FREE, no job ran
+                                       → all existing documents and customers remain, intact
+```
 ---
 
 ## 9. Screen inventory and required UI states
@@ -692,7 +817,8 @@ Effort is in focused hours. At ~10 hrs/week: **M0–M4 ("first sellable slice") 
 | M6 | Ship it | 12–14 | logo upload, deploy, security pass, account page, **MFA for all users** |
 | M7 | **Admin console** | 15–17 | support lookup, user list, suspend, plan override, audit |
 | M8 | Plan limits | 5–6 | free-tier enforcement |
-| M9 | Monetization | 12–16 | PayMongo, webhook, billing page, email |
+| M9 | Monetization | 20–25 | PayMongo checkout, webhook, reconcile, billing page |
+| M10 | Transactional email | 5–7 | Resend, password reset, "invoice is ready", verification |
 
 ---
 
@@ -1115,23 +1241,156 @@ took is visible in `/admin/audit`.
 
 ---
 
-### M9 — Monetization (12–16 hrs)
+### M9 — Monetization (20–25 hrs)  ← rewritten in v2.2
 
-- [ ] **M9-T01 · PayMongo checkout** (5h) — ₱299 Freelancer / ₱599 Business.
-- [ ] **M9-T02 · Webhook + plan sync** (4h) — signature verification, idempotent by event id, writes
-  **billing** fields only and never touches an active admin override (§5.10).
-  *Accept:* replaying the same webhook event twice changes nothing the second time.
-- [ ] **M9-T03 · Billing page** (2h) — `/dashboard/billing`: current plan, next charge, cancel.
-- [ ] **M9-T04 · Transactional email via Resend** (4h) — password reset, "your invoice is ready" with
-  the public link, and email verification (`emailVerifiedAt` finally gets written).
-- [ ] **M9-T05 · Admin billing view** (1h) — on `/admin/users/[id]`: billing status, last payment,
-  and the billing-vs-override distinction made visible. Read-only; refunds happen in PayMongo.
+Read §5.12 before writing a line of this. The whole milestone is one sentence: **a payment is a row
+in `billingCheckouts` that a signed webhook flips to `PAID`, and nothing else in the app is allowed
+to grant a plan.** Every task below exists to keep that sentence true.
+
+Estimate went from 12–16 to 20–25 because the original bullets costed the happy path only. The extra
+hours are the reconcile job, the return page, and the tests — which is exactly where a payment
+integration either works at 2am or doesn't.
+
+- [ ] **M9-T00 · PayMongo account + environment** (1h, *human, not an agent*)
+  *Do:* the setup checklist in §17. **No other M9 task can start until `PAYMONGO_SECRET_KEY` and
+  `PAYMONGO_WEBHOOK_SECRET` are in `.env.local` and a test webhook has reached a local tunnel.**
+  *Accept:* `curl -u sk_test_xxx: https://api.paymongo.com/v1/webhooks` returns the registered hook;
+  GCash, Maya, GrabPay and card all show as enabled in the dashboard.
+
+- [ ] **M9-T01 · Billing primitives** (3h)
+  *Files:* `lib/billing/plans.ts`, `lib/billing/paymongo.ts`, `models/billing-checkout.ts`,
+  `models/billing-event.ts`, `types/index.ts`
+  *Do:* the price table (`FREELANCER → 29900`, `BUSINESS → 59900`, `TERM_DAYS = 30`) and a thin
+  PayMongo client: base64 basic auth on the secret key, `Idempotency-Key` on every POST, a typed
+  error for non-2xx, and a hard 10-second timeout. Both models with the §6 indexes.
+  *Do not* add an SDK dependency — three endpoints do not justify one, and the locked stack (§3)
+  does not include it.
+  *Accept:* the price table is the only place an amount appears; `grep -rn "29900\|59900" --include=*.ts`
+  outside `lib/billing/plans.ts` and its test returns nothing.
+
+- [ ] **M9-T02 · Term + grace in `effectivePlan()`** (2h)
+  *Files:* `lib/plan.ts`, `models/user.ts`, `tests/plan.test.ts`
+  *Do:* add the §6 billing fields. Change resolution to: unexpired `ADMIN` override → else
+  `billingPlan` **while `billingGraceUntil > now`** → else `FREE`. Add
+  `billingState(user): { status: 'NONE'|'ACTIVE'|'GRACE'|'LAPSED', plan, paidUntil, graceUntil, daysLeft }`
+  — pure, synchronous, no DB, no `await`. Every banner, the billing page and the admin view read it.
+  *Accept:* a user whose `billingGraceUntil` passed one second ago resolves to `FREE` with **no job
+  having run**; an admin override still wins over a live paid term *and* over a lapsed one; the
+  existing four override/billing combinations in `plan.test.ts` still pass unchanged.
+
+- [ ] **M9-T03 · Create a checkout** (3h)
+  *Files:* `actions/billing.ts`, `lib/validation/billing.ts`, `lib/billing/checkout.ts`
+  *Do:* `startCheckout(plan)` — session required, `assertNotSuspended()`, Zod-parse the plan **name**
+  (never an amount), look the price up server-side, insert a `PENDING` `billingCheckouts` row with a
+  fresh `referenceNumber`, then create the PayMongo Checkout Session with
+  `payment_method_types: ['card','gcash','paymaya','grab_pay']`, `success_url` =
+  `${APP_URL}/dashboard/billing/return?ref=...`, `cancel_url` = `${APP_URL}/dashboard/billing`,
+  `metadata: { userId, checkoutId, plan }`, and store `checkoutSessionId` + `checkoutUrl` back on the
+  row. Reuse an existing `PENDING` row for the same plan if it is under an hour old rather than
+  littering PayMongo with sessions.
+  *Accept:* a request that posts `amount` or `plan: 'FREE'` is rejected by the action, not the UI; the
+  stored `amountCentavos` matches the price table; a suspended user cannot start a checkout.
+
+- [ ] **M9-T04 · Webhook handler** (5h) — *the task to get right*
+  *Files:* `app/api/webhooks/paymongo/route.ts`, `lib/billing/webhook.ts`, `lib/billing/grant.ts`,
+  `middleware.ts`
+  *Do:* in this order, and the order is the design:
+  1. `const raw = await req.text()` — **never `req.json()`**. The signature covers the raw bytes.
+  2. Parse `Paymongo-Signature` (`t=`, `te=`, `li=`). HMAC-SHA256 over `` `${t}.${raw}` `` with
+     `PAYMONGO_WEBHOOK_SECRET`; compare with `crypto.timingSafeEqual`. Pick `te` or `li` from **our
+     own key prefix**, never from anything in the payload. Reject if `|now − t| > 5 min`.
+     Invalid signature → `401`, and nothing is written.
+  3. Insert `billingEvents` with the PayMongo event id. Duplicate key → `200 {"status":"duplicate"}`,
+     stop. This is the idempotency guarantee; do not add a second one.
+  4. Ignore any type that is not `checkout_session.payment.paid`, `payment.paid`, `payment.failed` or
+     `payment.refunded` — record it, return `200`. An unrecognised type must never 4xx: three events
+     exhausting their retries disables the endpoint.
+  5. Resolve the `billingCheckouts` row by `checkoutSessionId`. Unknown → record `UNKNOWN_SESSION`,
+     return `200`.
+  6. Grant: `updateOne({ _id, status: 'PENDING' }, { $set: { status: 'PAID', ... } })`. If
+     `modifiedCount === 0`, the term was already granted — stop.
+  7. Extend the user with an update object whose keys are literally and only the five in §5.12.7.
+  Add the route to the `middleware.ts` public matcher and confirm it needs no session.
+  *Accept:* **replaying the same event body twice changes nothing the second time** — assert the
+  user's `billingPaidUntil` is byte-identical after the replay; a body with one character changed is
+  rejected `401`; an event 10 minutes old is rejected; a `payment.refunded` records but does **not**
+  change `billingPlan`; a webhook arriving for a user with a live admin override leaves
+  `plan`, `planSource`, `planOverrideExpiresAt` and `planOverrideReason` untouched (assert the exact
+  key set of the update object).
+
+- [ ] **M9-T05 · Return page** (1.5h)
+  *Files:* `app/(dashboard)/dashboard/billing/return/page.tsx`, `actions/billing.ts`
+  *Do:* read the checkout row by `ref`, **scoped to the session `userId`**. `PAID` → "You're on
+  Freelancer until 7 Oct 2026". `PENDING` → "Confirming your payment…" with a **Re-check payment**
+  button that calls the reconcile path for that one row. This page grants nothing (§5.12.6).
+  *Accept:* hitting the return URL by hand with someone else's `ref` 404s; hitting it with an
+  unpaid `ref` never upgrades the account no matter how many times it is reloaded.
+
+- [ ] **M9-T06 · Reconcile job** (2.5h)
+  *Files:* `app/api/cron/billing-reconcile/route.ts`, `lib/billing/reconcile.ts`, `vercel.json`
+  *Do:* bearer-check `CRON_SECRET` (a missing or wrong header is a `404`, not a `401` — do not
+  confirm the route exists). Find `PENDING` rows older than 15 minutes, `GET
+  /v1/checkout_sessions/{id}`, and run the **same** `grant()` used by the webhook. Flip rows still
+  unpaid after 24 hours to `EXPIRED`. Daily at 03:00 Manila. Every action writes a `billingEvents`
+  row with `source: 'RECONCILE'`.
+  *Accept:* deleting a webhook delivery and running the job produces the identical end state; running
+  the job twice in a row grants nothing the second time; an already-`PAID` row is skipped without an
+  API call.
+
+- [ ] **M9-T07 · Billing page + renewal banner** (3h)
+  *Files:* `app/(dashboard)/dashboard/billing/page.tsx`, `components/billing/*`,
+  `app/(dashboard)/dashboard/layout.tsx`
+  *Do:* current plan, the end date in words ("ends 7 Oct 2026 · 12 days left"), renew and upgrade
+  buttons, and payment history from `billingCheckouts`. States: never paid / active / in grace /
+  lapsed / **admin override live** — the override state says the plan is comped and shows no renew
+  button, because charging someone for what you already gave them is the worst bug in this milestone.
+  A dashboard-wide banner appears in `GRACE` only.
+  *Accept:* all five states render from `billingState()` alone; the `FREE`-limit upgrade prompts from
+  M8-T02 link here; no page anywhere computes a plan without `effectivePlan()`.
+
+- [ ] **M9-T08 · Admin billing view** (1.5h)
+  *Files:* `app/(admin)/admin/users/[id]/page.tsx`, `lib/admin/billing.ts`
+  *Do:* on the user detail page — billing term, grace, last payment, the last ten checkouts with
+  status, and **the billing-vs-override distinction stated in words**, not left to be inferred from
+  two dates ("Paid: Freelancer to 7 Oct. Override: Business to 1 Dec — override is what applies").
+  Read-only. Refunds happen in PayMongo.
+  *Accept:* opening it writes a `USER_VIEW` audit entry like every other admin read; no action on
+  this page can write a billing field.
+
+- [ ] **M9-T09 · Go live** (1h, *human*)
+  *Do:* §17 step 8 — live keys, a second webhook registered against the production URL with its own
+  secret, one real ₱299 purchase from a real GCash account, then refund it in the dashboard.
+  *Accept:* the real payment granted the term through the webhook, and the refund left the term in
+  place while showing on the admin view (§5.12.10).
+
+---
+
+### M10 — Transactional email (5–7 hrs)
+
+Split out of M9 in v2.2. Domain verification is DNS work with a lead time measured in hours, and
+nothing about it should be able to block a payment shipping.
+
+- [ ] **M10-T01 · Resend setup** (1h, *human*) — domain, SPF/DKIM records, `RESEND_API_KEY`, a
+  verified `from` address on the real domain. `onboarding@resend.dev` is for testing only.
+- [ ] **M10-T02 · Mailer + templates** (2h) — `lib/email/`, one send function, plain-text fallback on
+  every template, and a `MAIL_DRY_RUN` mode that logs instead of sending so tests never send mail.
+- [ ] **M10-T03 · Password reset by email** (1h) — the M2 token flow finally emails its link instead
+  of printing it to the server log (§10). Delete the log line in the same commit.
+- [ ] **M10-T04 · "Your invoice is ready"** (1.5h) — sends the public link to the customer, from the
+  user's action, rate-limited per user. Never attaches the PDF; the link is the product.
+- [ ] **M10-T05 · Email verification + security notices** (1.5h) — `emailVerifiedAt` gets written at
+  last, and the §5.11 rule 11 security events (device replaced, recovery code used, admin MFA reset)
+  are emailed to the account owner.
+- [ ] **M10-T06 · Billing receipts** (1h) — a receipt on a granted term, sent from the grant path so
+  reconcile-granted terms get one too. A failed send must never fail the grant.
 
 ---
 
 ## 12. Backlog (do not start without human approval)
 
-Recurring invoices · multi-user businesses and team roles · admin impersonation (needs a consent and
+**Auto-renewal via the PayMongo Subscriptions API** (card-only, needs PayMongo to enable key
+configuration on the account; §5.12 is built so this slots in behind the same `billingState()`) ·
+recurring invoices · multi-user businesses and team roles · admin impersonation (needs a consent and
 audit design) · custom PDF templates · CSV/Xero export · payment reminders · multi-currency ·
 public API · mobile app · admin-triggered emails · soft-delete purge job for closed accounts.
 
@@ -1171,7 +1430,13 @@ public API · mobile app · admin-triggered emails · soft-delete purge job for 
 `totals.ts` (VAT on/off, discount before VAT, half-up at `.005`, zero and negative guards),
 `money.ts` (parse and format round-trip), `numbering.ts` (no duplicates under concurrency),
 `dates.ts` (Manila boundaries — an invoice created 23:30 Manila belongs to that day, not UTC's),
-`plan.ts` (`effectivePlan` across all four combinations of billing and override),
+`plan.ts` (`effectivePlan` across all four combinations of billing and override, **plus the term
+and grace boundaries — one second before and one second after `billingGraceUntil`**),
+`billing/plans.ts` (the price table is the only source of an amount),
+`billing/grant.ts` (early renewal stacks onto the remaining term instead of truncating it; a term
+granted at 23:30 Manila ends on the right Manila day),
+`billing/webhook.ts` (signature verify against a known-good fixture, a one-character mutation, a
+stale timestamp, and the `te`/`li` mode choice),
 `public-projection.ts` (asserts the projection's key list exactly — this test is what stops a future
 field from leaking).
 
@@ -1192,6 +1457,16 @@ not by `lib/mfa.ts` itself, which would only prove it agrees with its own bug.
 10. An account with `mfaEnabledAt` unset is redirected out of every `/dashboard/*` route.
 11. `MFA_RESET` against an `ADMIN` target is refused server-side.
 12. A correct code submitted twice succeeds once.
+13. **The same webhook event delivered twice grants exactly one term** — assert `billingPaidUntil`
+    is unchanged by the replay, not merely that the second call returned 200.
+14. A webhook with a valid signature for a user who has a live admin override changes no field
+    outside the §5.12.7 allowlist.
+15. `/dashboard/billing/return` with another user's `ref` 404s, and with an unpaid `ref` never
+    grants a plan however many times it is loaded.
+16. `startCheckout` ignores any client-supplied amount and rejects `FREE`.
+17. `/api/cron/billing-reconcile` without `CRON_SECRET` returns 404, and running it after a dropped
+    webhook produces the same end state the webhook would have.
+18. An unrecognised webhook event type returns 2xx (a 4xx here is what disables the endpoint).
 
 **Manual before each milestone ships:** the §8 flow for that milestone, on a real phone, and one
 failure branch (`⟂`) per flow.
@@ -1211,10 +1486,22 @@ ADMIN_EMAILS=             # comma-separated allowlist — second admin factor (�
 MFA_ENCRYPTION_KEY=       # 32 bytes base64: openssl rand -base64 32 — encrypts TOTP secrets (§5.11)
 MFA_ISSUER=Bilyo          # the name shown in the authenticator app; changing it re-labels new enrolments only
 BLOB_READ_WRITE_TOKEN=    # M6
-PAYMONGO_SECRET_KEY=      # M9
-PAYMONGO_WEBHOOK_SECRET=  # M9
-RESEND_API_KEY=           # M9
+PAYMONGO_SECRET_KEY=      # M9 — sk_test_... in dev, sk_live_... in prod. Server-only, never NEXT_PUBLIC_
+PAYMONGO_WEBHOOK_SECRET=  # M9 — whsk_... Per environment: test and live webhooks have DIFFERENT secrets
+CRON_SECRET=              # M9 — openssl rand -base64 32. Bearer token for /api/cron/*
+RESEND_API_KEY=           # M10
+EMAIL_FROM=               # M10 — a verified address on your own domain
+MAIL_DRY_RUN=true         # M10 — log instead of send; true everywhere except production
 ```
+
+**Never prefix a PayMongo key with `NEXT_PUBLIC_`.** `sk_` has full account access; in a
+`NEXT_PUBLIC_` variable it is compiled into the client bundle and is public forever. The hosted
+checkout flow (§5.12) needs no key in the browser at all, so if a PayMongo value ever appears in
+client code, the design has gone wrong, not the naming.
+
+**A test webhook secret in production silently rejects every real payment**, because the signature
+will verify against `te` and never `li`. Register the two webhooks separately and keep their secrets
+in the environment that matches their key prefix.
 
 `.env.local` is git-ignored. `.env.example` is committed and must list every key above with empty
 values. **`ADMIN_EMAILS` is empty in `.env.example` and in every preview environment** — an admin
@@ -1231,9 +1518,12 @@ back up `AUTH_SECRET`, and never let a preview environment share production's va
 | Situation | Do this |
 |---|---|
 | "My customer says the link is broken" | `/admin/lookup` → the number → check token state → if revoked, the **user** re-issues it from their dashboard |
-| "I was charged but I'm still on FREE" | `/admin/users/[id]` → billing vs. override → if billing is right and the plan is wrong, it's a webhook bug: check the event log before touching data |
+| "I was charged but I'm still on FREE" | `/admin/users/[id]` → is there a `PENDING` checkout with a PayMongo payment against it? Then the webhook was lost: run `/api/cron/billing-reconcile` (or have the user press **Re-check payment**) and it self-heals. Only if reconcile also fails to grant is it a code bug — read `billingEvents` for that user before touching any data by hand |
+| PayMongo shows the webhook as **disabled** | Three events exhausted their 12 retries — a deploy broke the handler. Fix the handler, re-enable in the dashboard, then run the reconcile job: **missed events are not replayed on re-enable**, so reconcile is the only thing that recovers them |
+| A payment shows in PayMongo but no `billingEvents` row exists | The signature check is rejecting real events. Compare the key prefix (`sk_test_`/`sk_live_`) against which webhook secret that environment holds — mismatched modes is the cause almost every time |
+| A user paid twice by accident | Both terms are real and stacked (§5.12.2). Refund one in PayMongo; the term stays — shorten it with an audited plan override if that is the fair outcome |
 | A user is sending phishing invoices | Disable public links (reason logged) → then suspend if the account itself is the problem → never delete |
-| A user asks for a refund or a comp | Refund in PayMongo; comp with a plan override that has a reason and an expiry |
+| A user asks for a refund or a comp | Refund in PayMongo — **Bilyo never issues refunds**. The refund is recorded but does not revoke the term (§5.12.10); shorten it with an audited override if it should end early. Comp with a plan override that has a reason and an expiry |
 | A user asks to close their account | They do it at `/dashboard/account`. Admin does not close accounts in v1 |
 | A user asks for their data | They export it at `/dashboard/account` |
 | "I lost my phone" (user) | They sign in with a recovery code and replace the device at `/dashboard/account/security` |
@@ -1248,7 +1538,107 @@ wrong: find the bug, ship the fix, and let the user correct their own record.
 
 ---
 
-## 17. Sequencing rationale
+## 17. PayMongo setup checklist  ← new in v2.2
+
+**This is human work, not agent work, and M9 is blocked until it is done.** Every step below produces
+something that ends up in an environment variable or a dashboard toggle. Nothing here is code.
+
+### 1. Create and activate the merchant account
+Sign up at `dashboard.paymongo.com`. A fresh account is in **test mode** and can call the whole API
+immediately — you do **not** need activation to build M9. Activation is only needed to take real
+money, so start it now in parallel because it is the long pole: PayMongo quotes **up to 14 business
+days** and forwards your documents to their financial partners for onboarding.
+
+**There is no unregistered-individual path.** PayMongo's activation requirements are published per
+business type, and every one of them starts with a registration certificate:
+
+| Type | Documents |
+|---|---|
+| Sole proprietor | DTI Business Name certificate + government ID (1 primary or 3 secondary) |
+| Partnership | SEC certificate, Articles of Partnership, Partner's Resolution, ID |
+| Corporation | SEC certificate, Articles + By-Laws, latest GIS, notarised Secretary's Certificate, IDs |
+
+An unverified account sits at **Tier 1: QR Ph only, ₱10k/month cash-in** — 33 Freelancer
+subscriptions, and no GCash, no cards, which is the whole reason PayMongo was chosen (§18). **Tier 2
+is the only tier this product can run on.** For a solo founder that means a DTI Business Name
+registration (₱200 barangay to ₱2,000 national scope, + ₱30 DST, online at `bnrs.dti.gov.ph`, valid
+five years), then BIR registration, then the bank account in the business name.
+
+A live site describing what you sell and your refund terms is part of what they review — `/pricing`
+and a terms page should exist before you submit.
+
+### 2. Enable payment methods
+Card, GCash, GrabPay and Maya activate with the account. QRPh and BillEase need a separate request to
+your account manager and are not part of M9. Confirm all four are enabled before M9-T09 — a
+`payment_method_types` entry the account cannot process fails at checkout, not at create time.
+
+### 3. Get the API keys
+Dashboard → Developers → API Keys. In test mode you get `pk_test_...` and `sk_test_...`.
+**Only the secret key is ever used by Bilyo** — the hosted checkout flow puts no key in the browser.
+Put it in `.env.local` as `PAYMONGO_SECRET_KEY`. Never as `NEXT_PUBLIC_*`. Never in `.env.example`.
+
+### 4. Stand up a tunnel so webhooks can reach your laptop
+PayMongo pushes over the public internet to HTTPS only; `localhost:3000` is unreachable to it.
+
+```bash
+npx localtunnel --port 3000        # or: cloudflared tunnel --url http://localhost:3000
+```
+
+Keep the URL — it changes each run, and re-registering the webhook is part of your dev loop.
+
+### 5. Register the test webhook
+There is no dashboard button for this; the webhook is created through the API.
+
+```bash
+curl -X POST https://api.paymongo.com/v1/webhooks \
+  -u "sk_test_YOURKEY:" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"attributes":{
+        "url":"https://YOUR-TUNNEL.example/api/webhooks/paymongo",
+        "events":["checkout_session.payment.paid","payment.paid","payment.failed","payment.refunded"]
+      }}}'
+```
+
+The response contains `attributes.secret_key`, a `whsk_...` value. **It is shown once.** Copy it to
+`.env.local` as `PAYMONGO_WEBHOOK_SECRET`. Losing it means deleting the webhook and creating another.
+
+Useful during development: `GET /v1/webhooks` lists them, `POST /v1/webhooks/{id}/disable` and
+`/enable` toggle one without deleting it, and `PUT /v1/webhooks/{id}` moves it to a new tunnel URL.
+Note that **missed events are not replayed when a webhook is re-enabled** — that is precisely why
+M9-T06 exists.
+
+### 6. Fill in the rest of the environment
+
+```bash
+PAYMONGO_SECRET_KEY=sk_test_...
+PAYMONGO_WEBHOOK_SECRET=whsk_...
+CRON_SECRET=$(openssl rand -base64 32)
+APP_URL=https://YOUR-TUNNEL.example      # success_url and cancel_url are built from this
+```
+
+`APP_URL` must be the tunnel while you are testing, or PayMongo will redirect the customer to a
+`localhost` URL that only works on your own machine and looks fine to you and broken to everyone else.
+
+### 7. Know your test instruments
+Test mode never moves money. Cards: `4343 4343 4343 4345` succeeds, `4571 7360 0000 0014` triggers
+3-D Secure, `5100 0000 0000 0198` is declined — any future expiry, any CVC. GCash, Maya and GrabPay
+in test mode open a simulator page with **Authorize** and **Fail** buttons; click both at least once,
+because the failure branch is the one that ships broken.
+
+Walk the whole loop before writing M9-T07: create a session, pay it in the simulator, watch the
+webhook arrive, confirm `billingPaidUntil` moved. Then re-post the exact same webhook body with the
+same signature header and confirm **nothing** changes.
+
+### 8. Going live (M9-T09)
+Switch the dashboard to live mode and take `sk_live_...`. **Register a second webhook** against the
+production URL — it gets its own `whsk_` secret, which is not the test one. Set both in the
+production environment and nowhere else. Then buy one ₱299 term with a real GCash account, confirm
+the term was granted by the webhook and not by the redirect, and refund it from the dashboard to see
+the refund path end to end. Budget an hour and do it on a weekday, when PayMongo support answers.
+
+---
+
+## 18. Sequencing rationale
 
 The order front-loads what a paying user actually needs — a document their customer receives — and
 defers everything that only serves the operator.
@@ -1275,3 +1665,12 @@ depend on `effectivePlan()`, which M7 introduces — so an early comp doesn't re
 
 **Monetization last (M9)** because a payment integration built before there is demand is the most
 expensive way to learn what people won't pay for.
+
+**Prepaid terms rather than auto-renewing subscriptions (§5.12)** because PayMongo's Subscriptions
+API is card-only, and a Philippine invoicing product that cannot take GCash has picked its payment
+architecture over its market. The cost is a renewal the user has to initiate; the benefit is that the
+whole billing state is two dates on the user document, which is why `effectivePlan()` needs no cron
+job and every one of its states can be unit-tested in milliseconds.
+
+**Email after payments (M10)** because Resend needs DNS records verified on a real domain, and a
+lead time you do not control should never sit on the critical path of the thing that earns money.

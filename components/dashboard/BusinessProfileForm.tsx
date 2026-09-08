@@ -225,11 +225,35 @@ export function BusinessProfileForm({
         onSubmit={handleSubmit}
         className="bg-white border border-[var(--color-line)] rounded-xl shadow-sm p-6 sm:p-8 space-y-6"
       >
-        <div className="border-b border-[var(--color-line)] pb-4">
-          <h2 className="text-lg font-semibold text-neutral-900">Business Details</h2>
-          <p className="text-xs text-neutral-500 mt-1">
-            This information will be stamped on your outgoing quotations and invoices.
-          </p>
+        <div className="border-b border-[var(--color-line)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Business Details</h2>
+            <p className="text-xs text-neutral-500 mt-1">
+              This information will be stamped on your outgoing quotations and invoices.
+            </p>
+          </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="self-start sm:self-auto px-5 py-2 min-h-[40px] bg-[var(--color-brass)] hover:opacity-90 text-white font-medium text-sm rounded-lg shadow-sm transition-opacity disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shrink-0"
+          >
+            {isPending ? (
+              <>
+                <svg className="animate-spin -ml-0.5 mr-1.5 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {initialBusiness ? 'Save Changes' : 'Save & Continue'}
+              </>
+            )}
+          </button>
         </div>
 
         {/* Business Name */}
@@ -247,7 +271,7 @@ export function BusinessProfileForm({
             placeholder="e.g. Acme Creative Studio or Juan dela Cruz"
             className={`w-full px-3.5 py-2.5 text-sm rounded-lg border ${
               fieldErrors.businessName ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
-            } focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
+            } focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 focus:border-[var(--color-brass)]`}
           />
           {fieldErrors.businessName && (
             <p className="mt-1 text-xs text-red-600">{fieldErrors.businessName}</p>
@@ -268,7 +292,7 @@ export function BusinessProfileForm({
             placeholder="Unit, Building, Street, Barangay, City, Province, ZIP"
             className={`w-full px-3.5 py-2.5 text-sm rounded-lg border ${
               fieldErrors.address ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
-            } focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
+            } focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 focus:border-[var(--color-brass)]`}
           />
           {fieldErrors.address && (
             <p className="mt-1 text-xs text-red-600">{fieldErrors.address}</p>
@@ -290,7 +314,7 @@ export function BusinessProfileForm({
               placeholder="billing@example.com"
               className={`w-full px-3.5 py-2.5 text-sm rounded-lg border ${
                 fieldErrors.email ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
-              } focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
+              } focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 focus:border-[var(--color-brass)]`}
             />
             {fieldErrors.email && (
               <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
@@ -310,7 +334,7 @@ export function BusinessProfileForm({
               placeholder="0917 123 4567 or (02) 8123 4567"
               className={`w-full px-3.5 py-2.5 text-sm rounded-lg border ${
                 fieldErrors.phone ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
-              } focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
+              } focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 focus:border-[var(--color-brass)]`}
             />
             {fieldErrors.phone && (
               <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p>
@@ -332,7 +356,7 @@ export function BusinessProfileForm({
             placeholder="000-000-000-000"
             className={`w-full px-3.5 py-2.5 text-sm rounded-lg border ${
               fieldErrors.tin ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
-            } focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
+            } focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 focus:border-[var(--color-brass)]`}
           />
           <p className="mt-1 text-xs text-neutral-400">
             Standard format: 000-000-000 or 000-000-000-000. Leave blank if not registered.
@@ -359,7 +383,7 @@ export function BusinessProfileForm({
               type="checkbox"
               checked={formData.vatRegistered}
               onChange={handleChange}
-              className="w-5 h-5 rounded border-neutral-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
+              className="w-5 h-5 rounded border-neutral-300 text-[var(--color-brass)] focus:ring-[var(--color-brass)] cursor-pointer"
             />
           </div>
           {fieldErrors.vatRegistered && (
@@ -460,14 +484,14 @@ export function BusinessProfileForm({
               onClick={() => fileInputRef.current?.click()}
               className={`p-6 border-2 border-dashed rounded-xl cursor-pointer text-center transition-all ${
                 isDragging
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[0.99]'
+                  ? 'border-[var(--color-brass)] bg-[var(--color-brass)]/5 scale-[0.99]'
                   : 'border-[var(--color-line)] bg-neutral-50/50 hover:bg-neutral-50 hover:border-neutral-400'
               }`}
             >
               <div className="flex flex-col items-center justify-center space-y-2">
                 <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600">
                   {isUploadingLogo ? (
-                    <svg className="animate-spin w-5 h-5 text-[var(--color-primary)]" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin w-5 h-5 text-[var(--color-brass)]" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
@@ -492,13 +516,31 @@ export function BusinessProfileForm({
           )}
         </div>
 
-        <div className="pt-2 flex justify-end">
+        <div className="pt-4 border-t border-[var(--color-line)] flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4">
+          <p className="text-xs text-neutral-400">
+            Fields marked with <span className="text-red-500 font-semibold">*</span> are required.
+          </p>
           <button
             type="submit"
             disabled={isPending}
-            className="w-full sm:w-auto px-6 py-2.5 bg-[var(--color-primary)] hover:opacity-90 text-white font-medium text-sm rounded-lg transition-opacity disabled:opacity-50"
+            className="w-full sm:w-auto px-6 py-2.5 min-h-[44px] bg-[var(--color-brass)] hover:opacity-90 text-white font-medium text-sm rounded-lg shadow-sm transition-opacity disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isPending ? 'Saving profile...' : initialBusiness ? 'Update Profile' : 'Save & Continue'}
+            {isPending ? (
+              <>
+                <svg className="animate-spin -ml-0.5 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                Saving profile...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {initialBusiness ? 'Update Profile' : 'Save & Continue'}
+              </>
+            )}
           </button>
         </div>
       </form>

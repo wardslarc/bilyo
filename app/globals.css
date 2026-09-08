@@ -32,6 +32,10 @@
   --color-brass-ink: #7a5514;
   --color-brass-wash: #f3e7ce;
 
+  /* Primary action alias (mapped to brass accent) */
+  --color-primary: #c08a2e;
+  --color-primary-hover: #7a5514;
+
   /* Jade — status only (accepted / paid) */
   --color-jade: #2e8f86;
   --color-jade-light: #6fd0c4;
