@@ -831,7 +831,7 @@ user would pick Bilyo over a Word template.
   *Accept:* a quote sent at 23:30 on 31 August (Manila) counts in August, not September; the tiles
   answer §1.1 in under two seconds on a 200-quote account; drafts are excluded from every figure.
 
-- [ ] **P4-T02 · Recent quotes by status** (1h)
+- [x] **P4-T02 · Recent quotes by status** (1h)
   *Files:* `components/dashboard/RecentDocuments.tsx` → `RecentQuotations.tsx` ·
   `components/dashboard/QuotationList.tsx`
   *Accept:* status chips filter without a full page load; the empty state offers the create CTA.

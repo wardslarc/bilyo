@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth-guards';
 import { getDashboardMetrics, getRecentQuotations, getNeedsAttentionData } from '@/lib/metrics';
-import { RecentDocuments } from '@/components/dashboard/RecentDocuments';
+import { RecentQuotations } from '@/components/dashboard/RecentQuotations';
 import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 import { StatTiles } from '@/components/dashboard/StatTiles';
 
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   ]);
 
   const hasQuotations = metrics.totalQuotationCount > 0;
-  const recentQuotations = hasQuotations ? await getRecentQuotations(user.id, 5) : [];
+  const recentQuotations = hasQuotations ? await getRecentQuotations(user.id, 15) : [];
 
   return (
     <div className="py-6 px-4 sm:px-6 max-w-6xl mx-auto space-y-6">
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
           <StatTiles metrics={metrics} />
 
           {/* Recent Quotations list */}
-          <RecentDocuments quotations={recentQuotations} />
+          <RecentQuotations quotations={recentQuotations} />
 
           {/* Fast Navigation links */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">

@@ -5,8 +5,6 @@ import Link from 'next/link';
 import {
   getQuotations,
   sendQuotation,
-  acceptQuotation,
-  declineQuotation,
   type SerializedQuotation,
 } from '@/actions/quotations';
 import { formatMoney } from '@/lib/money';
@@ -87,34 +85,9 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
   };
 
   const handleSend = (id: string) => {
-    if (!confirm('Send this quotation? The customer and business details will be locked in.')) return;
+    if (!confirm('Send this quotation? The client and business details will be locked in.')) return;
     startTransition(async () => {
       const res = await sendQuotation(id);
-      if (!res.ok) {
-        setActionError(res.error);
-        return;
-      }
-      setActionError(null);
-      refreshList();
-    });
-  };
-
-  const handleAccept = (id: string) => {
-    startTransition(async () => {
-      const res = await acceptQuotation(id);
-      if (!res.ok) {
-        setActionError(res.error);
-        return;
-      }
-      setActionError(null);
-      refreshList();
-    });
-  };
-
-  const handleDecline = (id: string) => {
-    if (!confirm('Decline this quotation?')) return;
-    startTransition(async () => {
-      const res = await declineQuotation(id);
       if (!res.ok) {
         setActionError(res.error);
         return;
@@ -186,7 +159,7 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
             {statusFilter === 'ALL' ? 'No quotations yet' : `No ${statusFilter.toLowerCase()} quotations`}
           </p>
           <p className="text-xs text-[var(--color-muted)] mb-5">
-            Create your first quotation to start sending proposals to your customers.
+            Create your first quotation to start sending proposals to your clients.
           </p>
           <Link
             href="/dashboard/quotations/new"
@@ -262,26 +235,6 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                       >
                         Send
                       </button>
-                    )}
-                    {(q.status === 'SENT' || q.status === 'VIEWED') && displayStatus !== 'EXPIRED' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleAccept(q.id)}
-                          disabled={isPending}
-                          className="text-xs font-medium text-emerald-600 hover:underline disabled:opacity-40"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDecline(q.id)}
-                          disabled={isPending}
-                          className="text-xs font-medium text-red-600 hover:underline disabled:opacity-40"
-                        >
-                          Decline
-                        </button>
-                      </>
                     )}
                   </div>
                 </div>
