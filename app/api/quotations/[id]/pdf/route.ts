@@ -50,7 +50,7 @@ export async function GET(_request: Request, { params }: RouteContext): Promise<
   const customer =
     quotation.customerSnapshot ||
     (await Customer.findOne({ _id: quotation.customerId, userId: user.id })) || {
-      name: 'Customer',
+      name: 'Client',
     };
 
   const pdfProps: QuotationDocumentProps = {

@@ -836,7 +836,7 @@ user would pick Bilyo over a Word template.
   `components/dashboard/QuotationList.tsx`
   *Accept:* status chips filter without a full page load; the empty state offers the create CTA.
 
-- [ ] **P4-T03 · Clients list and detail** (1.5h)
+- [x] **P4-T03 · Clients list and detail** (1.5h)
   *Files:* `app/(dashboard)/dashboard/clients/**` (renamed from `customers`) ·
   `components/dashboard/CustomerList.tsx` → `ClientList.tsx` ·
   `components/dashboard/CustomerForm.tsx` → `ClientForm.tsx` · `actions/customers.ts`

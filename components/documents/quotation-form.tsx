@@ -751,7 +751,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
                 value={notes}
                 disabled={isLocked || isPending}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Scope description, inclusions, or customer notes…"
+                placeholder="Scope description, inclusions, or client notes…"
                 className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
               />
             </div>

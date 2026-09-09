@@ -104,7 +104,7 @@ export default async function DashboardPage() {
             </Link>
 
             <Link
-              href="/dashboard/customers"
+              href="/dashboard/clients"
               className="bg-white border border-[var(--color-line)] hover:border-[var(--color-brass)]/60 rounded-xl p-4 transition-colors shadow-xs group"
             >
               <div className="font-semibold text-sm text-[var(--color-text)] group-hover:text-[var(--color-brass)] transition-colors">

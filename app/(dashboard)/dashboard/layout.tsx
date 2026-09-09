@@ -29,7 +29,7 @@ export default async function DashboardLayout({
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', badge: unseenCount },
     { label: 'Quotations', href: '/dashboard/quotations' },
-    { label: 'Customers', href: '/dashboard/customers' },
+    { label: 'Clients', href: '/dashboard/clients' },
     { label: 'Settings', href: '/dashboard/settings' },
     { label: 'Account', href: '/dashboard/account' },
   ];
