@@ -64,10 +64,10 @@ export function QuotePreview() {
               FROM
             </span>
             <span className="text-[15px] font-semibold">
-              Escalo Design Studio
+              Juan dela Cruz
             </span>
             <span className="text-muted text-[13px] leading-relaxed">
-              Quezon City · hello@escalo.ph
+              Quezon City · juan@delacruz.com
             </span>
           </div>
           <div className="flex flex-col gap-1">
@@ -78,7 +78,7 @@ export function QuotePreview() {
               Kasiglahan Coffee Co.
             </span>
             <span className="text-muted text-[13px] leading-relaxed">
-              Marikina City · ana@kasiglahan.ph
+              Marikina City · ana@kasiglahan.com
             </span>
           </div>
         </div>
