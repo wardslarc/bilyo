@@ -756,7 +756,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* a refresh mid-edit loses nothing; autosave never fires on an invalid line; the server's
   stored total is recomputed from items, never trusted from the client.
 
-- [ ] **P2-T05 · Footer constant and status pipeline** (1h)
+- [x] **P2-T05 · Footer constant and status pipeline** (1h)
   *Files:* `lib/documents.ts` · `models/quotation.ts` · `lib/pdf/quotation-document.tsx`
   *Do:* `QUOTATION_FOOTER` as the single source of the §2.3 sentence, rendered on the detail page,
   the public page and the PDF. Add `VIEWED` to the status enum and to the badge config; keep

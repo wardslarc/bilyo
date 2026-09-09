@@ -12,49 +12,35 @@ import {
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
 
-// --- Status helpers ---
+import {
+  type DocumentStatus,
+  getDerivedQuotationStatus,
+  getStatusBadgeConfig,
+} from '@/lib/documents';
 
-type QuotationStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+// --- Status helpers ---
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'DRAFT', label: 'Draft' },
   { value: 'SENT', label: 'Sent' },
+  { value: 'VIEWED', label: 'Viewed' },
   { value: 'ACCEPTED', label: 'Accepted' },
   { value: 'DECLINED', label: 'Declined' },
+  { value: 'EXPIRED', label: 'Expired' },
 ];
 
-function statusBadgeClasses(status: QuotationStatus): string {
-  const base = 'inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full';
-  switch (status) {
-    case 'DRAFT':
-      return `${base} bg-neutral-100 text-neutral-600 border border-neutral-200`;
-    case 'SENT':
-      return `${base} bg-blue-50 text-blue-700 border border-blue-200`;
-    case 'ACCEPTED':
-      return `${base} bg-emerald-50 text-emerald-700 border border-emerald-200`;
-    case 'DECLINED':
-      return `${base} bg-red-50 text-red-700 border border-red-200`;
-    case 'EXPIRED':
-      return `${base} bg-amber-50 text-amber-700 border border-amber-200`;
-    default:
-      return `${base} bg-neutral-100 text-neutral-600`;
-  }
+function statusBadgeClasses(status: DocumentStatus): string {
+  const base = 'inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full border';
+  const badge = getStatusBadgeConfig(status);
+  return `${base} ${badge.className}`;
 }
 
 /**
- * Derive EXPIRED at read time (§5.4): validUntil < today and status is SENT
+ * Derive EXPIRED at read time (§6.4): status ∈ {SENT, VIEWED} && validUntil < today
  */
-function deriveStatus(q: SerializedQuotation): QuotationStatus {
-  if (q.status === 'SENT') {
-    const validUntil = new Date(q.validUntil);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (validUntil < today) {
-      return 'EXPIRED';
-    }
-  }
-  return q.status as QuotationStatus;
+function deriveStatus(q: SerializedQuotation): DocumentStatus {
+  return getDerivedQuotationStatus(q.status, q.validUntil);
 }
 
 // --- Props ---
@@ -233,7 +219,7 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                       {q.number}
                     </Link>
                     <span className={statusBadgeClasses(displayStatus)}>
-                      {displayStatus}
+                      {getStatusBadgeConfig(displayStatus).label}
                     </span>
                   </div>
                   <span className="text-sm font-bold text-[var(--color-text)]">
@@ -277,7 +263,7 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                         Send
                       </button>
                     )}
-                    {q.status === 'SENT' && displayStatus !== 'EXPIRED' && (
+                    {(q.status === 'SENT' || q.status === 'VIEWED') && displayStatus !== 'EXPIRED' && (
                       <>
                         <button
                           type="button"

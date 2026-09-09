@@ -24,6 +24,9 @@ import {
   defaultIssueDate,
   defaultSecondaryDate,
   isDocumentEditable,
+  getDerivedQuotationStatus,
+  getStatusBadgeConfig,
+  QUOTATION_FOOTER,
 } from '@/lib/documents';
 
 export interface QuotationFormProps {
@@ -388,6 +391,10 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
   };
 
   const pdfUrl = currentId ? `/api/quotations/${currentId}/pdf` : undefined;
+  const displayStatus = initialQuotation
+    ? getDerivedQuotationStatus(initialQuotation.status, initialQuotation.validUntil)
+    : 'DRAFT';
+  const statusBadge = getStatusBadgeConfig(displayStatus);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -399,6 +406,15 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
               ? `Edit ${initialQuotation?.number ?? 'Quotation'}`
               : 'New Quotation'}
           </h1>
+
+          {/* Status Badge (§6.4, P2-T05) */}
+          {isEditing && (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full border ${statusBadge.className}`}
+            >
+              {statusBadge.label}
+            </span>
+          )}
 
           {/* Visible Autosave Indicator (§10, P2-T04) */}
           {!isLocked && autosaveStatus !== 'idle' && (
@@ -782,6 +798,12 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
             </button>
           </div>
         )}
+        {/* Required Quotation Disclaimer Footer (§2.3, P2-T05) */}
+        <div className="border-t border-[var(--color-line-soft)] pt-6 pb-2 text-center">
+          <p className="text-xs text-[var(--color-muted)] italic">
+            {QUOTATION_FOOTER}
+          </p>
+        </div>
       </form>
     </div>
   );

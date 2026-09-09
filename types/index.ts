@@ -86,8 +86,11 @@ export interface ILineItem {
   amountCentavos: number;
 }
 
-// Document Statuses
-export type QuotationStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+// Document Statuses (§6.4: stored statuses)
+export type QuotationStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'DECLINED';
+
+// Read-time display status including derived EXPIRED (§6.4)
+export type DerivedQuotationStatus = QuotationStatus | 'EXPIRED';
 
 // Quotation
 export interface IQuotation {

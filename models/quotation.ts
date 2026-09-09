@@ -103,7 +103,7 @@ const QuotationSchema = new Schema<IQuotation>(
     },
     status: {
       type: String,
-      enum: ['DRAFT', 'SENT', 'ACCEPTED', 'DECLINED', 'EXPIRED'],
+      enum: ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'DECLINED'],
       default: 'DRAFT',
       required: true,
     },

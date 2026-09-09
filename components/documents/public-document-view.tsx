@@ -3,7 +3,7 @@ import Image from 'next/image';
 import type { PublicDocumentProjection } from '@/lib/public-projection';
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
-import { getStatusBadgeConfig, getDocumentPdfDisclaimer } from '@/lib/documents';
+import { getStatusBadgeConfig, QUOTATION_FOOTER } from '@/lib/documents';
 
 interface PublicDocumentViewProps {
   document: PublicDocumentProjection;
@@ -16,7 +16,6 @@ export function PublicDocumentView({
 }: PublicDocumentViewProps) {
   const badge = getStatusBadgeConfig(doc.status);
   const title = 'QUOTATION';
-  const disclaimer = getDocumentPdfDisclaimer();
 
   return (
     <div className="min-h-screen bg-neutral-100/70 py-8 px-4 sm:px-6 lg:px-8 font-sans antialiased text-neutral-800">
@@ -246,9 +245,9 @@ export function PublicDocumentView({
             </div>
           )}
 
-          {/* Disclaimer Footer */}
+          {/* Disclaimer Footer (§2.3, P2-T05) */}
           <div className="border-t border-neutral-100 pt-6 text-center">
-            <p className="text-[11px] text-neutral-400 italic">{disclaimer}</p>
+            <p className="text-[11px] text-neutral-400 italic">{QUOTATION_FOOTER}</p>
           </div>
         </div>
       </div>

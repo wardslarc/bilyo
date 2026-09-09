@@ -1,5 +1,6 @@
 import type {
   QuotationStatus,
+  DerivedQuotationStatus,
   ILineItem,
 } from '../types/index.ts';
 import { centavosToPesos } from './money.ts';
@@ -20,7 +21,7 @@ export interface LineItemRow {
   unitPrice: string;
 }
 
-export type DocumentStatus = QuotationStatus;
+export type DocumentStatus = DerivedQuotationStatus;
 
 /**
  * Format a Date object or ISO string to YYYY-MM-DD for input[type="date"]
@@ -85,6 +86,28 @@ export function isDocumentEditable(status?: DocumentStatus | null): boolean {
 }
 
 /**
+ * Derive quotation status at read time (§6.4):
+ * status ∈ {SENT, VIEWED} && validUntil < today -> EXPIRED
+ * Never stored in the database.
+ */
+export function getDerivedQuotationStatus(
+  status: QuotationStatus | string,
+  validUntil?: Date | string | null
+): DocumentStatus {
+  if ((status === 'SENT' || status === 'VIEWED') && validUntil) {
+    const validDate = typeof validUntil === 'string' ? new Date(validUntil) : validUntil;
+    if (!Number.isNaN(validDate.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (validDate < today) {
+        return 'EXPIRED';
+      }
+    }
+  }
+  return status as DocumentStatus;
+}
+
+/**
  * Returns human-readable badge text and CSS color classes for status display
  */
 export function getStatusBadgeConfig(status: DocumentStatus): {
@@ -101,6 +124,11 @@ export function getStatusBadgeConfig(status: DocumentStatus): {
       return {
         label: 'Sent',
         className: 'bg-blue-50 text-blue-700 border-blue-200',
+      };
+    case 'VIEWED':
+      return {
+        label: 'Viewed',
+        className: 'bg-indigo-50 text-indigo-700 border-indigo-200',
       };
     case 'ACCEPTED':
       return {

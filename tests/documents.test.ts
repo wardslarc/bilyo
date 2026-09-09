@@ -10,6 +10,7 @@ import {
   isDocumentEditable,
   getStatusBadgeConfig,
   getDocumentPdfDisclaimer,
+  getDerivedQuotationStatus,
 } from '../lib/documents.ts';
 
 describe('Shared Document Engine (M4-T01)', () => {
@@ -55,10 +56,37 @@ describe('Shared Document Engine (M4-T01)', () => {
       assert.strictEqual(payload[0].unitPrice, '1500.00');
     });
 
-    test('isDocumentEditable enforces lifecycle immutability (§5.4)', () => {
+    test('getDerivedQuotationStatus derives EXPIRED at read time (§6.4, P2-T05)', () => {
+      const pastDate = new Date(Date.now() - 86400000); // 1 day ago
+      const futureDate = new Date(Date.now() + 86400000); // 1 day ahead
+
+      // DRAFT is never derived as EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('DRAFT', pastDate), 'DRAFT');
+      assert.strictEqual(getDerivedQuotationStatus('DRAFT', futureDate), 'DRAFT');
+
+      // SENT: future stays SENT, past derives EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('SENT', futureDate), 'SENT');
+      assert.strictEqual(getDerivedQuotationStatus('SENT', pastDate), 'EXPIRED');
+
+      // VIEWED: future stays VIEWED, past derives EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('VIEWED', futureDate), 'VIEWED');
+      assert.strictEqual(getDerivedQuotationStatus('VIEWED', pastDate), 'EXPIRED');
+
+      // ACCEPTED and DECLINED are terminal (§6.4) and never derive as EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('ACCEPTED', pastDate), 'ACCEPTED');
+      assert.strictEqual(getDerivedQuotationStatus('DECLINED', pastDate), 'DECLINED');
+
+      // Null or invalid validUntil does not crash and preserves status
+      assert.strictEqual(getDerivedQuotationStatus('SENT', null), 'SENT');
+      assert.strictEqual(getDerivedQuotationStatus('VIEWED', undefined), 'VIEWED');
+      assert.strictEqual(getDerivedQuotationStatus('SENT', 'invalid-date'), 'SENT');
+    });
+
+    test('isDocumentEditable enforces lifecycle immutability (§5.4, §6.4)', () => {
       // Quotation: only DRAFT is editable
       assert.strictEqual(isDocumentEditable('DRAFT'), true);
       assert.strictEqual(isDocumentEditable('SENT'), false);
+      assert.strictEqual(isDocumentEditable('VIEWED'), false);
       assert.strictEqual(isDocumentEditable('ACCEPTED'), false);
       assert.strictEqual(isDocumentEditable('DECLINED'), false);
       assert.strictEqual(isDocumentEditable('EXPIRED'), false);
@@ -72,6 +100,7 @@ describe('Shared Document Engine (M4-T01)', () => {
       const statuses = [
         'DRAFT',
         'SENT',
+        'VIEWED',
         'ACCEPTED',
         'DECLINED',
         'EXPIRED',
@@ -82,12 +111,18 @@ describe('Shared Document Engine (M4-T01)', () => {
         assert.ok(badge.label.length > 0);
         assert.ok(badge.className.includes('border-'));
       }
+
+      assert.strictEqual(getStatusBadgeConfig('VIEWED').label, 'Viewed');
+      assert.strictEqual(getStatusBadgeConfig('EXPIRED').label, 'Expired');
     });
 
-    test('getDocumentPdfDisclaimer contains non-official disclaimer (AGENTS.md §3)', () => {
+    test('QUOTATION_FOOTER and getDocumentPdfDisclaimer contain exact legal disclaimer (§2.3, P2-T05)', () => {
       const disclaimer = getDocumentPdfDisclaimer();
       assert.strictEqual(disclaimer, QUOTATION_FOOTER);
-      assert.ok(disclaimer.includes('This is a quotation, not a tax document'));
+      assert.strictEqual(
+        QUOTATION_FOOTER,
+        'This is a quotation, not a tax document. It is not an invoice or official receipt.'
+      );
     });
 
     test('line items validation logic rejects incomplete rows for autosave (§6.4, P2-T04)', () => {

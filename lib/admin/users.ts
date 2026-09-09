@@ -257,9 +257,9 @@ export async function getAdminUserDetail(
   for (const quo of quotations) {
     if (quo.status === 'ACCEPTED') quoAccepted++;
     else if (quo.status === 'DECLINED') quoDeclined++;
-    else if (quo.status === 'EXPIRED' || (quo.validUntil && new Date(quo.validUntil) < now)) {
+    else if ((quo.status === 'SENT' || quo.status === 'VIEWED') && quo.validUntil && new Date(quo.validUntil) < now) {
       quoExpired++;
-    } else if (quo.status === 'SENT') quoSent++;
+    } else if (quo.status === 'SENT' || quo.status === 'VIEWED') quoSent++;
     else if (quo.status === 'DRAFT') quoDraft++;
   }
 

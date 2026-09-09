@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import dbConnect from './mongodb.ts';
 import { Quotation } from '../models/quotation.ts';
+import { getDerivedQuotationStatus } from './documents.ts';
 
 export interface DashboardMetrics {
   totalQuotationCount: number;
@@ -41,7 +42,7 @@ export function computeQuotationMetricsFromList(
     const total = Number(q.totalCentavos ?? 0);
 
     let status = q.status;
-    if (status === 'SENT' && q.validUntil) {
+    if ((status === 'SENT' || status === 'VIEWED') && q.validUntil) {
       if (new Date(q.validUntil).getTime() < nowMs) {
         status = 'EXPIRED';
       }
@@ -52,6 +53,7 @@ export function computeQuotationMetricsFromList(
         draftCount++;
         break;
       case 'SENT':
+      case 'VIEWED':
         sentCount++;
         totalQuotedCentavos += total;
         break;
@@ -138,15 +140,8 @@ export async function getRecentQuotations(
     .select('number status customerSnapshot totalCentavos issueDate validUntil createdAt')
     .lean();
 
-  const now = new Date();
-
   return docs.map((doc) => {
-    let displayStatus = String(doc.status ?? 'DRAFT');
-    if (displayStatus === 'SENT' && doc.validUntil) {
-      if (new Date(doc.validUntil).getTime() < now.getTime()) {
-        displayStatus = 'EXPIRED';
-      }
-    }
+    const displayStatus = getDerivedQuotationStatus(doc.status, doc.validUntil);
 
     const customerSnapshot = doc.customerSnapshot as { name?: string } | undefined;
 

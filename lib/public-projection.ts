@@ -3,7 +3,7 @@ import { Quotation } from '../models/quotation.ts';
 import { User } from '../models/user.ts';
 import { Business } from '../models/business.ts';
 import { Customer } from '../models/customer.ts';
-import type { DocumentStatus } from './documents.ts';
+import { type DocumentStatus, getDerivedQuotationStatus } from './documents.ts';
 
 export interface PublicLineItem {
   description: string;
@@ -143,13 +143,8 @@ export async function getPublicQuotationByCode(
     }
   }
 
-  // Derive EXPIRED at read time (§5.4): status === 'SENT' && validUntil < today
-  let displayStatus = quotation.status;
-  if (displayStatus === 'SENT' && quotation.validUntil) {
-    if (new Date(quotation.validUntil).getTime() < Date.now()) {
-      displayStatus = 'EXPIRED';
-    }
-  }
+  // Derive EXPIRED at read time (§6.4): status ∈ {SENT, VIEWED} && validUntil < today
+  const displayStatus = getDerivedQuotationStatus(quotation.status, quotation.validUntil);
 
   // Hand-written minimal projection (§5.6)
   return {

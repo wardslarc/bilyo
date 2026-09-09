@@ -5,7 +5,7 @@ import {
   type PdfBusinessInfo,
   type PdfCustomerInfo,
 } from './shared/document-layout.tsx';
-import { getDocumentPdfDisclaimer } from '../documents.ts';
+import { QUOTATION_FOOTER } from '../documents.ts';
 
 // Re-export shared types for backward compatibility
 export type LineItem = PdfLineItem;
@@ -55,7 +55,7 @@ export function QuotationDocument({
       secondaryDate={validUntil}
       notes={notes}
       terms={terms}
-      disclaimer={getDocumentPdfDisclaimer()}
+      disclaimer={QUOTATION_FOOTER}
     />
   );
 }

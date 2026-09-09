@@ -62,7 +62,7 @@ async function fetchPlatformMetricsInternal(): Promise<PlatformMetrics> {
     // 3. Quotes sent in last 30d
     Quotation.countDocuments({
       createdAt: { $gte: thirtyDaysAgo },
-      status: { $in: ['SENT', 'ACCEPTED', 'DECLINED', 'EXPIRED'] },
+      status: { $in: ['SENT', 'VIEWED', 'ACCEPTED', 'DECLINED'] },
     }),
 
     // 4. Quotes accepted in last 30d
