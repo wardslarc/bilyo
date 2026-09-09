@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatDateTime, isInvoiceOverdue } from '../lib/dates.ts';
+import { formatDate, formatDateTime } from '../lib/dates.ts';
 
 describe('lib/dates.ts', () => {
   describe('formatDate', () => {
@@ -26,24 +26,6 @@ describe('lib/dates.ts', () => {
       // 2026-09-30T06:30:00Z is 2:30 PM Manila time
       const date = new Date('2026-09-30T06:30:00Z');
       assert.strictEqual(formatDateTime(date), 'September 30, 2026 at 2:30 PM');
-    });
-  });
-
-  describe('isInvoiceOverdue', () => {
-    test('returns false if status is not SENT', () => {
-      const pastDue = new Date('2020-01-01T00:00:00Z');
-      assert.strictEqual(isInvoiceOverdue(pastDue, 'DRAFT'), false);
-      assert.strictEqual(isInvoiceOverdue(pastDue, 'PAID'), false);
-      assert.strictEqual(isInvoiceOverdue(pastDue, 'CANCELLED'), false);
-    });
-
-    test('derives overdue when status is SENT and dueDate < today', () => {
-      const now = new Date('2026-09-15T10:00:00Z');
-      const pastDueDate = new Date('2026-09-10T00:00:00Z');
-      const futureDueDate = new Date('2026-09-20T00:00:00Z');
-
-      assert.strictEqual(isInvoiceOverdue(pastDueDate, 'SENT', now), true);
-      assert.strictEqual(isInvoiceOverdue(futureDueDate, 'SENT', now), false);
     });
   });
 });

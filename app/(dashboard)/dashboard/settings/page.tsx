@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Business Profile & Settings · Bilyo',
-  description: 'Manage your business details, address, TIN, and VAT settings for invoices and quotations.',
+  description: 'Manage your business details, address, TIN, and VAT settings for quotations.',
 };
 
 interface SettingsPageProps {
@@ -26,7 +26,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           Business Profile
         </h1>
         <p className="text-sm text-neutral-500 mt-1">
-          Set up your company information, tax settings, and branding used on all outgoing invoices and quotations.
+          Set up your company information, tax settings, and branding used on all outgoing quotations.
         </p>
       </div>
 

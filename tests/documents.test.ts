@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DOCUMENT_CONFIG,
+  QUOTATION_FOOTER,
   toDateInputValue,
   defaultIssueDate,
   defaultSecondaryDate,
@@ -14,18 +14,6 @@ import {
 
 describe('Shared Document Engine (M4-T01)', () => {
   describe('lib/documents.ts configuration and helpers', () => {
-    test('DOCUMENT_CONFIG defines metadata for quotation and invoice', () => {
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.title, 'Quotation');
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.numberPrefix, 'QUO');
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.secondaryDateLabel, 'Valid Until');
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.secondaryDateKey, 'validUntil');
-
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.title, 'Invoice');
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.numberPrefix, 'INV');
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.secondaryDateLabel, 'Due Date');
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.secondaryDateKey, 'dueDate');
-    });
-
     test('toDateInputValue formats dates for input[type="date"]', () => {
       assert.strictEqual(toDateInputValue(null), '');
       assert.strictEqual(toDateInputValue(undefined), '');
@@ -69,22 +57,15 @@ describe('Shared Document Engine (M4-T01)', () => {
 
     test('isDocumentEditable enforces lifecycle immutability (§5.4)', () => {
       // Quotation: only DRAFT is editable
-      assert.strictEqual(isDocumentEditable('quotation', 'DRAFT'), true);
-      assert.strictEqual(isDocumentEditable('quotation', 'SENT'), false);
-      assert.strictEqual(isDocumentEditable('quotation', 'ACCEPTED'), false);
-      assert.strictEqual(isDocumentEditable('quotation', 'DECLINED'), false);
-      assert.strictEqual(isDocumentEditable('quotation', 'EXPIRED'), false);
+      assert.strictEqual(isDocumentEditable('DRAFT'), true);
+      assert.strictEqual(isDocumentEditable('SENT'), false);
+      assert.strictEqual(isDocumentEditable('ACCEPTED'), false);
+      assert.strictEqual(isDocumentEditable('DECLINED'), false);
+      assert.strictEqual(isDocumentEditable('EXPIRED'), false);
 
-      // Invoice: PAID and CANCELLED are terminal and immutable
-      assert.strictEqual(isDocumentEditable('invoice', 'DRAFT'), true);
-      assert.strictEqual(isDocumentEditable('invoice', 'SENT'), true);
-      assert.strictEqual(isDocumentEditable('invoice', 'PAID'), false);
-      assert.strictEqual(isDocumentEditable('invoice', 'CANCELLED'), false);
-      assert.strictEqual(isDocumentEditable('invoice', 'OVERDUE'), true);
-
-      // New documents
-      assert.strictEqual(isDocumentEditable('quotation', null), true);
-      assert.strictEqual(isDocumentEditable('invoice', null), true);
+      // New documents (null / undefined)
+      assert.strictEqual(isDocumentEditable(null), true);
+      assert.strictEqual(isDocumentEditable(undefined), true);
     });
 
     test('getStatusBadgeConfig provides distinct styling for all statuses', () => {
@@ -92,11 +73,8 @@ describe('Shared Document Engine (M4-T01)', () => {
         'DRAFT',
         'SENT',
         'ACCEPTED',
-        'PAID',
-        'OVERDUE',
         'DECLINED',
         'EXPIRED',
-        'CANCELLED',
       ] as const;
 
       for (const status of statuses) {
@@ -106,13 +84,10 @@ describe('Shared Document Engine (M4-T01)', () => {
       }
     });
 
-    test('getDocumentPdfDisclaimer contains non-official disclaimer (AGENTS.md §4)', () => {
-      const quoDisclaimer = getDocumentPdfDisclaimer('quotation');
-      assert.ok(quoDisclaimer.includes('not an official sales invoice'));
-
-      const invDisclaimer = getDocumentPdfDisclaimer('invoice');
-      assert.ok(invDisclaimer.includes('not an official sales invoice'));
-      assert.ok(invDisclaimer.includes('BIR regulations'));
+    test('getDocumentPdfDisclaimer contains non-official disclaimer (AGENTS.md §3)', () => {
+      const disclaimer = getDocumentPdfDisclaimer();
+      assert.strictEqual(disclaimer, QUOTATION_FOOTER);
+      assert.ok(disclaimer.includes('This is a quotation, not a tax document'));
     });
   });
 });

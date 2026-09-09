@@ -159,7 +159,7 @@ export function CustomerList({ initialCustomers }: CustomerListProps) {
           <p className="text-xs text-neutral-500 max-w-sm mx-auto">
             {searchTerm
               ? `No customer matches "${searchTerm}". Try a different keyword.`
-              : 'Add customer contact and billing details so you can issue quotations and invoices in seconds.'}
+              : 'Add client contact details so you can issue quotations in seconds.'}
           </p>
           {!searchTerm && (
             <div className="pt-2">

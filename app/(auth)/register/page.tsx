@@ -81,7 +81,7 @@ export default function RegisterPage() {
           Create your account
         </h1>
         <p className="text-sm text-[var(--color-muted)] mt-1">
-          Start creating quotations and invoices in minutes
+          Start sending quotations and closing sales in minutes
         </p>
       </div>
 

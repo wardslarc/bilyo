@@ -15,8 +15,8 @@ export function PublicDocumentView({
   pdfDownloadUrl,
 }: PublicDocumentViewProps) {
   const badge = getStatusBadgeConfig(doc.status);
-  const title = doc.kind === 'invoice' ? 'INVOICE' : 'QUOTATION';
-  const disclaimer = getDocumentPdfDisclaimer(doc.kind);
+  const title = 'QUOTATION';
+  const disclaimer = getDocumentPdfDisclaimer();
 
   return (
     <div className="min-h-screen bg-neutral-100/70 py-8 px-4 sm:px-6 lg:px-8 font-sans antialiased text-neutral-800">
@@ -103,7 +103,7 @@ export function PublicDocumentView({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs border-b border-neutral-100 pb-8">
             <div className="space-y-1.5">
               <span className="font-semibold text-neutral-400 uppercase tracking-wider text-[10px] block">
-                {doc.kind === 'invoice' ? 'Billed To' : 'Prepared For'}
+                Prepared For
               </span>
               <p className="font-bold text-sm text-neutral-900">
                 {doc.customer.name}

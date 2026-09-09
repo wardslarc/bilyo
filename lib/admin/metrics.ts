@@ -1,6 +1,5 @@
 import dbConnect from '../mongodb.ts';
 import { User } from '../../models/user.ts';
-import { Invoice } from '../../models/invoice.ts';
 import { Quotation } from '../../models/quotation.ts';
 import { requireAdmin } from './guard.ts';
 
@@ -77,11 +76,11 @@ async function fetchPlatformMetricsInternal(): Promise<PlatformMetrics> {
     User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
 
     // 3. Documents created in last 30d
-    Invoice.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+    Promise.resolve(0),
     Quotation.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
 
     // 4. Distinct users who created a document in last 30d
-    Invoice.distinct('userId', { createdAt: { $gte: thirtyDaysAgo } }),
+    Promise.resolve([]),
     Quotation.distinct('userId', { createdAt: { $gte: thirtyDaysAgo } }),
 
     // 5. Paid subscriptions (PayMongo billing)

@@ -27,16 +27,16 @@ describe('Public Link Projection & Security (M4-T04)', () => {
   describe('Minimal Projection Boundary (§5.6)', () => {
     test('projection payload contains NO user email and NO internal IDs', () => {
       // Mock raw DB document containing sensitive and internal fields
-      const rawDbInvoice = {
+      const rawDbQuotation = {
         _id: '65f1a2b3c4d5e6f7a8b9c0d1',
         userId: '65f1a2b3c4d5e6f7a8b9c0d0',
         customerId: '65f1a2b3c4d5e6f7a8b9c0d2',
         userAccountEmail: 'owner@secret.com', // sensitive
         passwordHash: '$2a$10$abcdefghijklmnopqrstuvwxyz', // highly sensitive
-        number: 'INV-000001',
+        number: 'QUO-000001',
         status: 'SENT',
         issueDate: new Date('2026-09-01'),
-        dueDate: new Date('2026-09-30'),
+        validUntil: new Date('2026-09-30'),
         items: [
           {
             description: 'Consulting',
@@ -65,20 +65,20 @@ describe('Public Link Projection & Security (M4-T04)', () => {
 
       // Transform via minimal projection contract
       const projection: PublicDocumentProjection = {
-        kind: 'invoice',
-        number: rawDbInvoice.number,
-        status: rawDbInvoice.status as 'SENT',
-        issueDate: rawDbInvoice.issueDate.toISOString(),
-        secondaryDateLabel: 'Due Date',
-        secondaryDate: rawDbInvoice.dueDate.toISOString(),
-        items: rawDbInvoice.items,
-        subtotalCentavos: rawDbInvoice.subtotalCentavos,
-        discountCentavos: rawDbInvoice.discountCentavos,
-        vatRatePercent: rawDbInvoice.vatRatePercent,
-        vatCentavos: rawDbInvoice.vatCentavos,
-        totalCentavos: rawDbInvoice.totalCentavos,
-        business: rawDbInvoice.businessSnapshot,
-        customer: rawDbInvoice.customerSnapshot,
+        kind: 'quotation',
+        number: rawDbQuotation.number,
+        status: rawDbQuotation.status as 'SENT',
+        issueDate: rawDbQuotation.issueDate.toISOString(),
+        secondaryDateLabel: 'Valid Until',
+        secondaryDate: rawDbQuotation.validUntil.toISOString(),
+        items: rawDbQuotation.items,
+        subtotalCentavos: rawDbQuotation.subtotalCentavos,
+        discountCentavos: rawDbQuotation.discountCentavos,
+        vatRatePercent: rawDbQuotation.vatRatePercent,
+        vatCentavos: rawDbQuotation.vatCentavos,
+        totalCentavos: rawDbQuotation.totalCentavos,
+        business: rawDbQuotation.businessSnapshot,
+        customer: rawDbQuotation.customerSnapshot,
       };
 
       // Serialize to JSON (as would be passed across Server Component to Client)
@@ -92,7 +92,7 @@ describe('Public Link Projection & Security (M4-T04)', () => {
       assert.strictEqual(json.includes('65f1a2b3c4d5e6f7a8b9c0d2'), false, 'NO customerId');
 
       // Verify required fields present
-      assert.ok(json.includes('INV-000001'));
+      assert.ok(json.includes('QUO-000001'));
       assert.ok(json.includes('Consulting'));
       assert.ok(json.includes('Freelance Studio'));
       assert.ok(json.includes('Acme Corp'));

@@ -607,7 +607,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* `git status --short` is empty afterwards; `git diff --shortstat` and
   `git diff --shortstat -w` agree on the next commit.
 
-- [ ] **P1-T01 · Delete the invoice surface** (3.5h)
+- [x] **P1-T01 · Delete the invoice surface** (3.5h)
   **The grep is the spec.** `grep -rlniE "\binvoice" app actions components lib models types tests middleware.ts`
   returns **74 files** today. The task is done when it returns zero. Work the list; do not guess at it.
   *Files (delete):* `app/(dashboard)/dashboard/invoices/**` · `app/i/[token]/**` ·

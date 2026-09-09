@@ -3,7 +3,6 @@ import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import { styles } from './styles.ts';
 import { formatMoney } from '../../money.ts';
 import { formatDate } from '../../dates.ts';
-import type { DocumentKind } from '../../documents.ts';
 
 export interface PdfLineItem {
   description: string;
@@ -31,8 +30,8 @@ export interface PdfCustomerInfo {
 }
 
 export interface BaseDocumentLayoutProps {
-  kind: DocumentKind;
-  documentTitle: string; // e.g. 'QUOTATION' or 'INVOICE'
+  kind?: 'quotation';
+  documentTitle: string; // e.g. 'QUOTATION'
   number: string;
   business: PdfBusinessInfo;
   customer: PdfCustomerInfo;

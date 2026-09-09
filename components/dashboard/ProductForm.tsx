@@ -79,7 +79,7 @@ export function ProductForm({ initialProduct }: ProductFormProps) {
     if (!initialProduct) return;
     const targetState = !initialProduct.archived;
     const confirmMessage = targetState
-      ? 'Archive this item? It will be hidden from new invoice & quotation pickers.'
+      ? 'Archive this item? It will be hidden from new quotation pickers.'
       : 'Restore this item?';
 
     if (!confirm(confirmMessage)) return;

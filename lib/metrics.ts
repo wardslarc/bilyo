@@ -1,118 +1,90 @@
 import mongoose from 'mongoose';
 import dbConnect from './mongodb.ts';
-import { Invoice } from '../models/invoice.ts';
-import { getManilaStartOfDay, getManilaMonthRange, isInvoiceOverdue } from './dates.ts';
+import { Quotation } from '../models/quotation.ts';
 
 export interface DashboardMetrics {
-  currentMonthRevenueCentavos: number;
-  currentMonthPaidCount: number;
-  outstandingCentavos: number;
-  outstandingCount: number;
-  paidCentavos: number;
-  paidCount: number;
-  overdueCentavos: number;
-  overdueCount: number;
+  totalQuotationCount: number;
   draftCount: number;
-  draftCentavos: number;
-  totalInvoiceCount: number;
+  sentCount: number;
+  acceptedCount: number;
+  declinedCount: number;
+  expiredCount: number;
+  totalQuotedCentavos: number;
+  acceptedCentavos: number;
 }
 
-export interface MetricInvoiceItem {
+export interface MetricQuotationItem {
   status: string;
   totalCentavos: number;
-  issueDate?: Date | string | number;
-  dueDate?: Date | string | number;
-  paidAt?: Date | string | number | null;
+  validUntil?: Date | string | number;
 }
 
 /**
- * Pure in-memory calculation of invoice metrics (§5.4).
+ * Pure in-memory calculation of quotation metrics.
  * Used for unit testing and validation without hitting the database.
  */
-export function computeInvoiceMetricsFromList(
-  invoices: MetricInvoiceItem[],
+export function computeQuotationMetricsFromList(
+  quotations: MetricQuotationItem[],
   now: Date = new Date()
 ): DashboardMetrics {
-  const { startOfMonth, endOfMonth } = getManilaMonthRange(now);
-  const todayStart = getManilaStartOfDay(now);
-
-  const startOfMonthMs = startOfMonth.getTime();
-  const endOfMonthMs = endOfMonth.getTime();
-  const todayStartMs = todayStart.getTime();
-
-  let currentMonthRevenueCentavos = 0;
-  let currentMonthPaidCount = 0;
-  let outstandingCentavos = 0;
-  let outstandingCount = 0;
-  let paidCentavos = 0;
-  let paidCount = 0;
-  let overdueCentavos = 0;
-  let overdueCount = 0;
   let draftCount = 0;
-  let draftCentavos = 0;
-  let totalInvoiceCount = 0;
+  let sentCount = 0;
+  let acceptedCount = 0;
+  let declinedCount = 0;
+  let expiredCount = 0;
+  let totalQuotedCentavos = 0;
+  let acceptedCentavos = 0;
 
-  for (const inv of invoices) {
-    if (inv.status === 'CANCELLED') {
-      continue;
+  const nowMs = now.getTime();
+
+  for (const q of quotations) {
+    const total = Number(q.totalCentavos ?? 0);
+
+    let status = q.status;
+    if (status === 'SENT' && q.validUntil) {
+      if (new Date(q.validUntil).getTime() < nowMs) {
+        status = 'EXPIRED';
+      }
     }
 
-    totalInvoiceCount++;
-    const total = Number(inv.totalCentavos ?? 0);
-
-    if (inv.status === 'PAID') {
-      paidCentavos += total;
-      paidCount++;
-
-      const paidDateMs = inv.paidAt
-        ? new Date(inv.paidAt).getTime()
-        : inv.issueDate
-          ? new Date(inv.issueDate).getTime()
-          : null;
-
-      if (paidDateMs !== null && paidDateMs >= startOfMonthMs && paidDateMs <= endOfMonthMs) {
-        currentMonthRevenueCentavos += total;
-        currentMonthPaidCount++;
-      }
-    } else if (inv.status === 'SENT') {
-      outstandingCentavos += total;
-      outstandingCount++;
-
-      if (inv.dueDate) {
-        const dueMs = new Date(inv.dueDate).getTime();
-        if (dueMs < todayStartMs) {
-          overdueCentavos += total;
-          overdueCount++;
-        }
-      }
-    } else if (inv.status === 'DRAFT') {
-      draftCount++;
-      draftCentavos += total;
+    switch (status) {
+      case 'DRAFT':
+        draftCount++;
+        break;
+      case 'SENT':
+        sentCount++;
+        totalQuotedCentavos += total;
+        break;
+      case 'ACCEPTED':
+        acceptedCount++;
+        totalQuotedCentavos += total;
+        acceptedCentavos += total;
+        break;
+      case 'DECLINED':
+        declinedCount++;
+        totalQuotedCentavos += total;
+        break;
+      case 'EXPIRED':
+        expiredCount++;
+        totalQuotedCentavos += total;
+        break;
     }
   }
 
   return {
-    currentMonthRevenueCentavos,
-    currentMonthPaidCount,
-    outstandingCentavos,
-    outstandingCount,
-    paidCentavos,
-    paidCount,
-    overdueCentavos,
-    overdueCount,
+    totalQuotationCount: quotations.length,
     draftCount,
-    draftCentavos,
-    totalInvoiceCount,
+    sentCount,
+    acceptedCount,
+    declinedCount,
+    expiredCount,
+    totalQuotedCentavos,
+    acceptedCentavos,
   };
 }
 
 /**
- * Single aggregation pipeline to compute dashboard metrics for a user (§5.4, M5-T01).
- * Executes exactly ONE aggregation query ($match + $group) to get:
- * - current-month revenue
- * - outstanding (SENT)
- * - paid (all-time)
- * - overdue (SENT and dueDate < today in Asia/Manila)
+ * Aggregation pipeline to compute dashboard quotation metrics for a user.
  */
 export async function getDashboardMetrics(
   userId: string,
@@ -125,218 +97,32 @@ export async function getDashboardMetrics(
       ? new mongoose.Types.ObjectId(userId)
       : userId;
 
-  const { startOfMonth, endOfMonth } = getManilaMonthRange(now);
-  const todayStart = getManilaStartOfDay(now);
+  const quotations = await Quotation.find({ userId: userObjectId })
+    .select('status totalCentavos validUntil')
+    .lean();
 
-  const results = await Invoice.aggregate<{
-    _id: null;
-    totalInvoiceCount: number;
-    currentMonthRevenueCentavos: number;
-    currentMonthPaidCount: number;
-    outstandingCentavos: number;
-    outstandingCount: number;
-    paidCentavos: number;
-    paidCount: number;
-    overdueCentavos: number;
-    overdueCount: number;
-    draftCount: number;
-    draftCentavos: number;
-  }>([
-    {
-      $match: {
-        userId: userObjectId,
-        status: { $ne: 'CANCELLED' },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalInvoiceCount: { $sum: 1 },
-
-        // Current month revenue: PAID with paidAt or issueDate in current month
-        currentMonthRevenueCentavos: {
-          $sum: {
-            $cond: [
-              {
-                $and: [
-                  { $eq: ['$status', 'PAID'] },
-                  {
-                    $or: [
-                      {
-                        $and: [
-                          { $ne: ['$paidAt', null] },
-                          { $gte: ['$paidAt', startOfMonth] },
-                          { $lte: ['$paidAt', endOfMonth] },
-                        ],
-                      },
-                      {
-                        $and: [
-                          { $eq: ['$paidAt', null] },
-                          { $gte: ['$issueDate', startOfMonth] },
-                          { $lte: ['$issueDate', endOfMonth] },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              '$totalCentavos',
-              0,
-            ],
-          },
-        },
-        currentMonthPaidCount: {
-          $sum: {
-            $cond: [
-              {
-                $and: [
-                  { $eq: ['$status', 'PAID'] },
-                  {
-                    $or: [
-                      {
-                        $and: [
-                          { $ne: ['$paidAt', null] },
-                          { $gte: ['$paidAt', startOfMonth] },
-                          { $lte: ['$paidAt', endOfMonth] },
-                        ],
-                      },
-                      {
-                        $and: [
-                          { $eq: ['$paidAt', null] },
-                          { $gte: ['$issueDate', startOfMonth] },
-                          { $lte: ['$issueDate', endOfMonth] },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              1,
-              0,
-            ],
-          },
-        },
-
-        // Outstanding: SENT invoices
-        outstandingCentavos: {
-          $sum: {
-            $cond: [{ $eq: ['$status', 'SENT'] }, '$totalCentavos', 0],
-          },
-        },
-        outstandingCount: {
-          $sum: {
-            $cond: [{ $eq: ['$status', 'SENT'] }, 1, 0],
-          },
-        },
-
-        // Paid: all-time PAID invoices
-        paidCentavos: {
-          $sum: {
-            $cond: [{ $eq: ['$status', 'PAID'] }, '$totalCentavos', 0],
-          },
-        },
-        paidCount: {
-          $sum: {
-            $cond: [{ $eq: ['$status', 'PAID'] }, 1, 0],
-          },
-        },
-
-        // Overdue: SENT invoices with dueDate < todayStart (§5.4)
-        overdueCentavos: {
-          $sum: {
-            $cond: [
-              {
-                $and: [
-                  { $eq: ['$status', 'SENT'] },
-                  { $lt: ['$dueDate', todayStart] },
-                ],
-              },
-              '$totalCentavos',
-              0,
-            ],
-          },
-        },
-        overdueCount: {
-          $sum: {
-            $cond: [
-              {
-                $and: [
-                  { $eq: ['$status', 'SENT'] },
-                  { $lt: ['$dueDate', todayStart] },
-                ],
-              },
-              1,
-              0,
-            ],
-          },
-        },
-
-        // Drafts
-        draftCount: {
-          $sum: {
-            $cond: [{ $eq: ['$status', 'DRAFT'] }, 1, 0],
-          },
-        },
-        draftCentavos: {
-          $sum: {
-            $cond: [{ $eq: ['$status', 'DRAFT'] }, '$totalCentavos', 0],
-          },
-        },
-      },
-    },
-  ]);
-
-  if (!results || results.length === 0) {
-    return {
-      currentMonthRevenueCentavos: 0,
-      currentMonthPaidCount: 0,
-      outstandingCentavos: 0,
-      outstandingCount: 0,
-      paidCentavos: 0,
-      paidCount: 0,
-      overdueCentavos: 0,
-      overdueCount: 0,
-      draftCount: 0,
-      draftCentavos: 0,
-      totalInvoiceCount: 0,
-    };
-  }
-
-  const row = results[0];
-  return {
-    currentMonthRevenueCentavos: Number(row.currentMonthRevenueCentavos || 0),
-    currentMonthPaidCount: Number(row.currentMonthPaidCount || 0),
-    outstandingCentavos: Number(row.outstandingCentavos || 0),
-    outstandingCount: Number(row.outstandingCount || 0),
-    paidCentavos: Number(row.paidCentavos || 0),
-    paidCount: Number(row.paidCount || 0),
-    overdueCentavos: Number(row.overdueCentavos || 0),
-    overdueCount: Number(row.overdueCount || 0),
-    draftCount: Number(row.draftCount || 0),
-    draftCentavos: Number(row.draftCentavos || 0),
-    totalInvoiceCount: Number(row.totalInvoiceCount || 0),
-  };
+  return computeQuotationMetricsFromList(quotations, now);
 }
 
-export interface RecentInvoiceItem {
+export interface RecentQuotationItem {
   id: string;
   number: string;
   customerName: string;
   totalCentavos: number;
   status: string;
   issueDate: string;
-  dueDate: string;
+  validUntil: string;
   createdAt: string;
 }
 
 /**
- * Fetch top recent invoices for the dashboard activity feed (§5.4, M5-T02).
+ * Fetch top recent quotations for the dashboard activity feed.
  * Strictly scoped by userId.
  */
-export async function getRecentInvoices(
+export async function getRecentQuotations(
   userId: string,
   limit: number = 5
-): Promise<RecentInvoiceItem[]> {
+): Promise<RecentQuotationItem[]> {
   await dbConnect();
 
   const userObjectId =
@@ -344,21 +130,21 @@ export async function getRecentInvoices(
       ? new mongoose.Types.ObjectId(userId)
       : userId;
 
-  const docs = await Invoice.find({
+  const docs = await Quotation.find({
     userId: userObjectId,
   })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .select('number status customerSnapshot totalCentavos issueDate dueDate createdAt')
+    .select('number status customerSnapshot totalCentavos issueDate validUntil createdAt')
     .lean();
 
   const now = new Date();
 
   return docs.map((doc) => {
     let displayStatus = String(doc.status ?? 'DRAFT');
-    if (displayStatus === 'SENT' && doc.dueDate) {
-      if (isInvoiceOverdue(doc.dueDate, 'SENT', now)) {
-        displayStatus = 'OVERDUE';
+    if (displayStatus === 'SENT' && doc.validUntil) {
+      if (new Date(doc.validUntil).getTime() < now.getTime()) {
+        displayStatus = 'EXPIRED';
       }
     }
 
@@ -367,11 +153,11 @@ export async function getRecentInvoices(
     return {
       id: String(doc._id),
       number: String(doc.number ?? ''),
-      customerName: customerSnapshot?.name ? String(customerSnapshot.name) : 'Unnamed Customer',
+      customerName: customerSnapshot?.name ? String(customerSnapshot.name) : 'Unnamed Client',
       totalCentavos: Number(doc.totalCentavos ?? 0),
       status: displayStatus,
       issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : new Date().toISOString(),
-      dueDate: doc.dueDate ? new Date(doc.dueDate).toISOString() : new Date().toISOString(),
+      validUntil: doc.validUntil ? new Date(doc.validUntil).toISOString() : new Date().toISOString(),
       createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
     };
   });

@@ -8,7 +8,6 @@ import {
 import {
   sanitizeUserExport,
   escapeCsvField,
-  formatInvoicesCsv,
   formatQuotationsCsv,
   formatCustomersCsv,
 } from '../lib/export.ts';
@@ -150,36 +149,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
       assert.strictEqual(escapeCsvField('line\nbreak'), '"line\nbreak"');
       assert.strictEqual(escapeCsvField(null), '');
       assert.strictEqual(escapeCsvField(undefined), '');
-    });
-
-    test('formatInvoicesCsv: formats headers, converts centavos to pesos, and maps fields', () => {
-      const invoices = [
-        {
-          invoiceNumber: 'INV-000001',
-          customerSnapshot: { name: 'Acme Corp, Inc.' },
-          issueDate: new Date('2026-03-01T00:00:00Z'),
-          dueDate: new Date('2026-03-15T00:00:00Z'),
-          status: 'SENT',
-          subtotalCentavos: 1000000, // 10,000.00
-          discountCentavos: 100000,  // 1,000.00
-          vatCentavos: 108000,       // 1,080.00
-          totalCentavos: 1008000,    // 10,080.00
-          paidAt: null,
-          notes: 'Standard 15 days terms',
-        },
-      ];
-
-      const csv = formatInvoicesCsv(invoices as unknown as Record<string, unknown>[]);
-      const lines = csv.split('\r\n');
-
-      assert.strictEqual(
-        lines[0],
-        'Invoice Number,Customer,Issue Date,Due Date,Status,Subtotal (PHP),Discount (PHP),VAT (PHP),Total (PHP),Paid Date,Notes'
-      );
-      assert.ok(lines[1].includes('INV-000001'));
-      assert.ok(lines[1].includes('"Acme Corp, Inc."'));
-      assert.ok(lines[1].includes('10000.00'));
-      assert.ok(lines[1].includes('10080.00'));
     });
 
     test('formatQuotationsCsv: generates correct columns and peso amounts', () => {

@@ -11,35 +11,22 @@ import { getManilaMonthRange } from '../lib/dates.ts';
 
 describe('Plan Limits & Enforcement (M8-T01)', () => {
   describe('evaluateResourceLimit for FREE plan', () => {
-    test('invoices: permits up to 4, rejects at 5 with clear usage message', () => {
-      // Under limit
-      const under = evaluateResourceLimit('INVOICES', 4, 'FREE');
+    test('quotations: permits up to 4, rejects at 5 with clear usage message', () => {
+      const under = evaluateResourceLimit('QUOTATIONS', 4, 'FREE');
       assert.strictEqual(under.allowed, true);
       assert.strictEqual(under.current, 4);
       assert.strictEqual(under.limit, 5);
       assert.strictEqual(under.error, undefined);
 
-      // At limit
-      const atLimit = evaluateResourceLimit('INVOICES', 5, 'FREE');
+      const atLimit = evaluateResourceLimit('QUOTATIONS', 5, 'FREE');
       assert.strictEqual(atLimit.allowed, false);
       assert.strictEqual(atLimit.current, 5);
       assert.strictEqual(atLimit.limit, 5);
-      assert.ok(atLimit.error?.includes('5 invoices on the FREE plan (5/5 used this month)'));
-      assert.ok(atLimit.error?.includes('Upgrade to Freelancer or Business'));
-
-      // Over limit
-      const over = evaluateResourceLimit('INVOICES', 6, 'FREE');
-      assert.strictEqual(over.allowed, false);
-    });
-
-    test('quotations: permits up to 4, rejects at 5 with clear usage message', () => {
-      const under = evaluateResourceLimit('QUOTATIONS', 4, 'FREE');
-      assert.strictEqual(under.allowed, true);
-
-      const atLimit = evaluateResourceLimit('QUOTATIONS', 5, 'FREE');
-      assert.strictEqual(atLimit.allowed, false);
       assert.ok(atLimit.error?.includes('5 quotations on the FREE plan (5/5 used this month)'));
       assert.ok(atLimit.error?.includes('Upgrade to Freelancer or Business'));
+
+      const over = evaluateResourceLimit('QUOTATIONS', 6, 'FREE');
+      assert.strictEqual(over.allowed, false);
     });
 
     test('customers: permits up to 9, rejects at 10 with clear usage message', () => {
@@ -54,7 +41,7 @@ describe('Plan Limits & Enforcement (M8-T01)', () => {
   });
 
   describe('Admin Override Lifts Limits Instantly (§5.10, M8-T01)', () => {
-    test('live ADMIN override to BUSINESS lifts invoice limit to Infinity', () => {
+    test('live ADMIN override to BUSINESS lifts quotation limit to Infinity', () => {
       const user: PlanUser = {
         plan: 'BUSINESS',
         planSource: 'ADMIN',
@@ -64,7 +51,7 @@ describe('Plan Limits & Enforcement (M8-T01)', () => {
       assert.strictEqual(effectivePlan(user), 'BUSINESS');
       assert.strictEqual(isPlanOverrideActive(user), true);
 
-      const res = evaluateResourceLimit('INVOICES', 100, user);
+      const res = evaluateResourceLimit('QUOTATIONS', 100, user);
       assert.strictEqual(res.allowed, true);
       assert.strictEqual(res.limit, Infinity);
       assert.strictEqual(res.error, undefined);
@@ -98,9 +85,9 @@ describe('Plan Limits & Enforcement (M8-T01)', () => {
       assert.strictEqual(isPlanOverrideActive(user), false);
 
       // Now subject to FREE limits again
-      const invoiceRes = evaluateResourceLimit('INVOICES', 5, user);
-      assert.strictEqual(invoiceRes.allowed, false);
-      assert.ok(invoiceRes.error?.includes('FREE'));
+      const quotationRes = evaluateResourceLimit('QUOTATIONS', 5, user);
+      assert.strictEqual(quotationRes.allowed, false);
+      assert.ok(quotationRes.error?.includes('FREE'));
 
       const custRes = evaluateResourceLimit('CUSTOMERS', 10, user);
       assert.strictEqual(custRes.allowed, false);
@@ -150,34 +137,19 @@ describe('Plan Limits & Enforcement (M8-T01)', () => {
   });
 
   describe('PLAN_LIMITS Constants', () => {
-    test('matches exact specification in DEVELOPMENT_PLAN.md §11', () => {
-      assert.strictEqual(PLAN_LIMITS.FREE.monthlyInvoices, 5);
+    test('matches quotation and customer limits', () => {
       assert.strictEqual(PLAN_LIMITS.FREE.monthlyQuotations, 5);
       assert.strictEqual(PLAN_LIMITS.FREE.maxCustomers, 10);
 
-      assert.strictEqual(PLAN_LIMITS.FREELANCER.monthlyInvoices, Infinity);
       assert.strictEqual(PLAN_LIMITS.FREELANCER.monthlyQuotations, Infinity);
       assert.strictEqual(PLAN_LIMITS.FREELANCER.maxCustomers, Infinity);
 
-      assert.strictEqual(PLAN_LIMITS.BUSINESS.monthlyInvoices, Infinity);
       assert.strictEqual(PLAN_LIMITS.BUSINESS.monthlyQuotations, Infinity);
       assert.strictEqual(PLAN_LIMITS.BUSINESS.maxCustomers, Infinity);
     });
   });
 
   describe('Upgrade Prompts & Limit Messages (M8-T02)', () => {
-    test('invoice limit explains limit hit, shows monthly usage, and suggests upgrading', () => {
-      const res = evaluateResourceLimit('INVOICES', 5, 'FREE');
-      assert.strictEqual(res.allowed, false);
-      assert.ok(res.error);
-      // Explains which limit was hit
-      assert.ok(res.error.includes('limit of 5 invoices'));
-      // Shows current usage
-      assert.ok(res.error.includes('5/5 used this month'));
-      // Suggests upgrade
-      assert.ok(res.error.includes('Upgrade to Freelancer or Business for unlimited invoices'));
-    });
-
     test('quotation limit explains limit hit, shows monthly usage, and suggests upgrading', () => {
       const res = evaluateResourceLimit('QUOTATIONS', 5, 'FREE');
       assert.strictEqual(res.allowed, false);

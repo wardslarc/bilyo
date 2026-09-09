@@ -131,11 +131,6 @@ const QuotationSchema = new Schema<IQuotation>(
       type: Date,
       required: true,
     },
-    convertedInvoiceId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Invoice',
-      default: null,
-    },
     notes: {
       type: String,
       default: '',

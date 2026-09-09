@@ -57,8 +57,8 @@ describe('Onboarding Gate (M2-T02)', () => {
     assert.strictEqual(res.targetUrl, '/dashboard/settings?onboarding=1');
   });
 
-  test('redirects signed-in user with no Business when hitting other dashboard routes like /dashboard/invoices', async () => {
-    const res = await checkOnboardingGate(userNoBizId, '/dashboard/invoices');
+  test('redirects signed-in user with no Business when hitting other dashboard routes like /dashboard/quotations', async () => {
+    const res = await checkOnboardingGate(userNoBizId, '/dashboard/quotations');
     assert.strictEqual(res.shouldRedirect, true);
     assert.strictEqual(res.targetUrl, '/dashboard/settings?onboarding=1');
   });
@@ -78,8 +78,8 @@ describe('Onboarding Gate (M2-T02)', () => {
     const resDashboard = await checkOnboardingGate(userWithBizId, '/dashboard');
     assert.strictEqual(resDashboard.shouldRedirect, false);
 
-    const resInvoices = await checkOnboardingGate(userWithBizId, '/dashboard/invoices');
-    assert.strictEqual(resInvoices.shouldRedirect, false);
+    const resQuotations = await checkOnboardingGate(userWithBizId, '/dashboard/quotations');
+    assert.strictEqual(resQuotations.shouldRedirect, false);
   });
 
   test('saving business profile unblocks the user immediately without looping', async () => {

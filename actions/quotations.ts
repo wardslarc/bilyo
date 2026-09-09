@@ -2,15 +2,13 @@
 
 import dbConnect from '../lib/mongodb.ts';
 import { Quotation } from '../models/quotation.ts';
-import { Invoice } from '../models/invoice.ts';
 import { Customer } from '../models/customer.ts';
 import { Business } from '../models/business.ts';
-import { serializeInvoice, type SerializedInvoice } from '../lib/documents.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
 import { quotationSchema, type QuotationInput } from '../lib/validation/quotation.ts';
 import { computeTotals, type ComputedTotals } from '../lib/totals.ts';
 import { nextNumber } from '../lib/numbering.ts';
-import { checkCanCreateQuotation, checkCanCreateInvoice } from '../lib/plan.ts';
+import { checkCanCreateQuotation } from '../lib/plan.ts';
 import type { ActionResult } from '../types/index.ts';
 
 // --- Serialized types for client transport ---
@@ -55,7 +53,6 @@ export interface SerializedQuotation {
     vatRegistered: boolean;
     logoUrl?: string | null;
   } | null;
-  convertedInvoiceId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -128,7 +125,6 @@ function serializeQuotation(doc: any): SerializedQuotation {
           logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
         }
       : null,
-    convertedInvoiceId: doc.convertedInvoiceId ? String(doc.convertedInvoiceId) : null,
     createdAt: doc.createdAt ? new Date(doc.createdAt as string | number | Date).toISOString() : new Date().toISOString(),
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt as string | number | Date).toISOString() : new Date().toISOString(),
   };
@@ -553,144 +549,5 @@ export async function declineQuotation(id: string): Promise<ActionResult<Seriali
     }
     console.error('declineQuotation error:', (error as Error).message);
     return { ok: false, error: 'Failed to decline quotation' };
-  }
-}
-
-/**
- * Convert a quotation to an invoice (§5.4, §8.2, M4-T05).
- * - Copies items, totals, and both snapshots.
- * - Generates sequential atomic number for the invoice.
- * - Sets sourceQuotationId on the invoice and convertedInvoiceId on the quotation.
- * - Sets quotation status to 'ACCEPTED'.
- * - IDEMPOTENT: If already converted, opens the existing invoice without creating another.
- */
-export async function convertQuotationToInvoice(
-  quotationId: string
-): Promise<ActionResult<SerializedInvoice>> {
-  try {
-    const user = await requireUser();
-    await assertNotSuspended(user.id);
-
-    await dbConnect();
-
-    const quotation = await Quotation.findOne({ _id: quotationId, userId: user.id });
-    if (!quotation) {
-      return { ok: false, error: 'Quotation not found' };
-    }
-
-    // Idempotency (§8.2, acceptance criteria): if already converted, return existing invoice
-    if (quotation.convertedInvoiceId) {
-      const existingInvoice = await Invoice.findOne({
-        _id: quotation.convertedInvoiceId,
-        userId: user.id,
-      }).lean();
-
-      if (existingInvoice) {
-        return {
-          ok: true,
-          data: serializeInvoice(existingInvoice),
-        };
-      }
-    }
-
-    // Only SENT or ACCEPTED quotations may be converted (§5.4)
-    if (quotation.status !== 'SENT' && quotation.status !== 'ACCEPTED') {
-      return {
-        ok: false,
-        error: 'Only sent or accepted quotations can be converted to an invoice',
-      };
-    }
-
-    // Server-side plan limit check: conversion creates a new invoice (§5.10, M8-T01)
-    const limitCheck = await checkCanCreateInvoice(user.id);
-    if (!limitCheck.allowed) {
-      return {
-        ok: false,
-        error: limitCheck.error || 'Invoice creation limit reached for your plan',
-      };
-    }
-
-    // Ensure customer snapshot exists (§3.9, §5.4)
-    let customerSnapshot = quotation.customerSnapshot;
-    if (!customerSnapshot) {
-      const customer = await Customer.findOne({
-        _id: quotation.customerId,
-        userId: user.id,
-      }).lean();
-
-      if (customer) {
-        customerSnapshot = {
-          name: customer.name,
-          email: customer.email || '',
-          phone: customer.phone || '',
-          address: customer.address || '',
-          tin: customer.tin || '',
-        };
-      }
-    }
-
-    // Ensure business snapshot exists (§3.9, §5.4)
-    let businessSnapshot = quotation.businessSnapshot;
-    if (!businessSnapshot) {
-      const business = await Business.findOne({ userId: user.id }).lean();
-      if (business) {
-        businessSnapshot = {
-          businessName: business.businessName,
-          address: business.address || '',
-          email: business.email || '',
-          phone: business.phone || '',
-          tin: business.tin || '',
-          vatRegistered: business.vatRegistered,
-          logoUrl: business.logoUrl || null,
-        };
-      }
-    }
-
-    // Atomic sequential invoice number (§5.3)
-    const invoiceNumber = await nextNumber(user.id, 'INVOICE');
-
-    const issueDate = new Date();
-    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Net 30 default
-
-    // Create the new invoice in DRAFT status
-    const invoice = await Invoice.create({
-      userId: user.id,
-      customerId: quotation.customerId,
-      number: invoiceNumber,
-      sourceQuotationId: quotation._id,
-      items: quotation.items,
-      subtotalCentavos: quotation.subtotalCentavos,
-      discountCentavos: quotation.discountCentavos,
-      vatRatePercent: quotation.vatRatePercent,
-      vatCentavos: quotation.vatCentavos,
-      totalCentavos: quotation.totalCentavos,
-      status: 'DRAFT',
-      issueDate,
-      dueDate,
-      notes: quotation.notes || '',
-      terms: quotation.terms || '',
-      customerSnapshot,
-      businessSnapshot,
-    });
-
-    // Update quotation: set convertedInvoiceId and transition to ACCEPTED (§5.4)
-    quotation.convertedInvoiceId = invoice._id;
-    quotation.status = 'ACCEPTED';
-    await quotation.save();
-
-    await safeRevalidate('/dashboard/quotations');
-    await safeRevalidate(`/dashboard/quotations/${quotationId}`);
-    await safeRevalidate('/dashboard/invoices');
-
-    return {
-      ok: true,
-      data: serializeInvoice(invoice),
-    };
-  } catch (error) {
-    if (error instanceof AuthGuardError) {
-      return { ok: false, error: error.message };
-    }
-    console.error('convertQuotationToInvoice error:', (error as Error).message);
-    return { ok: false, error: 'Failed to convert quotation to invoice' };
   }
 }

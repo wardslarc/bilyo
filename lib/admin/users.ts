@@ -2,11 +2,9 @@ import dbConnect from '../mongodb.ts';
 import { User } from '../../models/user.ts';
 import { Business } from '../../models/business.ts';
 import { Customer } from '../../models/customer.ts';
-import { Invoice } from '../../models/invoice.ts';
 import { Quotation } from '../../models/quotation.ts';
 import { AdminAuditLog } from '../../models/admin-audit-log.ts';
 import { requireAdmin } from './guard.ts';
-import { isInvoiceOverdue } from '../dates.ts';
 import { effectivePlan, isPlanOverrideActive } from '../plan.ts';
 
 
@@ -154,14 +152,10 @@ export async function getAdminUsersList(
   const userIds = rawUsers.map((u) => u._id);
 
   // Fetch associated business names and document counts in batch parallel queries
-  const [businesses, invoiceCounts, quotationCounts] = await Promise.all([
+  const [businesses, quotationCounts] = await Promise.all([
     Business.find({ userId: { $in: userIds } })
       .select('userId businessName')
       .lean(),
-    Invoice.aggregate([
-      { $match: { userId: { $in: userIds } } },
-      { $group: { _id: '$userId', count: { $sum: 1 } } },
-    ]),
     Quotation.aggregate([
       { $match: { userId: { $in: userIds } } },
       { $group: { _id: '$userId', count: { $sum: 1 } } },
@@ -173,11 +167,6 @@ export async function getAdminUsersList(
     businessMap.set(b.userId.toString(), b.businessName);
   }
 
-  const invoiceMap = new Map<string, number>();
-  for (const inv of invoiceCounts) {
-    invoiceMap.set(inv._id.toString(), inv.count);
-  }
-
   const quotationMap = new Map<string, number>();
   for (const quo of quotationCounts) {
     quotationMap.set(quo._id.toString(), quo.count);
@@ -185,7 +174,7 @@ export async function getAdminUsersList(
 
   const users: AdminUserListItem[] = rawUsers.map((u) => {
     const uid = u._id.toString();
-    const invCount = invoiceMap.get(uid) || 0;
+    const invCount = 0;
     const quoCount = quotationMap.get(uid) || 0;
 
     let status: 'ACTIVE' | 'SUSPENDED' | 'DELETION_REQUESTED' = 'ACTIVE';
@@ -293,11 +282,10 @@ export async function getAdminUserDetail(
   await requireAdmin();
   await dbConnect();
 
-  const [dbUser, business, invoices, quotations, recentAudits] =
+  const [dbUser, business, quotations, recentAudits] =
     await Promise.all([
       User.findById(userId).lean(),
       Business.findOne({ userId }).lean(),
-      Invoice.find({ userId }).select('status dueDate').lean(),
       Quotation.find({ userId }).select('status validUntil').lean(),
       AdminAuditLog.find({ targetUserId: userId })
         .sort({ createdAt: -1 })
@@ -309,26 +297,13 @@ export async function getAdminUserDetail(
     return null;
   }
 
-  // Calculate invoice counts
+  // Calculate invoice counts (deprecated)
   const now = new Date();
-  let invDraft = 0;
-  let invSent = 0;
-  let invPaid = 0;
-  let invOverdue = 0;
-  let invCancelled = 0;
-
-  for (const inv of invoices) {
-    if (inv.status === 'PAID') invPaid++;
-    else if (inv.status === 'CANCELLED') invCancelled++;
-    else if (inv.status === 'DRAFT') invDraft++;
-    else if (inv.status === 'SENT') {
-      if (inv.dueDate && isInvoiceOverdue(inv.dueDate, inv.status)) {
-        invOverdue++;
-      } else {
-        invSent++;
-      }
-    }
-  }
+  const invDraft = 0;
+  const invSent = 0;
+  const invPaid = 0;
+  const invOverdue = 0;
+  const invCancelled = 0;
 
   // Calculate quotation counts
   let quoDraft = 0;
@@ -385,7 +360,7 @@ export async function getAdminUserDetail(
       : null,
     counts: {
       invoices: {
-        total: invoices.length,
+        total: 0,
         draft: invDraft,
         sent: invSent,
         paid: invPaid,
@@ -438,18 +413,10 @@ export async function getAdminUserDocuments(
     return null;
   }
 
-  const [invoices, quotations] = await Promise.all([
-    Invoice.find({ userId }).sort({ createdAt: -1 }).lean(),
-    Quotation.find({ userId }).sort({ createdAt: -1 }).lean(),
-  ]);
+  const quotations = await Quotation.find({ userId }).sort({ createdAt: -1 }).lean();
 
   // Collect customer IDs for documents without snapshot names
   const customerIds = new Set<string>();
-  for (const inv of invoices) {
-    if (!inv.customerSnapshot?.name && inv.customerId) {
-      customerIds.add(inv.customerId.toString());
-    }
-  }
   for (const quo of quotations) {
     if (!quo.customerSnapshot?.name && quo.customerId) {
       customerIds.add(quo.customerId.toString());
@@ -467,23 +434,6 @@ export async function getAdminUserDocuments(
   }
 
   const docList: AdminUserDocumentListItem[] = [];
-
-  for (const inv of invoices) {
-    const cust = inv.customerSnapshot as { name?: string } | undefined;
-    const customerName = cust?.name || customerMap.get(inv.customerId?.toString()) || '—';
-    docList.push({
-      id: inv._id.toString(),
-      number: inv.number,
-      kind: 'invoice',
-      customerName,
-      issueDate: inv.issueDate,
-      dueDateOrValidUntil: inv.dueDate || null,
-      status: inv.status,
-      totalCentavos: inv.totalCentavos,
-      publicToken: inv.publicToken || '',
-      createdAt: inv.createdAt,
-    });
-  }
 
   for (const quo of quotations) {
     const cust = quo.customerSnapshot as { name?: string } | undefined;
@@ -570,67 +520,7 @@ export async function getAdminDocument(
   await dbConnect();
 
   if (kind === 'invoice') {
-    const invoice = await Invoice.findById(id).lean();
-    if (!invoice) return null;
-
-    let bSnap = invoice.businessSnapshot as Record<string, unknown> | undefined;
-    if (!bSnap?.businessName) {
-      const liveBiz = await Business.findOne({ userId: invoice.userId }).lean();
-      if (liveBiz) {
-        bSnap = liveBiz as unknown as Record<string, unknown>;
-      }
-    }
-
-    let cSnap = invoice.customerSnapshot as Record<string, unknown> | undefined;
-    if (!cSnap?.name && invoice.customerId) {
-      const liveCust = await Customer.findById(invoice.customerId).lean();
-      if (liveCust) {
-        cSnap = liveCust as unknown as Record<string, unknown>;
-      }
-    }
-
-    return {
-      id: invoice._id.toString(),
-      kind: 'invoice',
-      number: invoice.number,
-      status: invoice.status,
-      issueDate: invoice.issueDate,
-      dueDateOrValidUntil: invoice.dueDate || null,
-      paidAt: invoice.paidAt || null,
-      userId: invoice.userId.toString(),
-      business: {
-        businessName: (bSnap?.businessName as string) || '—',
-        address: (bSnap?.address as string) || '',
-        email: (bSnap?.email as string) || '',
-        phone: (bSnap?.phone as string) || '',
-        tin: (bSnap?.tin as string) || '',
-        vatRegistered: Boolean(bSnap?.vatRegistered),
-        logoUrl: (bSnap?.logoUrl as string) || null,
-      },
-      customer: {
-        name: (cSnap?.name as string) || '—',
-        company: (cSnap?.company as string) || undefined,
-        email: (cSnap?.email as string) || undefined,
-        phone: (cSnap?.phone as string) || undefined,
-        address: (cSnap?.address as string) || undefined,
-        taxId: (cSnap?.tin as string) || (cSnap?.taxId as string) || undefined,
-      },
-      items: invoice.items.map((it) => ({
-        description: it.description,
-        quantity: it.quantity,
-        unitPriceCentavos: it.unitPriceCentavos,
-        amountCentavos: it.amountCentavos,
-      })),
-      subtotalCentavos: invoice.subtotalCentavos,
-      discountCentavos: invoice.discountCentavos,
-      vatCentavos: invoice.vatCentavos,
-      totalCentavos: invoice.totalCentavos,
-      notes: invoice.notes,
-      terms: invoice.terms,
-      publicToken: invoice.publicToken || '',
-      publicTokenRevokedAt: invoice.publicTokenRevokedAt || null,
-      createdAt: invoice.createdAt,
-    };
+    return null;
   }
 
   if (kind === 'quotation') {

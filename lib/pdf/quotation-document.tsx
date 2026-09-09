@@ -61,7 +61,7 @@ export function QuotationDocument({
       secondaryDate={validUntil}
       notes={notes}
       terms={terms}
-      disclaimer={getDocumentPdfDisclaimer('quotation')}
+      disclaimer={getDocumentPdfDisclaimer()}
     />
   );
 }

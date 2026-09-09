@@ -14,7 +14,7 @@ export interface LineItemBuilderProps {
   items: LineItemRow[];
   /** Called on every edit so the parent can recompute totals */
   onChange: (items: LineItemRow[]) => void;
-  /** Whether the form is in a read-only / disabled state (e.g. PAID invoice) */
+  /** Whether the form is in a read-only / disabled state */
   disabled?: boolean;
 }
 

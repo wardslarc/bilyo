@@ -9,24 +9,20 @@ export interface PlanUser {
 }
 
 export interface PlanLimits {
-  monthlyInvoices: number;
   monthlyQuotations: number;
   maxCustomers: number;
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   FREE: {
-    monthlyInvoices: 5,
     monthlyQuotations: 5,
     maxCustomers: 10,
   },
   FREELANCER: {
-    monthlyInvoices: Infinity,
     monthlyQuotations: Infinity,
     maxCustomers: Infinity,
   },
   BUSINESS: {
-    monthlyInvoices: Infinity,
     monthlyQuotations: Infinity,
     maxCustomers: Infinity,
   },
@@ -96,7 +92,7 @@ export interface PlanLimitCheckResult {
  * Exported for fast, deterministic unit testing of limits, plans, and overrides.
  */
 export function evaluateResourceLimit(
-  resource: 'INVOICES' | 'QUOTATIONS' | 'CUSTOMERS',
+  resource: 'QUOTATIONS' | 'CUSTOMERS',
   currentCount: number,
   userOrPlan: Plan | PlanUser
 ): PlanLimitCheckResult {
@@ -107,11 +103,7 @@ export function evaluateResourceLimit(
   let resourceName: string;
   let periodNote: string;
 
-  if (resource === 'INVOICES') {
-    limit = limits.monthlyInvoices;
-    resourceName = 'invoices';
-    periodNote = ' this month';
-  } else if (resource === 'QUOTATIONS') {
+  if (resource === 'QUOTATIONS') {
     limit = limits.monthlyQuotations;
     resourceName = 'quotations';
     periodNote = ' this month';
@@ -137,39 +129,6 @@ export function evaluateResourceLimit(
     limit,
     plan,
   };
-}
-
-/**
- * Server-side invoice creation limit check (§5.10, M8-T01).
- * FREE: 5 invoices per calendar month in Asia/Manila.
- * Overrides via effectivePlan() lift limits immediately.
- */
-export async function checkCanCreateInvoice(
-  userId: string,
-  now: Date = new Date()
-): Promise<PlanLimitCheckResult> {
-  const dbConnect = (await import('./mongodb.ts')).default;
-  await dbConnect();
-
-  const { User } = await import('../models/user.ts');
-  const user = await User.findById(userId).lean();
-  const plan = effectivePlan(user);
-  const limits = PLAN_LIMITS[plan];
-
-  if (limits.monthlyInvoices === Infinity) {
-    return { allowed: true, current: 0, limit: Infinity, plan };
-  }
-
-  const { Invoice } = await import('../models/invoice.ts');
-  const { getManilaMonthRange } = await import('./dates.ts');
-  const { startOfMonth, endOfMonth } = getManilaMonthRange(now);
-
-  const current = await Invoice.countDocuments({
-    userId,
-    createdAt: { $gte: startOfMonth, $lte: endOfMonth },
-  });
-
-  return evaluateResourceLimit('INVOICES', current, plan);
 }
 
 /**

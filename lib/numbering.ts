@@ -4,13 +4,12 @@ import type { CounterKind } from '@/types';
 import dbConnect from './mongodb.ts';
 
 const KIND_PREFIX: Record<CounterKind, string> = {
-  INVOICE: 'INV-',
   QUOTATION: 'QUO-',
 };
 
 /**
  * Generates an atomic sequential document number per user (§5.3).
- * Format: INV-000001 / QUO-000001
+ * Format: QUO-000001
  * Never reused, never renumbered.
  */
 export async function nextNumber(

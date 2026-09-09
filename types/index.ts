@@ -117,34 +117,6 @@ export interface ILineItem {
 
 // Document Statuses
 export type QuotationStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
-export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
-
-// Invoice
-export interface IInvoice {
-  _id: Types.ObjectId;
-  userId: Types.ObjectId;
-  customerId: Types.ObjectId;
-  number: string;
-  customerSnapshot?: ICustomerSnapshot;
-  businessSnapshot?: IBusinessSnapshot;
-  items: ILineItem[];
-  subtotalCentavos: number;
-  discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
-  totalCentavos: number;
-  status: InvoiceStatus;
-  issueDate: Date;
-  dueDate: Date;
-  paidAt?: Date | null;
-  notes?: string;
-  terms?: string;
-  publicToken?: string | null;
-  publicTokenRevokedAt?: Date | null;
-  sourceQuotationId?: Types.ObjectId | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 // Quotation
 export interface IQuotation {
@@ -163,7 +135,6 @@ export interface IQuotation {
   status: QuotationStatus;
   issueDate: Date;
   validUntil: Date;
-  convertedInvoiceId?: Types.ObjectId | null;
   notes?: string;
   terms?: string;
   publicToken?: string | null;
@@ -173,7 +144,7 @@ export interface IQuotation {
 }
 
 // Atomic Numbering Counter
-export type CounterKind = 'INVOICE' | 'QUOTATION';
+export type CounterKind = 'QUOTATION';
 
 export interface ICounter {
   _id: Types.ObjectId;

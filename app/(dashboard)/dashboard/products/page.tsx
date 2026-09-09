@@ -22,7 +22,7 @@ export default async function ProductsPage() {
             Products & Services
           </h1>
           <p className="text-sm text-neutral-500 mt-0.5">
-            Saved items and standard hourly/project rates for rapid invoice and quotation drafting.
+            Saved items and standard hourly/project rates for rapid quotation drafting.
           </p>
         </div>
         <Link

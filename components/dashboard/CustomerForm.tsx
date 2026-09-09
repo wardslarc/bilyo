@@ -80,7 +80,7 @@ export function CustomerForm({ initialCustomer }: CustomerFormProps) {
     if (!initialCustomer) return;
     const targetState = !initialCustomer.archived;
     const confirmMessage = targetState
-      ? 'Archive this customer? They will be hidden from new invoice & quotation pickers.'
+      ? 'Archive this customer? They will be hidden from new quotation pickers.'
       : 'Restore this customer?';
 
     if (!confirm(confirmMessage)) return;
@@ -115,7 +115,7 @@ export function CustomerForm({ initialCustomer }: CustomerFormProps) {
               {isEditing ? 'Edit Customer' : 'Add New Customer'}
             </h2>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Customer details can be selected when creating quotations and invoices.
+              Customer details can be selected when creating quotations.
             </p>
           </div>
           {isEditing && initialCustomer?.archived && (

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { pesosToCentavos } from '../money.ts';
 
 /**
- * Line-item schema shared between quotation and invoice validation.
+ * Line-item schema for quotation validation.
  * Unit price is typed in pesos, transformed to centavos at the boundary.
  */
 export const lineItemInputSchema = z.object({

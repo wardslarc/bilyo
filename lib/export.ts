@@ -81,42 +81,6 @@ export interface ExportDataPayload {
   customers: Record<string, unknown>[];
   products: Record<string, unknown>[];
   quotations: Record<string, unknown>[];
-  invoices: Record<string, unknown>[];
-}
-
-export function formatInvoicesCsv(invoices: Record<string, unknown>[]): string {
-  const headers = [
-    { key: 'invoiceNumber', label: 'Invoice Number' },
-    { key: 'customerName', label: 'Customer' },
-    { key: 'issueDate', label: 'Issue Date' },
-    { key: 'dueDate', label: 'Due Date' },
-    { key: 'status', label: 'Status' },
-    { key: 'subtotalPesos', label: 'Subtotal (PHP)' },
-    { key: 'discountPesos', label: 'Discount (PHP)' },
-    { key: 'vatPesos', label: 'VAT (PHP)' },
-    { key: 'totalPesos', label: 'Total (PHP)' },
-    { key: 'paidAt', label: 'Paid Date' },
-    { key: 'notes', label: 'Notes' },
-  ];
-
-  const rows = invoices.map((inv) => {
-    const cust = inv.customerSnapshot as Record<string, unknown> | undefined;
-    return {
-      invoiceNumber: inv.invoiceNumber,
-      customerName: cust?.name || '',
-      issueDate: inv.issueDate ? new Date(inv.issueDate as string).toISOString().split('T')[0] : '',
-      dueDate: inv.dueDate ? new Date(inv.dueDate as string).toISOString().split('T')[0] : '',
-      status: inv.status,
-      subtotalPesos: centavosToPesos((inv.subtotalCentavos as number) || 0).toFixed(2),
-      discountPesos: centavosToPesos((inv.discountCentavos as number) || 0).toFixed(2),
-      vatPesos: centavosToPesos((inv.vatCentavos as number) || 0).toFixed(2),
-      totalPesos: centavosToPesos((inv.totalCentavos as number) || 0).toFixed(2),
-      paidAt: inv.paidAt ? new Date(inv.paidAt as string).toISOString().split('T')[0] : '',
-      notes: inv.notes || '',
-    };
-  });
-
-  return toCsv(headers, rows);
 }
 
 export function formatQuotationsCsv(quotations: Record<string, unknown>[]): string {

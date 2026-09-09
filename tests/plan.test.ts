@@ -115,7 +115,6 @@ describe('Plan Override & effectivePlan Single Source of Truth (M7-T06)', () => 
     test('FREE effective plan returns strict operational limits', () => {
       const user: PlanUser = { plan: 'FREE', planSource: 'DEFAULT' };
       const limits = getEffectivePlanLimits(user);
-      assert.strictEqual(limits.monthlyInvoices, 5);
       assert.strictEqual(limits.monthlyQuotations, 5);
       assert.strictEqual(limits.maxCustomers, 10);
     });
@@ -127,7 +126,6 @@ describe('Plan Override & effectivePlan Single Source of Truth (M7-T06)', () => 
         planOverrideExpiresAt: new Date(Date.now() + 30 * 86400000),
       };
       const limits = getEffectivePlanLimits(user);
-      assert.strictEqual(limits.monthlyInvoices, Infinity);
       assert.strictEqual(limits.monthlyQuotations, Infinity);
       assert.strictEqual(limits.maxCustomers, Infinity);
     });

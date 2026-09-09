@@ -194,7 +194,7 @@ export function BusinessProfileForm({
           <div>
             <h4 className="font-semibold text-sm">Welcome to Bilyo!</h4>
             <p className="text-xs text-amber-800 mt-0.5">
-              Please complete your business profile before creating invoices or quotations. These details will appear on your generated documents.
+              Please complete your business profile before creating quotations. These details will appear on your generated documents.
             </p>
           </div>
         </div>
@@ -228,7 +228,7 @@ export function BusinessProfileForm({
         <div className="border-b border-[var(--color-line)] pb-4">
           <h2 className="text-lg font-semibold text-neutral-900">Business Details</h2>
           <p className="text-xs text-neutral-500 mt-1">
-            This information will be stamped on your outgoing quotations and invoices.
+            This information will be stamped on your outgoing quotations.
           </p>
         </div>
 
@@ -374,7 +374,7 @@ export function BusinessProfileForm({
               Business Logo
             </label>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Upload your company logo to appear on outgoing quotations, invoices, and downloadable PDFs.
+              Upload your company logo to appear on outgoing quotations and downloadable PDFs.
             </p>
           </div>
 

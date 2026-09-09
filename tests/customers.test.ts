@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import dbConnect from '../lib/mongodb.ts';
 import { User } from '../models/user.ts';
 import { Customer } from '../models/customer.ts';
-import { Invoice } from '../models/invoice.ts';
+import { Quotation } from '../models/quotation.ts';
 import { customerSchema } from '../lib/validation/customer.ts';
 import {
   getCustomers,
@@ -49,7 +49,7 @@ describe('Customers CRUD (M2-T03)', () => {
 
   after(async () => {
     await Customer.deleteMany({ userId: { $in: [userAId, userBId] } });
-    await Invoice.deleteMany({ userId: { $in: [userAId, userBId] } });
+    await Quotation.deleteMany({ userId: { $in: [userAId, userBId] } });
     await User.deleteMany({ _id: { $in: [userAId, userBId] } });
     await mongoose.disconnect();
   });
@@ -266,10 +266,10 @@ describe('Customers CRUD (M2-T03)', () => {
       }));
 
       // Create a sent document with a snapshot of customerA1
-      const invoice = await Invoice.create({
+      const quotation = await Quotation.create({
         userId: userAId,
         customerId: customerA1Id,
-        number: 'INV-000001',
+        number: 'QUO-000001',
         status: 'SENT',
         customerSnapshot: {
           name: 'Alpha Corp Philippines',
@@ -300,20 +300,20 @@ describe('Customers CRUD (M2-T03)', () => {
         vatCentavos: 0,
         totalCentavos: 100000,
         issueDate: new Date(),
-        dueDate: new Date(Date.now() + 86400000 * 30),
+        validUntil: new Date(Date.now() + 86400000 * 30),
       });
 
       // Archive the referenced customer
       const resArchive = await archiveCustomer(customerA1Id, true);
       assert.strictEqual(resArchive.ok, true);
 
-      // Verify the invoice document is intact with frozen snapshot
-      const loadedInvoice = await Invoice.findById(invoice._id);
-      assert.ok(loadedInvoice);
-      assert.strictEqual(loadedInvoice.status, 'SENT');
-      assert.strictEqual(loadedInvoice.customerSnapshot?.name, 'Alpha Corp Philippines');
-      assert.strictEqual(loadedInvoice.customerSnapshot?.email, 'billing@alpha.ph');
-      assert.strictEqual(loadedInvoice.customerId?.toString(), customerA1Id);
+      // Verify the quotation document is intact with frozen snapshot
+      const loadedQuotation = await Quotation.findById(quotation._id);
+      assert.ok(loadedQuotation);
+      assert.strictEqual(loadedQuotation.status, 'SENT');
+      assert.strictEqual(loadedQuotation.customerSnapshot?.name, 'Alpha Corp Philippines');
+      assert.strictEqual(loadedQuotation.customerSnapshot?.email, 'billing@alpha.ph');
+      assert.strictEqual(loadedQuotation.customerId?.toString(), customerA1Id);
     });
   });
 });

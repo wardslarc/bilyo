@@ -13,17 +13,14 @@ describe('lib/numbering.ts', () => {
     await mongoose.disconnect();
   });
 
-  test('formats quotation and invoice numbers correctly', async () => {
+  test('formats quotation numbers correctly', async () => {
     await dbConnect();
-
-    const inv1 = await nextNumber(testUserId, 'INVOICE');
-    assert.strictEqual(inv1, 'INV-000001');
-
-    const inv2 = await nextNumber(testUserId, 'INVOICE');
-    assert.strictEqual(inv2, 'INV-000002');
 
     const quo1 = await nextNumber(testUserId, 'QUOTATION');
     assert.strictEqual(quo1, 'QUO-000001');
+
+    const quo2 = await nextNumber(testUserId, 'QUOTATION');
+    assert.strictEqual(quo2, 'QUO-000002');
   });
 
   test('handles 1,000 near-concurrent nextNumber calls producing ZERO duplicates', async () => {
@@ -35,7 +32,7 @@ describe('lib/numbering.ts', () => {
       const promises: Promise<string>[] = [];
 
       for (let i = 0; i < TOTAL_CALLS; i++) {
-        promises.push(nextNumber(concurrentUserId, 'INVOICE'));
+        promises.push(nextNumber(concurrentUserId, 'QUOTATION'));
       }
 
       const results = await Promise.all(promises);
@@ -48,8 +45,8 @@ describe('lib/numbering.ts', () => {
       assert.strictEqual(uniqueResults.size, TOTAL_CALLS, 'Expected zero duplicates');
 
       // Verify minimum and maximum sequence numbers
-      assert.strictEqual(uniqueResults.has('INV-000001'), true);
-      assert.strictEqual(uniqueResults.has('INV-001000'), true);
+      assert.strictEqual(uniqueResults.has('QUO-000001'), true);
+      assert.strictEqual(uniqueResults.has('QUO-001000'), true);
     } finally {
       await Counter.deleteMany({ userId: concurrentUserId });
     }

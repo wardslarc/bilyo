@@ -20,7 +20,7 @@ export default async function CustomersPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Customers</h1>
           <p className="text-sm text-neutral-500 mt-0.5">
-            Maintain your client directory for quick invoice and quotation generation.
+            Maintain your client directory for quick quotation generation.
           </p>
         </div>
         <Link

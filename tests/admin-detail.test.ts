@@ -1,44 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { isInvoiceOverdue } from '../lib/dates.ts';
 
 describe('Admin User Detail & Read-Only Documents (M7-T03)', () => {
   describe('Document count & status categorization', () => {
-    test('categorizes invoice statuses correctly including overdue check', () => {
-      const invoices = [
-        { status: 'DRAFT', dueDate: new Date() },
-        { status: 'PAID', dueDate: new Date() },
-        { status: 'CANCELLED', dueDate: new Date() },
-        { status: 'SENT', dueDate: new Date(Date.now() + 86400000 * 2) }, // Future = SENT
-        { status: 'SENT', dueDate: new Date(Date.now() - 86400000 * 2) }, // Past = OVERDUE
-      ];
-
-      let draft = 0;
-      let sent = 0;
-      let paid = 0;
-      let overdue = 0;
-      let cancelled = 0;
-
-      for (const inv of invoices) {
-        if (inv.status === 'PAID') paid++;
-        else if (inv.status === 'CANCELLED') cancelled++;
-        else if (inv.status === 'DRAFT') draft++;
-        else if (inv.status === 'SENT') {
-          if (isInvoiceOverdue(inv.dueDate, inv.status)) {
-            overdue++;
-          } else {
-            sent++;
-          }
-        }
-      }
-
-      assert.strictEqual(draft, 1);
-      assert.strictEqual(paid, 1);
-      assert.strictEqual(cancelled, 1);
-      assert.strictEqual(sent, 1);
-      assert.strictEqual(overdue, 1);
-      assert.strictEqual(draft + sent + paid + overdue + cancelled, 5);
-    });
 
     test('categorizes quotation statuses correctly including expired check', () => {
       const now = new Date();
@@ -77,9 +41,9 @@ describe('Admin User Detail & Read-Only Documents (M7-T03)', () => {
   describe('Unified document listing sort & customer snapshot fallback', () => {
     test('unified document list sorts chronologically newest first', () => {
       const docList = [
-        { id: '1', kind: 'invoice', createdAt: new Date('2026-01-01') },
+        { id: '1', kind: 'quotation', createdAt: new Date('2026-01-01') },
         { id: '2', kind: 'quotation', createdAt: new Date('2026-03-01') },
-        { id: '3', kind: 'invoice', createdAt: new Date('2026-02-01') },
+        { id: '3', kind: 'quotation', createdAt: new Date('2026-02-01') },
       ];
 
       docList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

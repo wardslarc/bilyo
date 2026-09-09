@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
 import { getStatusBadgeConfig, type DocumentStatus } from '@/lib/documents';
-import type { RecentInvoiceItem } from '@/lib/metrics';
+import type { RecentQuotationItem } from '@/lib/metrics';
 
 interface RecentDocumentsProps {
-  invoices: RecentInvoiceItem[];
+  quotations: RecentQuotationItem[];
 }
 
-export function RecentDocuments({ invoices }: RecentDocumentsProps) {
-  if (invoices.length === 0) {
+export function RecentDocuments({ quotations }: RecentDocumentsProps) {
+  if (quotations.length === 0) {
     return null;
   }
 
@@ -20,13 +20,13 @@ export function RecentDocuments({ invoices }: RecentDocumentsProps) {
     <div className="bg-white border border-[var(--color-line)] rounded-xl shadow-xs overflow-hidden">
       <div className="px-5 py-4 border-b border-[var(--color-line-soft)] flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold text-[var(--color-text)]">Recent Invoices</h2>
+          <h2 className="text-base font-semibold text-[var(--color-text)]">Recent Quotations</h2>
           <p className="text-xs text-[var(--color-muted)] mt-0.5">
-            Your most recently created and updated invoices.
+            Your most recently created and updated quotations.
           </p>
         </div>
         <Link
-          href="/dashboard/invoices"
+          href="/dashboard/quotations"
           className="text-xs font-semibold text-[var(--color-brass)] hover:underline flex items-center gap-1"
         >
           View all →
@@ -39,7 +39,7 @@ export function RecentDocuments({ invoices }: RecentDocumentsProps) {
           <thead className="bg-[var(--color-paper-sunk)] text-xs text-[var(--color-muted)] uppercase tracking-wider border-b border-[var(--color-line-soft)]">
             <tr>
               <th className="py-3 px-5 font-semibold">Number</th>
-              <th className="py-3 px-5 font-semibold">Customer</th>
+              <th className="py-3 px-5 font-semibold">Client</th>
               <th className="py-3 px-5 font-semibold">Date</th>
               <th className="py-3 px-5 font-semibold">Status</th>
               <th className="py-3 px-5 font-semibold text-right">Amount</th>
@@ -47,23 +47,23 @@ export function RecentDocuments({ invoices }: RecentDocumentsProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-line-soft)]">
-            {invoices.map((inv) => {
-              const badge = getStatusBadgeConfig(inv.status as DocumentStatus);
+            {quotations.map((q) => {
+              const badge = getStatusBadgeConfig(q.status as DocumentStatus);
               return (
-                <tr key={inv.id} className="hover:bg-[var(--color-paper)] transition-colors">
+                <tr key={q.id} className="hover:bg-[var(--color-paper)] transition-colors">
                   <td className="py-3.5 px-5 font-semibold text-[var(--color-text)] whitespace-nowrap">
                     <Link
-                      href={`/dashboard/invoices/${inv.id}`}
+                      href={`/dashboard/quotations/${q.id}`}
                       className="hover:text-[var(--color-brass)] transition-colors"
                     >
-                      {inv.number}
+                      {q.number}
                     </Link>
                   </td>
                   <td className="py-3.5 px-5 text-[var(--color-text)] truncate max-w-[200px]">
-                    {inv.customerName}
+                    {q.customerName}
                   </td>
                   <td className="py-3.5 px-5 text-xs text-[var(--color-muted)] whitespace-nowrap">
-                    {formatDate(inv.issueDate)}
+                    {formatDate(q.issueDate)}
                   </td>
                   <td className="py-3.5 px-5 whitespace-nowrap">
                     <span
@@ -73,11 +73,11 @@ export function RecentDocuments({ invoices }: RecentDocumentsProps) {
                     </span>
                   </td>
                   <td className="py-3.5 px-5 text-right font-mono font-bold text-[var(--color-text)] whitespace-nowrap">
-                    {formatMoney(inv.totalCentavos)}
+                    {formatMoney(q.totalCentavos)}
                   </td>
                   <td className="py-3.5 px-5 text-right whitespace-nowrap">
                     <Link
-                      href={`/dashboard/invoices/${inv.id}`}
+                      href={`/dashboard/quotations/${q.id}`}
                       className="text-xs font-medium text-[var(--color-brass)] hover:underline"
                     >
                       View →
@@ -92,16 +92,16 @@ export function RecentDocuments({ invoices }: RecentDocumentsProps) {
 
       {/* Mobile Card List View (usable at 390px) */}
       <div className="sm:hidden divide-y divide-[var(--color-line-soft)]">
-        {invoices.map((inv) => {
-          const badge = getStatusBadgeConfig(inv.status as DocumentStatus);
+        {quotations.map((q) => {
+          const badge = getStatusBadgeConfig(q.status as DocumentStatus);
           return (
-            <div key={inv.id} className="p-4 space-y-2">
+            <div key={q.id} className="p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <Link
-                  href={`/dashboard/invoices/${inv.id}`}
+                  href={`/dashboard/quotations/${q.id}`}
                   className="font-semibold text-sm text-[var(--color-text)] hover:text-[var(--color-brass)] transition-colors"
                 >
-                  {inv.number}
+                  {q.number}
                 </Link>
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.className}`}
@@ -112,17 +112,17 @@ export function RecentDocuments({ invoices }: RecentDocumentsProps) {
 
               <div className="flex items-center justify-between text-xs text-[var(--color-muted)]">
                 <span className="truncate max-w-[220px] text-[var(--color-text)]">
-                  {inv.customerName}
+                  {q.customerName}
                 </span>
                 <span className="font-mono font-bold text-sm text-[var(--color-text)]">
-                  {formatMoney(inv.totalCentavos)}
+                  {formatMoney(q.totalCentavos)}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs text-[var(--color-muted)] pt-1">
-                <span>Issued {formatDate(inv.issueDate)}</span>
+                <span>Issued {formatDate(q.issueDate)}</span>
                 <Link
-                  href={`/dashboard/invoices/${inv.id}`}
+                  href={`/dashboard/quotations/${q.id}`}
                   className="text-xs font-semibold text-[var(--color-brass)] hover:underline"
                 >
                   View Details →

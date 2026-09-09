@@ -1,5 +1,4 @@
 import dbConnect from '../mongodb.ts';
-import { Invoice } from '../../models/invoice.ts';
 import { Quotation } from '../../models/quotation.ts';
 import { User } from '../../models/user.ts';
 import { Business } from '../../models/business.ts';
@@ -125,16 +124,12 @@ export async function lookupDocumentAcrossUsers(
     ],
   };
 
-  const [invoices, quotations] = await Promise.all([
-    Invoice.find(filter).lean(),
-    Quotation.find(filter).lean(),
-  ]);
+  const quotations = await Quotation.find(filter).lean();
 
   const rawMatches: Array<{
-    doc: typeof invoices[number] | typeof quotations[number];
-    kind: 'invoice' | 'quotation';
+    doc: typeof quotations[number];
+    kind: 'quotation';
   }> = [
-    ...invoices.map((doc) => ({ doc, kind: 'invoice' as const })),
     ...quotations.map((doc) => ({ doc, kind: 'quotation' as const })),
   ];
 
@@ -167,10 +162,7 @@ export async function lookupDocumentAcrossUsers(
     const customerName =
       cSnap?.name || (cId ? customerNameMap.get(cId) : undefined) || '—';
 
-    const isInvoice = kind === 'invoice';
-    const dueDateOrValidUntil = isInvoice
-      ? (doc as typeof invoices[number]).dueDate
-      : (doc as typeof quotations[number]).validUntil;
+    const dueDateOrValidUntil = doc.validUntil;
 
     return {
       id: doc._id.toString(),

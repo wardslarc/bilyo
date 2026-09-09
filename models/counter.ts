@@ -10,7 +10,7 @@ const CounterSchema = new Schema<ICounter>(
     },
     kind: {
       type: String,
-      enum: ['INVOICE', 'QUOTATION'],
+      enum: ['QUOTATION'],
       required: true,
     },
     seq: {

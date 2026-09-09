@@ -8,7 +8,6 @@ import { Business } from '../models/business.ts';
 import { Customer } from '../models/customer.ts';
 import { Product } from '../models/product.ts';
 import { Quotation } from '../models/quotation.ts';
-import { Invoice } from '../models/invoice.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
 import {
   changePasswordSchema,
@@ -26,7 +25,6 @@ import {
 import { encrypt, decrypt } from '../lib/crypto.ts';
 import {
   sanitizeUserExport,
-  formatInvoicesCsv,
   formatQuotationsCsv,
   formatCustomersCsv,
 } from '../lib/export.ts';
@@ -190,7 +188,6 @@ export async function changeEmail(
 
 export interface ExportDataResult {
   jsonString: string;
-  invoicesCsv: string;
   quotationsCsv: string;
   customersCsv: string;
 }
@@ -209,14 +206,13 @@ export async function exportUserData(): Promise<ActionResult<ExportDataResult>> 
     await dbConnect();
 
     // Query exclusively scoped to sessionUser.id
-    const [dbUser, business, customers, products, quotations, invoices] =
+    const [dbUser, business, customers, products, quotations] =
       await Promise.all([
         User.findById(sessionUser.id).lean(),
         Business.findOne({ userId: sessionUser.id }).lean(),
         Customer.find({ userId: sessionUser.id }).sort({ createdAt: -1 }).lean(),
         Product.find({ userId: sessionUser.id }).sort({ createdAt: -1 }).lean(),
         Quotation.find({ userId: sessionUser.id }).sort({ createdAt: -1 }).lean(),
-        Invoice.find({ userId: sessionUser.id }).sort({ createdAt: -1 }).lean(),
       ]);
 
     if (!dbUser) {
@@ -235,11 +231,9 @@ export async function exportUserData(): Promise<ActionResult<ExportDataResult>> 
       customers,
       products,
       quotations,
-      invoices,
     };
 
     const jsonString = JSON.stringify(fullExport, null, 2);
-    const invoicesCsv = formatInvoicesCsv(invoices as unknown as Record<string, unknown>[]);
     const quotationsCsv = formatQuotationsCsv(quotations as unknown as Record<string, unknown>[]);
     const customersCsv = formatCustomersCsv(customers as unknown as Record<string, unknown>[]);
 
@@ -247,7 +241,6 @@ export async function exportUserData(): Promise<ActionResult<ExportDataResult>> 
       ok: true,
       data: {
         jsonString,
-        invoicesCsv,
         quotationsCsv,
         customersCsv,
       },

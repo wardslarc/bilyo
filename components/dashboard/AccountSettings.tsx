@@ -78,13 +78,6 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
         'application/json'
       );
 
-      // Download Invoices CSV
-      triggerDownload(
-        `bilyo-invoices-${dateStr}.csv`,
-        res.data.invoicesCsv,
-        'text/csv;charset=utf-8;'
-      );
-
       // Download Quotations CSV
       triggerDownload(
         `bilyo-quotations-${dateStr}.csv`,
@@ -445,7 +438,7 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
           </div>
           <p className="text-xs text-neutral-500 mt-1">
             Export a full copy of your account data, business profile, customers, products,
-            quotations, and invoices in portable formats (JSON and CSV).
+            and quotations in portable formats (JSON and CSV).
           </p>
         </div>
 
