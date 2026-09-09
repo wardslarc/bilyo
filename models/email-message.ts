@@ -35,7 +35,8 @@ const EmailMessageSchema = new Schema<IEmailMessage>(
     },
     providerId: {
       type: String,
-      default: null,
+      // Do not set default: null. In MongoDB, sparse indexes still index explicit null values,
+      // which causes E11000 duplicate key error on subsequent null inserts.
     },
     idempotencyKey: {
       type: String,
@@ -94,7 +95,13 @@ const EmailMessageSchema = new Schema<IEmailMessage>(
 // Indexes per EMAIL_DELIVERY_PLAN.md §3.1:
 EmailMessageSchema.index({ userId: 1, createdAt: -1 });
 EmailMessageSchema.index({ quotationId: 1, createdAt: -1 });
-EmailMessageSchema.index({ providerId: 1 }, { unique: true, sparse: true });
+EmailMessageSchema.index(
+  { providerId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { providerId: { $type: 'string' } },
+  }
+);
 EmailMessageSchema.index({ idempotencyKey: 1 }, { unique: true });
 EmailMessageSchema.index({ toEmail: 1, status: 1 });
 

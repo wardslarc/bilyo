@@ -89,7 +89,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
             sentAt: isDry ? new Date() : null,
           },
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
 
       if (isDry) {
@@ -124,7 +124,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
           queuedAt: new Date(),
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     // If already sent or delivered, return success immediately
@@ -182,7 +182,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     await EmailMessage.findByIdAndUpdate(outbox._id, {
       $inc: { attempts: 1 },
       $set: {
-        providerId: providerId || null,
+        ...(providerId ? { providerId } : {}),
         status: 'SENT',
         sentAt: new Date(),
         lastError: null,
