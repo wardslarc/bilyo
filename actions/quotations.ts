@@ -5,7 +5,12 @@ import { Quotation } from '../models/quotation.ts';
 import { Customer } from '../models/customer.ts';
 import { Business } from '../models/business.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
-import { quotationSchema, type QuotationInput } from '../lib/validation/quotation.ts';
+import {
+  quotationSchema,
+  type QuotationInput,
+  markPaidInputSchema,
+  type MarkPaidInput,
+} from '../lib/validation/quotation.ts';
 import { computeTotals, type ComputedTotals } from '../lib/totals.ts';
 import { nextNumber } from '../lib/numbering.ts';
 import { recordEvent } from '../lib/events.ts';
@@ -49,6 +54,8 @@ export interface SerializedQuotation {
     phone?: string;
     logoUrl?: string | null;
   } | null;
+  paidAt?: string | null;
+  paidAmountCentavos?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -115,6 +122,8 @@ function serializeQuotation(doc: any): SerializedQuotation {
           logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
         }
       : null,
+    paidAt: doc.paidAt ? new Date(doc.paidAt as string | number | Date).toISOString() : null,
+    paidAmountCentavos: doc.paidAmountCentavos != null ? Number(doc.paidAmountCentavos) : null,
     createdAt: doc.createdAt ? new Date(doc.createdAt as string | number | Date).toISOString() : new Date().toISOString(),
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt as string | number | Date).toISOString() : new Date().toISOString(),
   };
@@ -622,3 +631,91 @@ export async function recordQuotationView(
     return false;
   }
 }
+
+/**
+ * Mark an ACCEPTED quotation as paid or clear payment status (§6.8, P4-T04).
+ * Strictly scoped by session userId.
+ * Toggling on sets paidAt + paidAmountCentavos (defaulting to totalCentavos) and records MARKED_PAID.
+ * Toggling off clears both fields and records UNMARKED_PAID.
+ * No invoice, receipt, or numbering is generated.
+ */
+export async function markQuotationPaid(
+  id: string,
+  input: MarkPaidInput
+): Promise<ActionResult<SerializedQuotation>> {
+  try {
+    const user = await requireUser();
+    await assertNotSuspended(user.id);
+
+    const parseResult = markPaidInputSchema.safeParse(input);
+    if (!parseResult.success) {
+      return {
+        ok: false,
+        error: 'Validation failed',
+        fieldErrors: extractFieldErrors(parseResult.error.issues),
+      };
+    }
+
+    const { paid, amount } = parseResult.data;
+
+    await dbConnect();
+
+    // Strictly scoped by userId from session (AGENTS.md §4.1)
+    const quote = await Quotation.findOne({ _id: id, userId: user.id });
+    if (!quote) {
+      return { ok: false, error: 'Quotation not found' };
+    }
+
+    // Only accepted quotations can be marked as paid (§6.8)
+    if (quote.status !== 'ACCEPTED') {
+      return {
+        ok: false,
+        error: 'Only accepted quotations can be marked as paid',
+      };
+    }
+
+    if (paid) {
+      const paidAmountCentavos = amount !== undefined ? amount : quote.totalCentavos;
+      quote.paidAt = new Date();
+      quote.paidAmountCentavos = paidAmountCentavos;
+      await quote.save();
+
+      // Record append-only event (§6.6, §6.8)
+      await recordEvent({
+        quotationId: quote._id,
+        userId: user.id,
+        type: 'MARKED_PAID',
+        actor: 'OWNER',
+        metadata: { paidAmountCentavos },
+      });
+    } else {
+      quote.paidAt = null;
+      quote.paidAmountCentavos = null;
+      await quote.save();
+
+      // Record append-only event (§6.6, §6.8)
+      await recordEvent({
+        quotationId: quote._id,
+        userId: user.id,
+        type: 'UNMARKED_PAID',
+        actor: 'OWNER',
+      });
+    }
+
+    await safeRevalidate(`/dashboard/quotations/${id}`);
+    await safeRevalidate('/dashboard/quotations');
+    await safeRevalidate('/dashboard');
+    if (quote.customerId) {
+      await safeRevalidate(`/dashboard/clients/${quote.customerId}`);
+    }
+
+    return { ok: true, data: serializeQuotation(quote.toObject()) };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('markQuotationPaid error:', (error as Error).message);
+    return { ok: false, error: 'Failed to update payment status' };
+  }
+}
+

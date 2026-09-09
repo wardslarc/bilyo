@@ -845,7 +845,7 @@ user would pick Bilyo over a Word template.
   *Accept:* `/dashboard/customers` redirects to `/dashboard/clients`; no user-visible string says
   "customer"; the history list is `userId`-scoped, not just `clientId`-scoped.
 
-- [ ] **P4-T04 · Mark as paid** (1h)
+- [x] **P4-T04 · Mark as paid** (1h)
   *Files:* `actions/quotations.ts` · `components/quotations/mark-paid-toggle.tsx` ·
   `models/quotation.ts` · `lib/validation/quotation.ts`
   *Do:* §6.8. Available only on `ACCEPTED`. Optional amount, defaulting to the total.

@@ -41,7 +41,6 @@ export interface PublicDocumentProjection {
   issueDate: string;
   secondaryDateLabel: string;
   secondaryDate: string;
-  paidAt?: string | null;
   respondedAt?: string | null;
   respondedByName?: string | null;
   items: PublicLineItem[];

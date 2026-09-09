@@ -85,3 +85,35 @@ export const quotationSchema = z.object({
 
 export type QuotationInput = z.input<typeof quotationSchema>;
 export type QuotationData = z.output<typeof quotationSchema>;
+
+/**
+ * Validation schema for marking a quotation as paid / unpaid (§6.8, P4-T04).
+ * Optional amount is typed in pesos and converted to integer centavos.
+ * Defaults to the quotation's totalCentavos if omitted.
+ */
+export const markPaidInputSchema = z.object({
+  paid: z.boolean(),
+  amount: z
+    .union([z.string(), z.number()])
+    .optional()
+    .refine(
+      (val) => {
+        if (val === undefined || val === null || val === '') return true;
+        try {
+          const centavos = pesosToCentavos(val);
+          return Number.isInteger(centavos) && centavos > 0;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Payment amount must be a valid positive amount' }
+    )
+    .transform((val) => {
+      if (val === undefined || val === null || val === '') return undefined;
+      return pesosToCentavos(val);
+    }),
+});
+
+export type MarkPaidInput = z.input<typeof markPaidInputSchema>;
+export type MarkPaidData = z.output<typeof markPaidInputSchema>;
+
