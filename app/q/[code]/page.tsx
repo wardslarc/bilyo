@@ -4,6 +4,9 @@ import { getPublicQuotationByCode } from '@/lib/public-projection';
 import { formatMoney } from '@/lib/money';
 import { QuotePage } from '@/components/public/quote-page';
 
+import { auth } from '@/lib/auth';
+import { recordQuotationView } from '@/actions/quotations';
+
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
@@ -47,6 +50,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PublicQuotationPage({ params }: PageProps) {
   const { code } = await params;
+
+  // Session check: guard so owner previewing their own link does not count (§6.4, P3-T03)
+  const session = await auth();
+  const viewerUserId = session?.user?.id || null;
+
+  // First public render sets viewedAt, moves SENT → VIEWED, appends one VIEWED event
+  await recordQuotationView(code, viewerUserId);
 
   const doc = await getPublicQuotationByCode(code);
 

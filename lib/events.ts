@@ -46,3 +46,23 @@ export async function getQuotationEvents(
     .sort({ createdAt: 1 })
     .lean();
 }
+
+/**
+ * Check if an event type already exists for a quotation (§6.6).
+ */
+export async function hasQuotationEvent(
+  quotationId: string | Types.ObjectId,
+  type: EventType
+): Promise<boolean> {
+  await dbConnect();
+
+  const found = await Event.findOne({
+    quotationId,
+    type,
+  })
+    .select('_id')
+    .lean();
+
+  return Boolean(found);
+}
+

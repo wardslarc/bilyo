@@ -794,7 +794,7 @@ user would pick Bilyo over a Word template.
   not a second write; an expired quote shows no buttons and its action is rejected server-side even
   if called directly; an accepted quote's items can no longer be edited by the owner.
 
-- [ ] **P3-T03 · View tracking** (1h)
+- [x] **P3-T03 · View tracking** (1h)
   *Files:* `app/q/[code]/page.tsx` · `lib/events.ts` · `actions/quotations.ts`
   *Do:* first public render sets `viewedAt`, moves `SENT` → `VIEWED`, appends one `VIEWED` event.
   Guard so the owner previewing their own link does not count, and so a second view appends nothing.

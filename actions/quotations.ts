@@ -430,6 +430,7 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
     }
 
     doc.status = 'SENT';
+    doc.sentAt = new Date();
     doc.publicCode = publicCode;
     doc.publicToken = publicCode;
 
@@ -486,7 +487,7 @@ export async function acceptQuotation(id: string): Promise<ActionResult<Serializ
     await dbConnect();
 
     const doc = await Quotation.findOneAndUpdate(
-      { _id: id, userId: user.id, status: 'SENT' },
+      { _id: id, userId: user.id, status: { $in: ['SENT', 'VIEWED'] } },
       { $set: { status: 'ACCEPTED' } },
       { returnDocument: 'after', lean: true }
     );
@@ -519,7 +520,7 @@ export async function declineQuotation(id: string): Promise<ActionResult<Seriali
     await dbConnect();
 
     const doc = await Quotation.findOneAndUpdate(
-      { _id: id, userId: user.id, status: 'SENT' },
+      { _id: id, userId: user.id, status: { $in: ['SENT', 'VIEWED'] } },
       { $set: { status: 'DECLINED' } },
       { returnDocument: 'after', lean: true }
     );
@@ -538,5 +539,86 @@ export async function declineQuotation(id: string): Promise<ActionResult<Seriali
     }
     console.error('declineQuotation error:', (error as Error).message);
     return { ok: false, error: 'Failed to decline quotation' };
+  }
+}
+
+/**
+ * Track when a quotation is viewed via its public link (§6.4, P3-T03).
+ * First public render sets viewedAt, moves SENT → VIEWED, appends one VIEWED event.
+ * Guards:
+ * - Owner previewing their own link does not count.
+ * - Second view appends nothing.
+ * - Already responded (ACCEPTED/DECLINED) does not regress to VIEWED.
+ */
+export async function recordQuotationView(
+  code: string,
+  viewerUserId?: string | null
+): Promise<boolean> {
+  try {
+    if (!code) return false;
+
+    await dbConnect();
+
+    // Check existing quotation
+    const existing = await Quotation.findOne({
+      $or: [{ publicCode: code }, { publicToken: code }],
+    })
+      .select('_id userId status viewedAt publicCodeRevokedAt publicTokenRevokedAt')
+      .lean();
+
+    if (!existing) return false;
+
+    // Do not track if link revoked
+    if (existing.publicCodeRevokedAt || existing.publicTokenRevokedAt) {
+      return false;
+    }
+
+    // Guard: owner previewing their own link does not count (§6.4, P3-T03)
+    if (viewerUserId && existing.userId.toString() === viewerUserId) {
+      return false;
+    }
+
+    // If already viewed or already answered (ACCEPTED/DECLINED), do not update
+    if (existing.viewedAt || existing.status !== 'SENT') {
+      return false;
+    }
+
+    const now = new Date();
+
+    // Atomic state transition SENT -> VIEWED
+    const updated = await Quotation.findOneAndUpdate(
+      {
+        _id: existing._id,
+        status: 'SENT',
+        viewedAt: null,
+      },
+      {
+        $set: {
+          status: 'VIEWED',
+          viewedAt: now,
+        },
+      },
+      { returnDocument: 'after', lean: true }
+    );
+
+    if (!updated) {
+      return false;
+    }
+
+    // Append append-only VIEWED event (§6.6, P3-T03)
+    await recordEvent({
+      quotationId: updated._id,
+      userId: updated.userId,
+      type: 'VIEWED',
+      actor: 'CLIENT',
+    });
+
+    await safeRevalidate(`/dashboard/quotations/${existing._id}`);
+    await safeRevalidate('/dashboard/quotations');
+
+    return true;
+  } catch (error) {
+    console.error('recordQuotationView error:', error);
+    return false;
   }
 }
