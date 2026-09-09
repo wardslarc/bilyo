@@ -722,7 +722,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
 
 ### P2 — Quotation core (6–8 hrs) · *Weekend 1 in the brief*
 
-- [ ] **P2-T01 · New numbering** (2h)
+- [x] **P2-T01 · New numbering** (2h)
   *Files:* `lib/numbering.ts` · `models/counter.ts` · `tests/numbering.test.ts`
   *Do:* `Q-YYYY-NNNN`, per user per `Asia/Manila` year (§6.3). Drop the `INVOICE` kind. Replace the
   `{userId, kind}` unique index with `{userId, kind, year}`; write the index change as a documented

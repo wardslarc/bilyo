@@ -119,6 +119,7 @@ export interface ICounter {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   kind: CounterKind;
+  year: number;
   seq: number;
 }
 

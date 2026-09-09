@@ -87,3 +87,15 @@ export function getManilaMonthRange(refDate: Date = new Date()): {
 
   return { startOfMonth, endOfMonth };
 }
+
+/**
+ * Gets the current calendar year in Asia/Manila (UTC+8).
+ */
+export function getManilaYear(refDate: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MANILA_TZ,
+    year: 'numeric',
+  }).formatToParts(refDate);
+
+  return Number.parseInt(parts.find((p) => p.type === 'year')?.value || '1970', 10);
+}

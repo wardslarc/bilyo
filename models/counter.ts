@@ -13,6 +13,10 @@ const CounterSchema = new Schema<ICounter>(
       enum: ['QUOTATION'],
       required: true,
     },
+    year: {
+      type: Number,
+      required: true,
+    },
     seq: {
       type: Number,
       default: 0,
@@ -24,8 +28,9 @@ const CounterSchema = new Schema<ICounter>(
   }
 );
 
-// Indexes per DEVELOPMENT_PLAN.md §6
-CounterSchema.index({ userId: 1, kind: 1 }, { unique: true });
+// Indexes per DEVELOPMENT_PLAN.md §6.3:
+// Unique index per { userId, kind, year }
+CounterSchema.index({ userId: 1, kind: 1, year: 1 }, { unique: true });
 
 export const Counter: Model<ICounter> =
   mongoose.models.Counter || mongoose.model<ICounter>('Counter', CounterSchema);

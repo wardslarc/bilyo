@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatDateTime } from '../lib/dates.ts';
+import { formatDate, formatDateTime, getManilaYear } from '../lib/dates.ts';
 
 describe('lib/dates.ts', () => {
   describe('formatDate', () => {
@@ -26,6 +26,23 @@ describe('lib/dates.ts', () => {
       // 2026-09-30T06:30:00Z is 2:30 PM Manila time
       const date = new Date('2026-09-30T06:30:00Z');
       assert.strictEqual(formatDateTime(date), 'September 30, 2026 at 2:30 PM');
+    });
+  });
+
+  describe('getManilaYear', () => {
+    test('returns correct calendar year for standard Manila dates', () => {
+      const date = new Date('2026-06-15T12:00:00Z');
+      assert.strictEqual(getManilaYear(date), 2026);
+    });
+
+    test('handles New Year boundary between UTC and Asia/Manila (UTC+8)', () => {
+      // 2026-12-31T15:59:59Z is 2026-12-31 23:59:59 in Manila (Year 2026)
+      const endOf2026 = new Date('2026-12-31T15:59:59Z');
+      assert.strictEqual(getManilaYear(endOf2026), 2026);
+
+      // 2026-12-31T16:00:00Z is 2027-01-01 00:00:00 in Manila (Year 2027)
+      const startOf2027 = new Date('2026-12-31T16:00:00Z');
+      assert.strictEqual(getManilaYear(startOf2027), 2027);
     });
   });
 });
