@@ -66,3 +66,20 @@ export async function hasQuotationEvent(
   return Boolean(found);
 }
 
+export * from './timeline.ts';
+
+/**
+ * Retrieves the serialized event timeline for a quotation, scoped by userId (§4.1, §6.6, §12 P3-T05).
+ * Sorted chronologically ascending (oldest first).
+ */
+export async function getSerializedQuotationEvents(
+  quotationId: string | Types.ObjectId,
+  userId: string | Types.ObjectId
+) {
+  const { serializeEvent } = await import('./timeline.ts');
+  const events = await getQuotationEvents(quotationId, userId);
+  return events.map(serializeEvent);
+}
+
+
+

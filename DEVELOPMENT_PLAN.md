@@ -810,7 +810,7 @@ user would pick Bilyo over a Word template.
   *Accept:* an accept or decline appears in the owner's dashboard within one refresh; the badge
   clears when the list is opened; the query is `userId`-scoped.
 
-- [ ] **P3-T05 · Timeline on the quote detail page** (1h)
+- [x] **P3-T05 · Timeline on the quote detail page** (1h)
   *Files:* `app/(dashboard)/dashboard/quotations/[id]/page.tsx` · `components/quotations/timeline.tsx`
   *Do:* read `events` for the quotation, render Created · Sent · Viewed · Accepted/Declined ·
   Marked paid with `Asia/Manila` timestamps and the actor. Copy-link button beside it.
