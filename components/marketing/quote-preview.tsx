@@ -1,9 +1,11 @@
+import { QUOTATION_FOOTER } from "@/lib/documents";
+
 /**
- * Marketing artwork: a static picture of a sent invoice.
+ * Marketing artwork: a static picture of a sent quotation.
  *
  * The amounts below are sample *display copy*, not domain money — nothing here
  * is computed, stored, or round-tripped. Real money stays integer centavos and
- * is formatted through lib/money.ts (DEVELOPMENT_PLAN.md §4.1).
+ * is formatted through lib/money.ts (DEVELOPMENT_PLAN.md §6.1).
  */
 const SAMPLE_ITEMS = [
   { description: "Brand identity design", quantity: "1", amount: "25,000.00" },
@@ -20,14 +22,14 @@ const SAMPLE_TOTALS = [
   { label: "Discount", amount: "−2,000.00" },
 ];
 
-export function InvoicePreview() {
+export function QuotePreview() {
   return (
     <div className="relative w-full lg:w-140 lg:pt-6.5">
-      {/* The quotation this invoice came from — desktop only. */}
+      {/* Floating client confirmation chip — desktop only. */}
       <div className="border-paper/10 bg-ink-raised absolute top-0 left-2 hidden w-75 -rotate-4 items-center justify-between gap-3 rounded-xl border p-4 px-4.5 lg:flex">
         <div className="flex flex-col gap-1">
           <span className="text-paper/60 font-mono text-[13px]">
-            QUO-000031
+            Q-2026-0031
           </span>
           <span className="text-paper/85 text-sm">Kasiglahan Coffee Co.</span>
         </div>
@@ -40,10 +42,10 @@ export function InvoicePreview() {
         <header className="border-line-soft flex items-start justify-between gap-3 border-b p-4.5 pb-3.5 lg:p-7 lg:pb-5">
           <div className="flex flex-col gap-1.5">
             <span className="font-display text-faint text-[10px] font-semibold tracking-[0.16em] lg:text-[11px]">
-              INVOICE
+              QUOTATION
             </span>
             <span className="font-mono text-[17px] font-medium lg:text-xl">
-              INV-000012
+              Q-2026-0012
             </span>
           </div>
           <div className="flex flex-col items-end gap-1.5 lg:gap-2">
@@ -51,7 +53,7 @@ export function InvoicePreview() {
               SENT
             </span>
             <span className="text-muted text-xs lg:text-[13px]">
-              Due September 30, 2026
+              Valid until September 30, 2026
             </span>
           </div>
         </header>
@@ -70,7 +72,7 @@ export function InvoicePreview() {
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-faint text-[10px] font-semibold tracking-[0.12em] lg:text-[11px]">
-              BILL TO
+              QUOTED TO
             </span>
             <span className="text-[15px] font-semibold">
               Kasiglahan Coffee Co.
@@ -127,13 +129,17 @@ export function InvoicePreview() {
             ))}
             <div className="border-line-soft flex items-baseline justify-between border-t pt-2.5">
               <span className="font-display text-sm font-semibold lg:text-[15px]">
-                Total due
+                Total
               </span>
               <span className="font-mono text-xl font-medium lg:text-[22px]">
                 ₱42,200.00
               </span>
             </div>
           </div>
+        </div>
+
+        <div className="border-line-soft border-t px-4.5 py-2.5 text-center text-[11px] text-slate-400 italic lg:px-7">
+          {QUOTATION_FOOTER}
         </div>
 
         <footer className="border-line-soft bg-paper-edge flex items-center justify-between gap-3 border-t px-4.5 py-3.25 lg:px-7 lg:py-4">
@@ -152,7 +158,7 @@ export function InvoicePreview() {
               <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
             </svg>
             <span className="text-muted font-mono text-xs lg:text-[13px]">
-              bilyo.ph/i/8fk2q1xz9v
+              bilyo.ph/q/8fk2q1xz9v
             </span>
           </div>
           <span className="border-line font-display flex items-center gap-1.5 rounded-md border bg-white px-3 py-2 text-xs font-medium lg:text-[13px]">

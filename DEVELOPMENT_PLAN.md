@@ -709,7 +709,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* admin lookup finds a quote by number **or** public code; every admin read still appends
   an audit row; no admin path references an invoice.
 
-- [ ] **P1-T07 · Marketing copy pass** (1h)
+- [x] **P1-T07 · Marketing copy pass** (1h)
   *Files:* `app/(marketing)/page.tsx` · `app/(marketing)/pricing/page.tsx` ·
   `components/marketing/*` (`invoice-preview.tsx` → `quote-preview.tsx`) · `README.md` ·
   `package.json` (`name: "bilyo"`)

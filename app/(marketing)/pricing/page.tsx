@@ -4,8 +4,8 @@ import { SiteFooter } from '@/components/marketing/site-footer';
 import { PricingSection } from '@/components/marketing/pricing-section';
 
 export const metadata = {
-  title: 'Pricing · Bilyo',
-  description: 'Simple, transparent pricing for Philippine freelancers and businesses. Free forever tier available.',
+  title: 'Quotation Access Plan · Bilyo',
+  description: 'Simple, transparent quotation access for Philippine service businesses. Free during beta.',
 };
 
 export default function PricingPage() {

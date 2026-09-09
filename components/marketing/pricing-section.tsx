@@ -1,53 +1,54 @@
+'use client';
+
+import { useState } from "react";
 import Link from "next/link";
 
-type Plan = {
+type Pass = {
   name: string;
   blurb: string;
   price: string;
+  period: string;
   features: string[];
-  /** Copy the plan doesn't decide yet — rendered as a visible placeholder. */
-  placeholder?: string;
-  cta: string;
   featured?: boolean;
 };
 
-/**
- * Prices and the free-tier limits come from DEVELOPMENT_PLAN.md §7 (M7-T01, M8-T01).
- * What separates Freelancer from Business is not decided there, so it is a
- * bracketed placeholder rather than an invented feature.
- */
-const PLANS: Plan[] = [
+const PASSES: Pass[] = [
   {
-    name: "Free",
-    blurb: "For your first few clients.",
-    price: "₱0",
+    name: "30-Day Access",
+    blurb: "For occasional quotes and short projects.",
+    price: "₱199",
+    period: "30 days",
     features: [
-      "5 invoices per month",
-      "5 quotations per month",
-      "Up to 10 saved clients",
-      "PDF download and public link",
+      "Unlimited quotations",
+      "Client one-tap accept or decline",
+      "Private mobile links and PDF downloads",
+      "Track when clients view and decide",
     ],
-    cta: "Start free",
   },
   {
-    name: "Freelancer",
-    blurb: "For steady, repeat billing.",
-    price: "₱299",
+    name: "90-Day Access",
+    blurb: "For steady freelancers and consultants.",
+    price: "₱499",
+    period: "90 days",
     features: [
-      "Unlimited invoices and quotations",
-      "Unlimited saved clients and services",
+      "Everything in 30-Day Access",
+      "Save regular clients and service rates",
+      "Full quotation history and pipeline",
+      "Stackable renewals",
     ],
-    placeholder: "[WHAT ELSE FREELANCER ADDS — 2 LINES]",
-    cta: "Start free, upgrade later",
     featured: true,
   },
   {
-    name: "Business",
-    blurb: "For a shop with volume.",
-    price: "₱599",
-    features: ["Everything in Freelancer"],
-    placeholder: "[WHAT BUSINESS ADDS — 3 LINES]",
-    cta: "Start free, upgrade later",
+    name: "1-Year Access",
+    blurb: "For established service businesses.",
+    price: "₱1,499",
+    period: "365 days",
+    features: [
+      "Everything in 90-Day Access",
+      "Best value per month",
+      "Priority customer support",
+      "Export client and quotation data anytime",
+    ],
   },
 ];
 
@@ -69,27 +70,35 @@ function CheckIcon() {
 }
 
 export function PricingSection() {
+  const [notified, setNotified] = useState(false);
+
   return (
     <section
       id="pricing"
       className="mx-auto w-full max-w-360 px-5 py-14 lg:px-30 lg:py-25"
     >
+      {/* Beta Announcement Banner per §6.10 */}
+      <div className="mb-10 rounded-xl border border-brass/30 bg-brass/10 p-4 text-center lg:mb-14">
+        <p className="font-display text-sm font-semibold text-ink lg:text-base">
+          ✨ Bilyo is free during beta. Paid access starts soon. Beta users get 50% off their first pass.
+        </p>
+      </div>
+
       <div className="flex flex-col gap-3.5 lg:items-center lg:gap-4 lg:pb-13 lg:text-center">
         <h2 className="font-display text-3xl leading-tight font-bold tracking-tight text-balance lg:text-[42px]">
-          Start free. Pay when billing becomes a habit.
+          Quotation Access Plan
         </h2>
         <p className="text-muted max-w-140 text-base leading-relaxed lg:text-[17px]">
-          Every plan includes the PDF, the public link and centavo-accurate
-          totals. Billed monthly, in pesos.
+          Prepaid access, no auto-renewals, no credit cards. Quotes are never metered.
         </p>
       </div>
 
       <div className="mt-3.5 grid gap-3.5 lg:mt-0 lg:grid-cols-3 lg:gap-6">
-        {PLANS.map((plan) => (
+        {PASSES.map((pass) => (
           <div
-            key={plan.name}
+            key={pass.name}
             className={`flex flex-col gap-4.5 rounded-xl p-5.5 pb-7 lg:gap-5.5 lg:p-8 lg:pb-9 ${
-              plan.featured
+              pass.featured
                 ? "bg-ink text-paper order-first lg:order-none"
                 : "border-line border bg-white"
             }`}
@@ -97,34 +106,34 @@ export function PricingSection() {
             <div className="flex items-start justify-between gap-2.5">
               <div className="flex flex-col gap-1.5">
                 <span className="font-display text-[17px] font-semibold lg:text-lg">
-                  {plan.name}
+                  {pass.name}
                 </span>
                 <span
-                  className={`text-sm lg:text-[15px] ${plan.featured ? "text-paper/60" : "text-muted"}`}
+                  className={`text-sm lg:text-[15px] ${pass.featured ? "text-paper/60" : "text-muted"}`}
                 >
-                  {plan.blurb}
+                  {pass.blurb}
                 </span>
               </div>
-              {plan.featured ? (
+              {pass.featured ? (
                 <span className="bg-brass font-display text-ink rounded px-2.25 py-1.25 text-[10px] font-semibold tracking-wider lg:px-2.75 lg:py-1.5 lg:text-[11px]">
-                  MOST LIKELY FIT
+                  POPULAR
                 </span>
               ) : null}
             </div>
 
             <div className="flex items-baseline gap-1.5">
               <span className="font-display text-[38px] font-bold tracking-tight lg:text-[44px]">
-                {plan.price}
+                {pass.price}
               </span>
               <span
-                className={`text-[15px] lg:text-base ${plan.featured ? "text-paper/60" : "text-muted"}`}
+                className={`text-[15px] lg:text-base ${pass.featured ? "text-paper/60" : "text-muted"}`}
               >
-                /month
+                / {pass.period}
               </span>
             </div>
 
             <ul className="flex flex-col gap-2.5 lg:gap-3">
-              {plan.features.map((feature) => (
+              {pass.features.map((feature) => (
                 <li
                   key={feature}
                   className="flex items-start gap-2.25 lg:gap-2.5"
@@ -135,27 +144,35 @@ export function PricingSection() {
                   </span>
                 </li>
               ))}
-              {plan.placeholder ? (
-                <li
-                  className={`font-mono text-[13px] leading-relaxed lg:text-sm ${
-                    plan.featured ? "text-brass" : "text-brass-ink"
-                  }`}
-                >
-                  {plan.placeholder}
-                </li>
-              ) : null}
             </ul>
 
-            <Link
-              href="/register"
-              className={`font-display mt-auto flex h-13 items-center justify-center rounded-md text-base font-semibold transition-opacity hover:opacity-90 ${
-                plan.featured
-                  ? "bg-brass text-ink"
-                  : "border-text text-text border"
-              }`}
-            >
-              {plan.cta}
-            </Link>
+            <div className="mt-auto pt-2">
+              {notified ? (
+                <div className="rounded-md bg-emerald-50 py-2.5 text-center text-xs font-semibold text-emerald-700">
+                  We will let you know when paid passes open!
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Link
+                    href="/register"
+                    className={`font-display flex h-11.5 items-center justify-center rounded-md px-5 text-sm font-semibold transition-opacity hover:opacity-90 ${
+                      pass.featured
+                        ? "bg-brass text-ink"
+                        : "border-line text-ink hover:border-ink/40 border bg-white"
+                    }`}
+                  >
+                    Start free in beta
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setNotified(true)}
+                    className="text-xs text-muted hover:text-ink transition-colors cursor-pointer py-1"
+                  >
+                    Notify me when passes launch →
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
