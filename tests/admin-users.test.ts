@@ -14,16 +14,6 @@ describe('Admin User List Query & Pagination (M7-T02)', () => {
       assert.deepStrictEqual(filter, {});
     });
 
-    test('plan filter adds exact plan match', () => {
-      const filter = buildUsersFilter({ plan: 'BUSINESS' });
-      assert.deepStrictEqual(filter, { plan: 'BUSINESS' });
-    });
-
-    test('plan "ALL" does not filter by plan', () => {
-      const filter = buildUsersFilter({ plan: 'ALL' });
-      assert.deepStrictEqual(filter, {});
-    });
-
     test('status "SUSPENDED" filters for non-null suspendedAt', () => {
       const filter = buildUsersFilter({ status: 'SUSPENDED' });
       assert.deepStrictEqual(filter, { suspendedAt: { $ne: null } });
@@ -73,7 +63,6 @@ describe('Admin User List Query & Pagination (M7-T02)', () => {
 
     test('multiple filters are composed with $and', () => {
       const filter = buildUsersFilter({
-        plan: 'FREELANCER',
         status: 'ACTIVE',
         search: 'santos',
       }) as {
@@ -81,7 +70,7 @@ describe('Admin User List Query & Pagination (M7-T02)', () => {
       };
 
       assert.ok(filter.$and);
-      assert.strictEqual(filter.$and.length, 3);
+      assert.strictEqual(filter.$and.length, 2);
     });
   });
 

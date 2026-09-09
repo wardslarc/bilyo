@@ -30,8 +30,6 @@ export interface SanitizedUserData {
   name: string;
   email: string;
   role: string;
-  plan: string;
-  planSource: string;
   createdAt?: string | Date;
   updatedAt?: string | Date;
   emailVerifiedAt?: string | Date | null;
@@ -50,8 +48,6 @@ export function sanitizeUserExport(user: {
   name?: string;
   email?: string;
   role?: string;
-  plan?: string;
-  planSource?: string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   emailVerifiedAt?: Date | string | null;
@@ -63,8 +59,6 @@ export function sanitizeUserExport(user: {
     name: user.name || '',
     email: user.email || '',
     role: user.role || 'USER',
-    plan: user.plan || 'FREE',
-    planSource: user.planSource || 'DEFAULT',
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     emailVerifiedAt: user.emailVerifiedAt || null,
@@ -79,44 +73,7 @@ export interface ExportDataPayload {
   user: SanitizedUserData;
   business: Record<string, unknown> | null;
   customers: Record<string, unknown>[];
-  products: Record<string, unknown>[];
   quotations: Record<string, unknown>[];
-  invoices: Record<string, unknown>[];
-}
-
-export function formatInvoicesCsv(invoices: Record<string, unknown>[]): string {
-  const headers = [
-    { key: 'invoiceNumber', label: 'Invoice Number' },
-    { key: 'customerName', label: 'Customer' },
-    { key: 'issueDate', label: 'Issue Date' },
-    { key: 'dueDate', label: 'Due Date' },
-    { key: 'status', label: 'Status' },
-    { key: 'subtotalPesos', label: 'Subtotal (PHP)' },
-    { key: 'discountPesos', label: 'Discount (PHP)' },
-    { key: 'vatPesos', label: 'VAT (PHP)' },
-    { key: 'totalPesos', label: 'Total (PHP)' },
-    { key: 'paidAt', label: 'Paid Date' },
-    { key: 'notes', label: 'Notes' },
-  ];
-
-  const rows = invoices.map((inv) => {
-    const cust = inv.customerSnapshot as Record<string, unknown> | undefined;
-    return {
-      invoiceNumber: inv.invoiceNumber,
-      customerName: cust?.name || '',
-      issueDate: inv.issueDate ? new Date(inv.issueDate as string).toISOString().split('T')[0] : '',
-      dueDate: inv.dueDate ? new Date(inv.dueDate as string).toISOString().split('T')[0] : '',
-      status: inv.status,
-      subtotalPesos: centavosToPesos((inv.subtotalCentavos as number) || 0).toFixed(2),
-      discountPesos: centavosToPesos((inv.discountCentavos as number) || 0).toFixed(2),
-      vatPesos: centavosToPesos((inv.vatCentavos as number) || 0).toFixed(2),
-      totalPesos: centavosToPesos((inv.totalCentavos as number) || 0).toFixed(2),
-      paidAt: inv.paidAt ? new Date(inv.paidAt as string).toISOString().split('T')[0] : '',
-      notes: inv.notes || '',
-    };
-  });
-
-  return toCsv(headers, rows);
 }
 
 export function formatQuotationsCsv(quotations: Record<string, unknown>[]): string {
@@ -128,7 +85,6 @@ export function formatQuotationsCsv(quotations: Record<string, unknown>[]): stri
     { key: 'status', label: 'Status' },
     { key: 'subtotalPesos', label: 'Subtotal (PHP)' },
     { key: 'discountPesos', label: 'Discount (PHP)' },
-    { key: 'vatPesos', label: 'VAT (PHP)' },
     { key: 'totalPesos', label: 'Total (PHP)' },
     { key: 'notes', label: 'Notes' },
   ];
@@ -143,7 +99,6 @@ export function formatQuotationsCsv(quotations: Record<string, unknown>[]): stri
       status: q.status,
       subtotalPesos: centavosToPesos((q.subtotalCentavos as number) || 0).toFixed(2),
       discountPesos: centavosToPesos((q.discountCentavos as number) || 0).toFixed(2),
-      vatPesos: centavosToPesos((q.vatCentavos as number) || 0).toFixed(2),
       totalPesos: centavosToPesos((q.totalCentavos as number) || 0).toFixed(2),
       notes: q.notes || '',
     };
@@ -158,7 +113,6 @@ export function formatCustomersCsv(customers: Record<string, unknown>[]): string
     { key: 'company', label: 'Company' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
-    { key: 'taxId', label: 'Tax ID' },
     { key: 'address', label: 'Address' },
     { key: 'archived', label: 'Archived' },
   ];
@@ -168,7 +122,6 @@ export function formatCustomersCsv(customers: Record<string, unknown>[]): string
     company: c.company || '',
     email: c.email || '',
     phone: c.phone || '',
-    taxId: c.taxId || '',
     address: c.address || '',
     archived: c.archivedAt ? 'Yes' : 'No',
   }));

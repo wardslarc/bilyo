@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { InvoicePreview } from "@/components/marketing/invoice-preview";
+import { QuotePreview } from "@/components/marketing/quote-preview";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
+import { QUOTATION_FOOTER } from "@/lib/documents";
 
 const TRUST_POINTS = [
   {
@@ -10,12 +11,12 @@ const TRUST_POINTS = [
     body: "Amounts are stored as whole centavos, never floats.",
   },
   {
-    title: "12% VAT, when it applies",
-    body: "Not VAT-registered? The line simply doesn't print.",
+    title: "Straightforward totals",
+    body: "Line items, clean discounts, and clear totals without hidden formulas.",
   },
   {
     title: "Sequential numbering",
-    body: "QUO-000001, INV-000001 — never reused, never renumbered.",
+    body: "Q-2026-0001 — per user, per year, never reused.",
   },
   {
     title: "Manila time, peso first",
@@ -25,8 +26,8 @@ const TRUST_POINTS = [
 
 const FEATURES = [
   {
-    title: "Accepted quote, instant invoice",
-    body: "One click carries the line items, discount, VAT and client details across. The quotation stays on file as accepted, linked to the invoice it became. Nothing is retyped, nothing drifts.",
+    title: "One-tap client response",
+    body: "Your client opens the link on their phone and accepts or declines in seconds. No account needed, no app to install, and your pipeline updates immediately.",
     icon: (
       <>
         <path d="M4 8h11" />
@@ -38,7 +39,7 @@ const FEATURES = [
   },
   {
     title: "A link, not an attachment",
-    body: "Every document gets a private link your client opens in any browser — no sign-up, no app, readable on a phone. The PDF is one tap away from that page. Revoke the link whenever you want.",
+    body: "Every quotation gets a private link your client opens in any browser — no sign-up, no app, readable on a phone. The PDF is one tap away from that page. Revoke the link whenever you want.",
     icon: (
       <>
         <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
@@ -47,8 +48,8 @@ const FEATURES = [
     ),
   },
   {
-    title: "A sent document stays sent",
-    body: "The moment you send, Bilyo freezes your business details and your client's onto the document. Update an address next month and the invoice they already received is untouched.",
+    title: "A sent quotation stays sent",
+    body: "The moment you send, Bilyo freezes your business details and your client's onto the document. Update your profile later and quotes already sent remain untouched.",
     icon: (
       <>
         <path d="M12 3l7.5 3.4v5c0 4.3-3.1 8-7.5 9.6-4.4-1.6-7.5-5.3-7.5-9.6v-5z" />
@@ -62,17 +63,17 @@ const STEPS = [
   {
     number: "01",
     title: "Add your business",
-    body: "Business name, address, TIN, and whether you're VAT-registered. Save your regular clients and the services you sell so you stop typing them.",
+    body: "Business name, address, and contact details. Save your regular clients so you stop retyping them.",
   },
   {
     number: "02",
-    title: "Build the document",
-    body: "Pick a client, add line items from your saved services or type them fresh. Subtotal, discount and VAT compute as you go — and are checked again on the server when you save.",
+    title: "Build the quotation",
+    body: "Pick a client, add line items and quantities. Subtotal and discount compute as you type, and are verified server-side when you save.",
   },
   {
     number: "03",
-    title: "Send it and watch it",
-    body: "Share the link or download the PDF, then mark it paid when the money lands. Anything past its due date shows up as overdue without you tagging it.",
+    title: "Send it and get confirmed",
+    body: "Share the link via Messenger or email, or download the PDF. See when your client views it and track confirmed sales on your dashboard.",
   },
 ];
 
@@ -97,13 +98,13 @@ export default function LandingPage() {
               </div>
 
               <h1 className="font-display text-[40px] leading-[1.06] font-bold tracking-tight text-balance lg:text-[62px] lg:leading-[1.04]">
-                Quotation to invoice to paid — in one place.
+                Quotations your clients can accept with one tap.
               </h1>
 
               <p className="text-paper/75 max-w-135 text-[17px] leading-relaxed lg:text-xl">
-                Build a quotation, turn it into an invoice, and send it as a
-                link your client opens in a browser — or a PDF. Peso-exact, 12%
-                VAT handled, and you can see what is still unpaid.
+                Build a quotation and send it as a link your client opens on their
+                phone — or a clean PDF. Fast approvals, clear confirmations, and
+                a pipeline you can track.
               </p>
 
               <div className="flex w-full flex-col gap-3 pt-1 lg:w-auto lg:flex-row lg:items-center lg:gap-4 lg:pt-2">
@@ -117,7 +118,7 @@ export default function LandingPage() {
                   href="#sample"
                   className="border-paper/25 font-display text-paper hover:border-paper/50 flex h-13.5 items-center justify-center gap-2 rounded-md border px-6.5 text-[17px] font-medium transition-colors lg:h-14"
                 >
-                  See a sample invoice
+                  See a sample quote
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -135,12 +136,12 @@ export default function LandingPage() {
               </div>
 
               <p className="text-paper/50 text-sm lg:text-[15px]">
-                Free for 5 invoices and 5 quotations a month. No card required.
+                Free and unlimited during beta. No card required.
               </p>
             </div>
 
             <div id="sample" className="w-full scroll-mt-8 lg:w-auto">
-              <InvoicePreview />
+              <QuotePreview />
             </div>
           </div>
         </div>
@@ -174,12 +175,10 @@ export default function LandingPage() {
       >
         <div className="flex flex-col gap-4 pb-6 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:pb-14">
           <h2 className="font-display max-w-155 text-3xl leading-tight font-bold tracking-tight text-balance lg:text-[42px]">
-            Everything a small invoice needs, and nothing that belongs in an
-            accounting system.
+            Everything a quotation needs to turn into a confirmed sale.
           </h2>
           <p className="text-muted text-base leading-relaxed lg:mb-1.5 lg:w-82.5">
-            Bilyo does one job: getting the document from you to your client,
-            correctly.
+            Bilyo does one job: getting the quotation from you to your client and closing it smoothly.
           </p>
         </div>
 
@@ -225,7 +224,7 @@ export default function LandingPage() {
             </span>
           </div>
           <h2 className="font-display max-w-175 text-3xl leading-tight font-bold tracking-tight text-balance lg:text-[42px]">
-            Set up once. Every document after that takes a minute.
+            Set up once. Every quotation after that takes a minute.
           </h2>
 
           <div className="mt-8 grid gap-6.5 lg:mt-14 lg:grid-cols-3 lg:gap-10">
@@ -258,11 +257,9 @@ export default function LandingPage() {
       {/* ---------- Pricing ---------- */}
       <PricingSection />
 
-      {/* ---------- What Bilyo is not ----------
-          Required honesty, not decoration: AGENTS.md §4 forbids fabricated BIR
-          compliance claims anywhere in the product, marketing copy included. */}
+      {/* ---------- Required Legal Notice (§2.3) ---------- */}
       <div className="mx-auto w-full max-w-360 px-5 pb-13 lg:px-30 lg:pb-24">
-        <div className="border-line bg-paper-sunk flex flex-col gap-2 rounded-xl border p-5.5 lg:flex-row lg:items-start lg:gap-4.5 lg:p-8">
+        <div className="border-line bg-paper-sunk flex flex-col gap-2 rounded-xl border p-5.5 lg:flex-row lg:items-center lg:gap-4.5 lg:p-6">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -270,24 +267,16 @@ export default function LandingPage() {
             strokeWidth={1.7}
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-muted size-5 shrink-0 lg:mt-0.5 lg:size-5.5"
+            className="text-muted size-5 shrink-0 lg:size-5.5"
             aria-hidden="true"
           >
             <circle cx="12" cy="12" r="9" />
             <path d="M12 11v5.5" />
             <path d="M12 7.6v.4" />
           </svg>
-          <div className="flex flex-col gap-1.5">
-            <span className="font-display text-base font-semibold lg:text-[17px]">
-              What Bilyo is not
-            </span>
-            <span className="text-muted max-w-220 text-[15px] leading-relaxed lg:text-base">
-              Bilyo is a billing tool, not an accounting system and not a
-              BIR-accredited CAS. The documents it produces are not official
-              sales invoices or official receipts — every PDF says so in its
-              footer. Keep issuing your BIR-registered receipts as you do today.
-            </span>
-          </div>
+          <p className="text-muted text-sm leading-relaxed lg:text-[15px]">
+            {QUOTATION_FOOTER}
+          </p>
         </div>
       </div>
 
@@ -296,17 +285,17 @@ export default function LandingPage() {
         <div className="mx-auto flex w-full max-w-360 flex-col gap-4.5 px-5 py-13 lg:flex-row lg:items-center lg:justify-between lg:gap-14 lg:px-30 lg:py-21">
           <div className="flex flex-col gap-3 lg:gap-3.5">
             <h2 className="font-display max-w-155 text-3xl leading-tight font-bold tracking-tight text-balance lg:text-[40px]">
-              Your next invoice takes about a minute.
+              Your next quotation takes about a minute.
             </h2>
             <p className="text-paper/70 text-base lg:text-[17px]">
-              Free plan, no card. Bring one client and see how it feels.
+              Free during beta, no credit card required. Bring one client and see how fast they confirm.
             </p>
           </div>
           <Link
             href="/register"
             className="bg-brass font-display text-ink flex h-14 shrink-0 items-center justify-center rounded-md px-8.5 text-[17px] font-semibold transition-opacity hover:opacity-90 lg:h-14.5 lg:text-lg"
           >
-            Create your first invoice
+            Create your first quotation
           </Link>
         </div>
       </div>

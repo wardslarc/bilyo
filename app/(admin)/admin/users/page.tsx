@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'User Management · Bilyo Admin',
-  description: 'Manage users, view active plans, suspension status, and document counts.',
+  description: 'Manage users, suspension status, and document counts.',
 };
 
 interface AdminUsersPageProps {
@@ -19,9 +19,6 @@ export default async function AdminUsersPage({
 
   const page = Math.max(1, Number(resolvedParams.page) || 1);
   const search = typeof resolvedParams.q === 'string' ? resolvedParams.q : '';
-  const plan = (typeof resolvedParams.plan === 'string'
-    ? resolvedParams.plan
-    : 'ALL') as 'FREE' | 'FREELANCER' | 'BUSINESS' | 'ALL';
   const status = (typeof resolvedParams.status === 'string'
     ? resolvedParams.status
     : 'ALL') as 'ACTIVE' | 'SUSPENDED' | 'DELETION' | 'ALL';
@@ -31,7 +28,6 @@ export default async function AdminUsersPage({
     page,
     limit: 25,
     search,
-    plan,
     status,
     activeIn30Days,
   });
@@ -43,7 +39,7 @@ export default async function AdminUsersPage({
           User Management
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Review accounts, inspect plan overrides, track activity, and resolve support cases.
+          Review accounts, track activity, and resolve support cases.
         </p>
       </div>
 
@@ -54,7 +50,6 @@ export default async function AdminUsersPage({
         totalPages={data.totalPages}
         limit={data.limit}
         currentSearch={search}
-        currentPlan={plan}
         currentStatus={status}
         currentActive30={activeIn30Days}
       />

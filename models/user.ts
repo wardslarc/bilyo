@@ -24,36 +24,6 @@ const UserSchema = new Schema<IUser>(
       default: null,
     },
 
-    // Plan (§5.10)
-    plan: {
-      type: String,
-      enum: ['FREE', 'FREELANCER', 'BUSINESS'],
-      default: 'FREE',
-      required: true,
-    },
-    planSource: {
-      type: String,
-      enum: ['DEFAULT', 'BILLING', 'ADMIN'],
-      default: 'DEFAULT',
-      required: true,
-    },
-    planOverrideExpiresAt: {
-      type: Date,
-      default: null,
-    },
-    planOverrideReason: {
-      type: String,
-      default: null,
-    },
-    billingCustomerId: {
-      type: String,
-      default: null,
-    },
-    billingPlan: {
-      type: String,
-      enum: ['FREE', 'FREELANCER', 'BUSINESS'],
-      default: null,
-    },
 
     // MFA (§5.11)
     mfaEnabledAt: {
@@ -123,6 +93,10 @@ const UserSchema = new Schema<IUser>(
       default: null,
     },
     lastActiveAt: {
+      type: Date,
+      default: null,
+    },
+    lastSeenEventsAt: {
       type: Date,
       default: null,
     },

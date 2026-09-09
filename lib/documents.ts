@@ -1,9 +1,15 @@
 import type {
   QuotationStatus,
-  InvoiceStatus,
+  DerivedQuotationStatus,
   ILineItem,
 } from '../types/index.ts';
 import { centavosToPesos } from './money.ts';
+
+/**
+ * Required footer on every quotation view and PDF (AGENTS.md §3.3)
+ */
+export const QUOTATION_FOOTER =
+  'This is a quotation, not a tax document. It is not an invoice or official receipt.';
 
 export interface LineItemRow {
   /** Client-side key for React reconciliation */
@@ -13,38 +19,9 @@ export interface LineItemRow {
   quantity: string;
   /** Raw peso string from the input — converted to centavos only at compute time */
   unitPrice: string;
-  /** If prefilled from a product, track it for UX but not for storage */
-  productId?: string;
 }
 
-export type DocumentKind = 'quotation' | 'invoice';
-
-export type DocumentStatus = QuotationStatus | InvoiceStatus;
-
-export interface DocumentInfo {
-  kind: DocumentKind;
-  title: string;
-  numberPrefix: string;
-  secondaryDateLabel: string;
-  secondaryDateKey: 'validUntil' | 'dueDate';
-}
-
-export const DOCUMENT_CONFIG: Record<DocumentKind, DocumentInfo> = {
-  quotation: {
-    kind: 'quotation',
-    title: 'Quotation',
-    numberPrefix: 'QUO',
-    secondaryDateLabel: 'Valid Until',
-    secondaryDateKey: 'validUntil',
-  },
-  invoice: {
-    kind: 'invoice',
-    title: 'Invoice',
-    numberPrefix: 'INV',
-    secondaryDateLabel: 'Due Date',
-    secondaryDateKey: 'dueDate',
-  },
-};
+export type DocumentStatus = DerivedQuotationStatus;
 
 /**
  * Format a Date object or ISO string to YYYY-MM-DD for input[type="date"]
@@ -68,7 +45,7 @@ export function defaultIssueDate(): string {
 }
 
 /**
- * Default validity / due date: today + offset days formatted as YYYY-MM-DD
+ * Default validity date: today + offset days formatted as YYYY-MM-DD
  */
 export function defaultSecondaryDate(daysAhead = 30): string {
   const d = new Date();
@@ -100,20 +77,34 @@ export function rowsToPayloadItems(rows: LineItemRow[]) {
 }
 
 /**
- * Check if a document is editable based on kind and status.
- * Quotations in DRAFT are editable; SENT/ACCEPTED/etc are view/locked.
- * Invoices: PAID and CANCELLED are terminal and permanently immutable (§5.4).
+ * Check if a quotation is editable based on status.
+ * Quotations in DRAFT are editable; SENT/ACCEPTED/etc are locked.
  */
-export function isDocumentEditable(
-  kind: DocumentKind,
-  status?: DocumentStatus | null
-): boolean {
+export function isDocumentEditable(status?: DocumentStatus | null): boolean {
   if (!status) return true; // new document
-  if (kind === 'quotation') {
-    return status === 'DRAFT';
+  return status === 'DRAFT';
+}
+
+/**
+ * Derive quotation status at read time (§6.4):
+ * status ∈ {SENT, VIEWED} && validUntil < today -> EXPIRED
+ * Never stored in the database.
+ */
+export function getDerivedQuotationStatus(
+  status: QuotationStatus | string,
+  validUntil?: Date | string | null
+): DocumentStatus {
+  if ((status === 'SENT' || status === 'VIEWED') && validUntil) {
+    const validDate = typeof validUntil === 'string' ? new Date(validUntil) : validUntil;
+    if (!Number.isNaN(validDate.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (validDate < today) {
+        return 'EXPIRED';
+      }
+    }
   }
-  // invoice: PAID and CANCELLED are terminal; DRAFT and SENT can be edited
-  return status !== 'PAID' && status !== 'CANCELLED';
+  return status as DocumentStatus;
 }
 
 /**
@@ -134,20 +125,15 @@ export function getStatusBadgeConfig(status: DocumentStatus): {
         label: 'Sent',
         className: 'bg-blue-50 text-blue-700 border-blue-200',
       };
+    case 'VIEWED':
+      return {
+        label: 'Viewed',
+        className: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      };
     case 'ACCEPTED':
       return {
         label: 'Accepted',
         className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      };
-    case 'PAID':
-      return {
-        label: 'Paid',
-        className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      };
-    case 'OVERDUE':
-      return {
-        label: 'Overdue',
-        className: 'bg-red-50 text-red-700 border-red-200',
       };
     case 'DECLINED':
       return {
@@ -159,11 +145,6 @@ export function getStatusBadgeConfig(status: DocumentStatus): {
         label: 'Expired',
         className: 'bg-amber-50 text-amber-700 border-amber-200',
       };
-    case 'CANCELLED':
-      return {
-        label: 'Cancelled',
-        className: 'bg-neutral-100 text-neutral-500 border-neutral-200',
-      };
     default:
       return {
         label: status,
@@ -173,132 +154,8 @@ export function getStatusBadgeConfig(status: DocumentStatus): {
 }
 
 /**
- * Standard PDF disclaimer text required by AGENTS.md §4
+ * Standard PDF disclaimer text required by AGENTS.md §3
  */
-export function getDocumentPdfDisclaimer(kind: DocumentKind): string {
-  if (kind === 'quotation') {
-    return 'This document is a quotation and is not an official sales invoice or receipt. It is not valid for tax purposes.';
-  }
-  return 'This document is an invoice and is not an official sales invoice or receipt under BIR regulations. It is not valid for claiming input tax.';
-}
-
-export interface SerializedLineItem {
-  description: string;
-  quantity: number;
-  unitPriceCentavos: number;
-  amountCentavos: number;
-}
-
-export interface SerializedInvoice {
-  id: string;
-  userId: string;
-  customerId: string;
-  number: string;
-  items: SerializedLineItem[];
-  subtotalCentavos: number;
-  discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
-  totalCentavos: number;
-  status: string;
-  issueDate: string;
-  dueDate: string;
-  paidAt: string | null;
-  notes: string;
-  terms: string;
-  publicToken: string | null;
-  customerSnapshot: {
-    name: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    tin?: string;
-  } | null;
-  businessSnapshot: {
-    businessName: string;
-    address?: string;
-    email?: string;
-    phone?: string;
-    tin?: string;
-    vatRegistered: boolean;
-    logoUrl?: string | null;
-  } | null;
-  sourceQuotationId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function serializeInvoice(doc: any): SerializedInvoice {
-  const items = (doc.items as Array<Record<string, unknown>> | undefined) ?? [];
-  const customerSnapshot = doc.customerSnapshot as Record<string, unknown> | null | undefined;
-  const businessSnapshot = doc.businessSnapshot as Record<string, unknown> | null | undefined;
-
-  // Derive OVERDUE at read time (§5.4): status === 'SENT' && dueDate < today
-  let displayStatus = String(doc.status ?? 'DRAFT');
-  if (displayStatus === 'SENT' && doc.dueDate) {
-    const due = new Date(doc.dueDate);
-    const now = new Date();
-    if (due.getTime() < now.getTime()) {
-      displayStatus = 'OVERDUE';
-    }
-  }
-
-  return {
-    id: String(doc._id),
-    userId: String(doc.userId),
-    customerId: String(doc.customerId),
-    number: String(doc.number ?? ''),
-    items: items.map((item) => ({
-      description: String(item.description ?? ''),
-      quantity: Number(item.quantity ?? 0),
-      unitPriceCentavos: Number(item.unitPriceCentavos ?? 0),
-      amountCentavos: Number(item.amountCentavos ?? 0),
-    })),
-    subtotalCentavos: Number(doc.subtotalCentavos ?? 0),
-    discountCentavos: Number(doc.discountCentavos ?? 0),
-    vatRatePercent: Number(doc.vatRatePercent ?? 12),
-    vatCentavos: Number(doc.vatCentavos ?? 0),
-    totalCentavos: Number(doc.totalCentavos ?? 0),
-    status: displayStatus,
-    issueDate: doc.issueDate
-      ? new Date(doc.issueDate as string | number | Date).toISOString()
-      : new Date().toISOString(),
-    dueDate: doc.dueDate
-      ? new Date(doc.dueDate as string | number | Date).toISOString()
-      : new Date().toISOString(),
-    paidAt: doc.paidAt
-      ? new Date(doc.paidAt as string | number | Date).toISOString()
-      : null,
-    notes: String(doc.notes ?? ''),
-    terms: String(doc.terms ?? ''),
-    publicToken: doc.publicToken ? String(doc.publicToken) : null,
-    customerSnapshot: customerSnapshot
-      ? {
-          name: String(customerSnapshot.name ?? ''),
-          email: customerSnapshot.email ? String(customerSnapshot.email) : undefined,
-          phone: customerSnapshot.phone ? String(customerSnapshot.phone) : undefined,
-          address: customerSnapshot.address ? String(customerSnapshot.address) : undefined,
-          tin: customerSnapshot.tin ? String(customerSnapshot.tin) : undefined,
-        }
-      : null,
-    businessSnapshot: businessSnapshot
-      ? {
-          businessName: String(businessSnapshot.businessName ?? ''),
-          address: businessSnapshot.address ? String(businessSnapshot.address) : undefined,
-          email: businessSnapshot.email ? String(businessSnapshot.email) : undefined,
-          phone: businessSnapshot.phone ? String(businessSnapshot.phone) : undefined,
-          tin: businessSnapshot.tin ? String(businessSnapshot.tin) : undefined,
-          vatRegistered: Boolean(businessSnapshot.vatRegistered),
-          logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
-        }
-      : null,
-    sourceQuotationId: doc.sourceQuotationId ? String(doc.sourceQuotationId) : null,
-    createdAt: doc.createdAt
-      ? new Date(doc.createdAt as string | number | Date).toISOString()
-      : new Date().toISOString(),
-    updatedAt: doc.updatedAt
-      ? new Date(doc.updatedAt as string | number | Date).toISOString()
-      : new Date().toISOString(),
-  };
+export function getDocumentPdfDisclaimer(): string {
+  return QUOTATION_FOOTER;
 }

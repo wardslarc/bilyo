@@ -1,7 +1,7 @@
 import { StyleSheet, Font } from '@react-pdf/renderer';
 
 /**
- * Shared PDF styles for quotations and invoices.
+ * Shared PDF styles for quotations.
  * A4 page size (595.28 x 841.89 pts), consistent branding.
  */
 

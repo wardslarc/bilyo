@@ -3,7 +3,6 @@ import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import { styles } from './styles.ts';
 import { formatMoney } from '../../money.ts';
 import { formatDate } from '../../dates.ts';
-import type { DocumentKind } from '../../documents.ts';
 
 export interface PdfLineItem {
   description: string;
@@ -17,8 +16,6 @@ export interface PdfBusinessInfo {
   address?: string;
   email?: string;
   phone?: string;
-  tin?: string;
-  vatRegistered: boolean;
   logoUrl?: string | null;
 }
 
@@ -27,25 +24,21 @@ export interface PdfCustomerInfo {
   email?: string;
   phone?: string;
   address?: string;
-  tin?: string;
 }
 
 export interface BaseDocumentLayoutProps {
-  kind: DocumentKind;
-  documentTitle: string; // e.g. 'QUOTATION' or 'INVOICE'
+  kind?: 'quotation';
+  documentTitle: string; // e.g. 'QUOTATION'
   number: string;
   business: PdfBusinessInfo;
   customer: PdfCustomerInfo;
   items: PdfLineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   issueDate: string | Date;
-  secondaryDateLabel: string; // e.g. 'Valid Until' or 'Due Date'
+  secondaryDateLabel: string; // e.g. 'Valid Until'
   secondaryDate: string | Date;
-  paidAt?: string | Date | null;
   notes?: string;
   terms?: string;
   disclaimer: string;
@@ -75,7 +68,6 @@ export function DocumentHeader({
         {business.address && <Text style={styles.infoTextMuted}>{business.address}</Text>}
         {business.email && <Text style={styles.infoTextMuted}>{business.email}</Text>}
         {business.phone && <Text style={styles.infoTextMuted}>{business.phone}</Text>}
-        {business.tin && <Text style={styles.infoTextMuted}>TIN: {business.tin}</Text>}
       </View>
       <View style={styles.headerRight}>
         <Text style={styles.docTitle}>{title}</Text>
@@ -90,13 +82,11 @@ export function DocumentInfoSection({
   issueDate,
   secondaryDateLabel,
   secondaryDate,
-  paidAt,
 }: {
   customer: PdfCustomerInfo;
   issueDate: string | Date;
   secondaryDateLabel: string;
   secondaryDate: string | Date;
-  paidAt?: string | Date | null;
 }) {
   return (
     <View style={styles.infoSection}>
@@ -106,7 +96,6 @@ export function DocumentInfoSection({
         {customer.address && <Text style={styles.infoText}>{customer.address}</Text>}
         {customer.email && <Text style={styles.infoTextMuted}>{customer.email}</Text>}
         {customer.phone && <Text style={styles.infoTextMuted}>{customer.phone}</Text>}
-        {customer.tin && <Text style={styles.infoTextMuted}>TIN: {customer.tin}</Text>}
       </View>
       <View style={styles.infoBlock}>
         <Text style={styles.infoLabel}>Details</Text>
@@ -114,7 +103,6 @@ export function DocumentInfoSection({
         <Text style={styles.infoText}>
           {secondaryDateLabel}: {formatDate(secondaryDate)}
         </Text>
-        {paidAt && <Text style={styles.infoText}>Paid Date: {formatDate(paidAt)}</Text>}
       </View>
     </View>
   );
@@ -169,16 +157,10 @@ export function DocumentItemsTable({ items }: { items: PdfLineItem[] }) {
 export function DocumentTotalsBlock({
   subtotalCentavos,
   discountCentavos,
-  vatRegistered,
-  vatRatePercent,
-  vatCentavos,
   totalCentavos,
 }: {
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRegistered: boolean;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
 }) {
   return (
@@ -197,14 +179,6 @@ export function DocumentTotalsBlock({
             <Text style={{ ...styles.totalsValue, color: '#dc2626' }}>
               -{formatMoney(discountCentavos)}
             </Text>
-          </View>
-        )}
-
-        {/* VAT — only when business is VAT-registered (§5.2) */}
-        {vatRegistered && (
-          <View style={styles.totalsRow}>
-            <Text style={styles.totalsLabel}>VAT ({vatRatePercent}%)</Text>
-            <Text style={styles.totalsValue}>{formatMoney(vatCentavos)}</Text>
           </View>
         )}
 
@@ -270,13 +244,10 @@ export function BaseDocumentLayout({
   items,
   subtotalCentavos,
   discountCentavos,
-  vatRatePercent,
-  vatCentavos,
   totalCentavos,
   issueDate,
   secondaryDateLabel,
   secondaryDate,
-  paidAt,
   notes,
   terms,
   disclaimer,
@@ -294,15 +265,11 @@ export function BaseDocumentLayout({
           issueDate={issueDate}
           secondaryDateLabel={secondaryDateLabel}
           secondaryDate={secondaryDate}
-          paidAt={paidAt}
         />
         <DocumentItemsTable items={items} />
         <DocumentTotalsBlock
           subtotalCentavos={subtotalCentavos}
           discountCentavos={discountCentavos}
-          vatRegistered={business.vatRegistered}
-          vatRatePercent={vatRatePercent}
-          vatCentavos={vatCentavos}
           totalCentavos={totalCentavos}
         />
         <DocumentNotesAndTerms notes={notes} terms={terms} />

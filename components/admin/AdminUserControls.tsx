@@ -7,12 +7,9 @@ import {
   unsuspendUser,
   disableUserPublicLinks,
   enableUserPublicLinks,
-  setPlanOverride,
-  clearPlanOverride,
   resetUserMfa,
 } from '@/actions/admin/users';
 import { formatDate } from '@/lib/dates';
-import type { Plan } from '@/types';
 
 interface AdminUserControlsProps {
   user: {
@@ -20,12 +17,6 @@ interface AdminUserControlsProps {
     email: string;
     name: string;
     role: 'USER' | 'ADMIN';
-    plan: 'FREE' | 'FREELANCER' | 'BUSINESS';
-    planSource: 'DEFAULT' | 'BILLING' | 'ADMIN';
-    isPlanOverridden: boolean;
-    planOverrideExpiresAt?: Date | null;
-    planOverrideReason?: string | null;
-    billingPlan?: 'FREE' | 'FREELANCER' | 'BUSINESS' | null;
     suspendedAt: Date | null;
     suspendedReason?: string | null;
     publicLinksDisabledAt?: Date | null;
@@ -39,16 +30,12 @@ type ModalType =
   | 'unsuspend'
   | 'disable-links'
   | 'enable-links'
-  | 'set-plan'
-  | 'clear-plan'
   | 'mfa-reset'
   | null;
 
 export function AdminUserControls({ user }: AdminUserControlsProps) {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [reason, setReason] = useState('');
-  const [overridePlan, setOverridePlan] = useState<Plan>('BUSINESS');
-  const [overrideDays, setOverrideDays] = useState<number>(90);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -62,10 +49,6 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
     setActiveModal(type);
     setReason('');
     setError(null);
-    if (type === 'set-plan') {
-      setOverridePlan(user.plan === 'FREE' ? 'BUSINESS' : user.plan);
-      setOverrideDays(90);
-    }
   };
 
   const closeModal = () => {
@@ -93,15 +76,6 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
         res = await disableUserPublicLinks({ userId: user.id, reason: trimmed });
       } else if (activeModal === 'enable-links') {
         res = await enableUserPublicLinks({ userId: user.id, reason: trimmed });
-      } else if (activeModal === 'set-plan') {
-        res = await setPlanOverride({
-          userId: user.id,
-          plan: overridePlan,
-          reason: trimmed,
-          days: overrideDays,
-        });
-      } else if (activeModal === 'clear-plan') {
-        res = await clearPlanOverride({ userId: user.id, reason: trimmed });
       } else if (activeModal === 'mfa-reset') {
         res = await resetUserMfa({ userId: user.id, reason: trimmed });
       }
@@ -119,11 +93,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                 ? 'Public links have been disabled for this user.'
                 : activeModal === 'enable-links'
                   ? 'Public links have been re-enabled for this user.'
-                  : activeModal === 'set-plan'
-                    ? `Plan override to ${overridePlan} set for ${overrideDays} days.`
-                    : activeModal === 'clear-plan'
-                      ? 'Plan override has been cleared.'
-                      : 'MFA has been reset. The user must enrol a new authenticator device on next sign-in.'
+                  : 'MFA has been reset. The user must enrol a new authenticator device on next sign-in.'
         );
         router.refresh();
       }
@@ -146,107 +116,40 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
             />
           </svg>
-          <h2 className="font-semibold text-slate-900">
-            Account & Security Controls
-          </h2>
+          <h2 className="font-semibold text-slate-900">Administrative Controls</h2>
         </div>
-        <span className="text-xs text-slate-400 font-medium">Audited Actions (§5.8, §5.9, §5.10)</span>
+        <span className="text-xs text-slate-400">Audited Mutations</span>
       </div>
 
+      {/* Success banner */}
       {success && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md text-emerald-800 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>{success}</span>
-          </div>
+        <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-800 flex items-center justify-between">
+          <span>{success}</span>
           <button
             onClick={() => setSuccess(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold ml-4"
+            className="text-emerald-600 hover:text-emerald-900 font-bold ml-2"
           >
             ×
           </button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {/* Plan & Subscription Card (§5.10) */}
+      {/* Control Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Account Suspension Box (§5.9) */}
         <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
           <div className="flex items-start justify-between">
             <div>
               <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Subscription Tier
-              </span>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="font-mono font-bold text-sm text-slate-900">
-                  {user.plan}
-                </span>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${
-                    user.isPlanOverridden
-                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                      : user.planSource === 'BILLING'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {user.isPlanOverridden
-                    ? 'ADMIN OVERRIDE'
-                    : user.planSource === 'BILLING'
-                      ? 'BILLING'
-                      : 'DEFAULT'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {user.isPlanOverridden && user.planOverrideExpiresAt
-                  ? `Override expires ${formatDate(user.planOverrideExpiresAt)}`
-                  : user.billingPlan
-                    ? `Billing plan: ${user.billingPlan}`
-                    : 'Standard free tier.'}
-              </p>
-              {user.isPlanOverridden && user.planOverrideReason && (
-                <p className="text-[11px] text-purple-700 mt-0.5 italic">
-                  &ldquo;{user.planOverrideReason}&rdquo;
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 pt-1">
-            <button
-              id="btn-override-plan"
-              onClick={() => openModal('set-plan')}
-              className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-md shadow-xs bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
-            >
-              {user.isPlanOverridden ? 'Update Override...' : 'Override Plan...'}
-            </button>
-            {user.isPlanOverridden && (
-              <button
-                id="btn-clear-plan-override"
-                onClick={() => openModal('clear-plan')}
-                className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors"
-              >
-                Clear Override
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Suspension Control Box (§5.9) */}
-        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Account Access
+                Account Status
               </span>
               <p className="text-xs text-slate-500 mt-0.5">
-                {isSuspended && user.suspendedAt
-                  ? `Suspended on ${formatDate(user.suspendedAt)}`
-                  : 'Account is active. Sign-in and document mutations enabled.'}
+                {isSuspended
+                  ? `Suspended: "${user.suspendedReason || 'No reason provided'}"`
+                  : 'Account is active and permitted to sign in.'}
               </p>
             </div>
             <span
@@ -293,7 +196,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
               <p className="text-xs text-slate-500 mt-0.5">
                 {isPublicLinksDisabled && user.publicLinksDisabledAt
                   ? `Public links disabled on ${formatDate(user.publicLinksDisabledAt)} (returning 404)`
-                  : 'Customer links (/i/*, /q/*) are active and resolving.'}
+                  : 'Customer quotation links (/q/*) are active and resolving.'}
               </p>
             </div>
             <span
@@ -385,11 +288,7 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                       ? 'bg-rose-100 text-rose-700'
                       : activeModal === 'unsuspend'
                         ? 'bg-emerald-100 text-emerald-700'
-                        : activeModal === 'disable-links' || activeModal === 'mfa-reset'
-                          ? 'bg-amber-100 text-amber-700'
-                          : activeModal === 'enable-links'
-                            ? 'bg-indigo-100 text-indigo-700'
-                            : 'bg-purple-100 text-purple-700'
+                        : 'bg-amber-100 text-amber-700'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -407,8 +306,6 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                     {activeModal === 'unsuspend' && 'Confirm Account Unsuspension'}
                     {activeModal === 'disable-links' && 'Disable All Public Links (Abuse Containment)'}
                     {activeModal === 'enable-links' && 'Re-enable Public Document Links'}
-                    {activeModal === 'set-plan' && 'Set Administrative Plan Override'}
-                    {activeModal === 'clear-plan' && 'Clear Administrative Plan Override'}
                     {activeModal === 'mfa-reset' && 'Reset Multi-Factor Authentication (MFA)'}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -428,52 +325,12 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
               </button>
             </div>
 
-            {/* Plan override specific fields */}
-            {activeModal === 'set-plan' && (
-              <div className="space-y-4 pt-1">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Override Plan Tier
-                    </label>
-                    <select
-                      id="select-override-plan"
-                      value={overridePlan}
-                      onChange={(e) => setOverridePlan(e.target.value as Plan)}
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 font-semibold"
-                    >
-                      <option value="FREELANCER">FREELANCER (₱299/mo)</option>
-                      <option value="BUSINESS">BUSINESS (₱599/mo)</option>
-                      <option value="FREE">FREE</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Duration (Days)
-                    </label>
-                    <select
-                      id="select-override-days"
-                      value={overrideDays}
-                      onChange={(e) => setOverrideDays(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
-                    >
-                      <option value={30}>30 Days (1 Month)</option>
-                      <option value={60}>60 Days (2 Months)</option>
-                      <option value={90}>90 Days (Default / Quarter)</option>
-                      <option value={180}>180 Days (Half Year)</option>
-                      <option value={365}>365 Days (1 Year)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Explanatory notice */}
             <div className="text-xs text-slate-600 bg-slate-50 p-3.5 rounded-lg border border-slate-200 leading-relaxed">
               {activeModal === 'suspend' && (
                 <span>
                   Suspending this account immediately blocks future sign-ins and prevents mutating
-                  actions. <strong>Existing public links stay alive</strong> so issued invoices
+                  actions. <strong>Existing public links stay alive</strong> so issued quotations
                   remain accessible to customers (§5.9).
                 </span>
               )}
@@ -487,27 +344,13 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                 <span>
                   <strong>Abuse & fraud containment:</strong> Setting{' '}
                   <code className="font-mono bg-slate-200 px-1 py-0.5 rounded">publicLinksDisabledAt</code>{' '}
-                  makes every public invoice and quotation link (<code className="font-mono">/i/*</code>,{' '}
-                  <code className="font-mono">/q/*</code>) for this account immediately return 404.
+                  makes every public quotation link (<code className="font-mono">/q/*</code>) for this account immediately return 404.
                 </span>
               )}
               {activeModal === 'enable-links' && (
                 <span>
-                  Re-enabling public links clears the link disabled restriction. Customer-facing invoice
-                  and quotation views will resolve normally again.
-                </span>
-              )}
-              {activeModal === 'set-plan' && (
-                <span>
-                  An administrative override takes effect immediately and lifts plan limits instantly (§5.10).
-                  When the duration expires, the account falls back gracefully to billing or FREE with zero
-                  background cleanup jobs.
-                </span>
-              )}
-              {activeModal === 'clear-plan' && (
-                <span>
-                  Clearing the override restores the user to their underlying billing plan (or FREE default)
-                  immediately.
+                  Re-enabling public links clears the link disabled restriction. Customer-facing quotation
+                  views will resolve normally again.
                 </span>
               )}
               {activeModal === 'mfa-reset' && (
@@ -516,98 +359,70 @@ export function AdminUserControls({ user }: AdminUserControlsProps) {
                   <strong className="font-mono">{user.email}</strong> will immediately clear all enrolled
                   secrets, replay counters, and recovery codes. The user will be required to configure a new
                   authenticator app from scratch upon their next sign-in.
-                  <br /><br />
-                  <span className="text-slate-500 italic">
-                    Note: Per security guidelines (§3.8), previous secrets and recovery codes are permanently deleted and never revealed.
-                  </span>
                 </span>
               )}
             </div>
 
-            {/* Error banner */}
-            {error && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-center gap-2">
-                <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Reason Textarea (M7-T06: requires min 10 chars before button enables) */}
+            {/* Mandatory Reason Input */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <label htmlFor="action-reason-input" className="font-semibold text-slate-700">
-                  Justification / Reason (Audited)
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Mandatory Operational Justification (Audit Log)
                 </label>
                 <span
-                  className={`font-mono text-[11px] ${
-                    isReasonValid ? 'text-emerald-600 font-bold' : 'text-slate-400'
+                  className={`text-[11px] font-mono ${
+                    isReasonValid ? 'text-slate-400' : 'text-amber-600 font-semibold'
                   }`}
                 >
-                  {reason.trim().length} / 10 characters min
+                  {reason.trim().length}/10 chars min
                 </span>
               </div>
               <textarea
-                id="action-reason-input"
+                id="input-admin-reason"
                 rows={3}
                 value={reason}
-                onChange={(e) => {
-                  setReason(e.target.value);
-                  if (error) setError(null);
-                }}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Describe the verified operational justification or support ticket ID (min 10 chars)..."
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 disabled:bg-slate-50"
                 disabled={isPending}
-                placeholder="Specify the operational or support justification for this action..."
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                 autoFocus
               />
               <p className="text-[11px] text-slate-400">
-                This justification will be permanently recorded in the append-only admin audit log.
+                This entry will be permanently recorded in the immutable platform audit log with your admin identity.
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-2">
+            {/* Error banner */}
+            {error && (
+              <div className="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-md">
+                {error}
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={closeModal}
                 disabled={isPending}
-                className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                id="btn-confirm-action"
                 type="button"
+                id="btn-confirm-admin-action"
                 onClick={handleConfirm}
                 disabled={!isReasonValid || isPending}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white rounded-md shadow-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`px-4 py-2 text-xs font-semibold text-white rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs ${
                   activeModal === 'suspend'
                     ? 'bg-rose-600 hover:bg-rose-700'
                     : activeModal === 'unsuspend'
                       ? 'bg-emerald-600 hover:bg-emerald-700'
-                      : activeModal === 'disable-links' || activeModal === 'mfa-reset'
-                        ? 'bg-amber-600 hover:bg-amber-700'
-                        : activeModal === 'set-plan'
-                          ? 'bg-purple-600 hover:bg-purple-700'
-                          : 'bg-indigo-600 hover:bg-indigo-700'
+                      : 'bg-amber-600 hover:bg-amber-700'
                 }`}
               >
-                {isPending && (
-                  <svg className="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                )}
-                <span>
-                  {activeModal === 'suspend' && 'Confirm Suspension'}
-                  {activeModal === 'unsuspend' && 'Confirm Unsuspension'}
-                  {activeModal === 'disable-links' && 'Confirm Link Disablement'}
-                  {activeModal === 'enable-links' && 'Confirm Link Re-enablement'}
-                  {activeModal === 'set-plan' && 'Apply Plan Override'}
-                  {activeModal === 'clear-plan' && 'Clear Plan Override'}
-                  {activeModal === 'mfa-reset' && 'Confirm MFA Reset'}
-                </span>
+                {isPending ? 'Processing...' : 'Confirm Action'}
               </button>
             </div>
           </div>

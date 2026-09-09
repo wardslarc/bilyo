@@ -1,9 +1,8 @@
 export { User } from './user';
 export { Business } from './business';
 export { Customer } from './customer';
-export { Product } from './product';
-export { Invoice } from './invoice';
 export { Quotation } from './quotation';
 export { Counter } from './counter';
 export { PasswordResetToken } from './password-reset-token';
 export { AdminAuditLog } from './admin-audit-log';
+export { Event } from './event';

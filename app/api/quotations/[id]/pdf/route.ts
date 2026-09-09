@@ -45,13 +45,12 @@ export async function GET(_request: Request, { params }: RouteContext): Promise<
     quotation.businessSnapshot ||
     (await Business.findOne({ userId: user.id })) || {
       businessName: 'Business',
-      vatRegistered: false,
     };
 
   const customer =
     quotation.customerSnapshot ||
     (await Customer.findOne({ _id: quotation.customerId, userId: user.id })) || {
-      name: 'Customer',
+      name: 'Client',
     };
 
   const pdfProps: QuotationDocumentProps = {
@@ -64,8 +63,6 @@ export async function GET(_request: Request, { params }: RouteContext): Promise<
     })),
     subtotalCentavos: quotation.subtotalCentavos,
     discountCentavos: quotation.discountCentavos,
-    vatRatePercent: quotation.vatRatePercent,
-    vatCentavos: quotation.vatCentavos,
     totalCentavos: quotation.totalCentavos,
     issueDate: quotation.issueDate,
     validUntil: quotation.validUntil,
@@ -76,8 +73,6 @@ export async function GET(_request: Request, { params }: RouteContext): Promise<
       address: business.address,
       email: business.email,
       phone: business.phone,
-      tin: business.tin,
-      vatRegistered: business.vatRegistered,
       logoUrl: business.logoUrl,
     },
     customer: {
@@ -85,7 +80,6 @@ export async function GET(_request: Request, { params }: RouteContext): Promise<
       email: customer.email,
       phone: customer.phone,
       address: customer.address,
-      tin: customer.tin,
     },
   };
 

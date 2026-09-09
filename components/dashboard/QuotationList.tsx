@@ -2,62 +2,43 @@
 
 import React, { useState, useTransition, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   getQuotations,
   sendQuotation,
-  acceptQuotation,
-  declineQuotation,
-  convertQuotationToInvoice,
   type SerializedQuotation,
 } from '@/actions/quotations';
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
-import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
+
+import {
+  type DocumentStatus,
+  getDerivedQuotationStatus,
+  getStatusBadgeConfig,
+} from '@/lib/documents';
 
 // --- Status helpers ---
-
-type QuotationStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'DRAFT', label: 'Draft' },
   { value: 'SENT', label: 'Sent' },
+  { value: 'VIEWED', label: 'Viewed' },
   { value: 'ACCEPTED', label: 'Accepted' },
   { value: 'DECLINED', label: 'Declined' },
+  { value: 'EXPIRED', label: 'Expired' },
 ];
 
-function statusBadgeClasses(status: QuotationStatus): string {
-  const base = 'inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full';
-  switch (status) {
-    case 'DRAFT':
-      return `${base} bg-neutral-100 text-neutral-600 border border-neutral-200`;
-    case 'SENT':
-      return `${base} bg-blue-50 text-blue-700 border border-blue-200`;
-    case 'ACCEPTED':
-      return `${base} bg-emerald-50 text-emerald-700 border border-emerald-200`;
-    case 'DECLINED':
-      return `${base} bg-red-50 text-red-700 border border-red-200`;
-    case 'EXPIRED':
-      return `${base} bg-amber-50 text-amber-700 border border-amber-200`;
-    default:
-      return `${base} bg-neutral-100 text-neutral-600`;
-  }
+function statusBadgeClasses(status: DocumentStatus): string {
+  const base = 'inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full border';
+  const badge = getStatusBadgeConfig(status);
+  return `${base} ${badge.className}`;
 }
 
 /**
- * Derive EXPIRED at read time (§5.4): validUntil < today and status is SENT
+ * Derive EXPIRED at read time (§6.4): status ∈ {SENT, VIEWED} && validUntil < today
  */
-function deriveStatus(q: SerializedQuotation): QuotationStatus {
-  if (q.status === 'SENT') {
-    const validUntil = new Date(q.validUntil);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (validUntil < today) {
-      return 'EXPIRED';
-    }
-  }
-  return q.status as QuotationStatus;
+function deriveStatus(q: SerializedQuotation): DocumentStatus {
+  return getDerivedQuotationStatus(q.status, q.validUntil);
 }
 
 // --- Props ---
@@ -68,8 +49,8 @@ interface QuotationListProps {
 
 // --- Component ---
 
+
 export function QuotationList({ initialQuotations }: QuotationListProps) {
-  const router = useRouter();
   const [quotations, setQuotations] = useState<SerializedQuotation[]>(initialQuotations);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -104,7 +85,7 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
   };
 
   const handleSend = (id: string) => {
-    if (!confirm('Send this quotation? The customer and business details will be locked in.')) return;
+    if (!confirm('Send this quotation? The client and business details will be locked in.')) return;
     startTransition(async () => {
       const res = await sendQuotation(id);
       if (!res.ok) {
@@ -116,51 +97,13 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
     });
   };
 
-  const handleAccept = (id: string) => {
-    startTransition(async () => {
-      const res = await acceptQuotation(id);
-      if (!res.ok) {
-        setActionError(res.error);
-        return;
-      }
-      setActionError(null);
-      refreshList();
-    });
-  };
-
-  const handleDecline = (id: string) => {
-    if (!confirm('Decline this quotation?')) return;
-    startTransition(async () => {
-      const res = await declineQuotation(id);
-      if (!res.ok) {
-        setActionError(res.error);
-        return;
-      }
-      setActionError(null);
-      refreshList();
-    });
-  };
-
-  const handleConvert = (id: string) => {
-    startTransition(async () => {
-      const res = await convertQuotationToInvoice(id);
-      if (!res.ok) {
-        setActionError(res.error);
-        return;
-      }
-      setActionError(null);
-      router.push(`/dashboard/invoices/${res.data.id}`);
-    });
-  };
-
   return (
     <div className="space-y-5">
-      {/* Action error / Plan limit upgrade prompt */}
       {actionError && (
-        <PlanLimitAlert
-          error={actionError}
-          onDismiss={() => setActionError(null)}
-        />
+        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} className="text-red-500 hover:text-red-700 text-xs font-medium">Dismiss</button>
+        </div>
       )}
 
       {/* Toolbar */}
@@ -216,7 +159,7 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
             {statusFilter === 'ALL' ? 'No quotations yet' : `No ${statusFilter.toLowerCase()} quotations`}
           </p>
           <p className="text-xs text-[var(--color-muted)] mb-5">
-            Create your first quotation to start sending proposals to your customers.
+            Create your first quotation to start sending proposals to your clients.
           </p>
           <Link
             href="/dashboard/quotations/new"
@@ -249,7 +192,7 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                       {q.number}
                     </Link>
                     <span className={statusBadgeClasses(displayStatus)}>
-                      {displayStatus}
+                      {getStatusBadgeConfig(displayStatus).label}
                     </span>
                   </div>
                   <span className="text-sm font-bold text-[var(--color-text)]">
@@ -292,45 +235,6 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                       >
                         Send
                       </button>
-                    )}
-                    {q.status === 'SENT' && displayStatus !== 'EXPIRED' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleAccept(q.id)}
-                          disabled={isPending}
-                          className="text-xs font-medium text-emerald-600 hover:underline disabled:opacity-40"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDecline(q.id)}
-                          disabled={isPending}
-                          className="text-xs font-medium text-red-600 hover:underline disabled:opacity-40"
-                        >
-                          Decline
-                        </button>
-                      </>
-                    )}
-                    {q.convertedInvoiceId ? (
-                      <Link
-                        href={`/dashboard/invoices/${q.convertedInvoiceId}`}
-                        className="text-xs font-medium text-emerald-600 hover:underline flex items-center gap-0.5"
-                      >
-                        Invoice →
-                      </Link>
-                    ) : (
-                      (q.status === 'SENT' || q.status === 'ACCEPTED') && (
-                        <button
-                          type="button"
-                          onClick={() => handleConvert(q.id)}
-                          disabled={isPending}
-                          className="text-xs font-medium text-purple-600 hover:underline disabled:opacity-40"
-                        >
-                          Convert to Invoice
-                        </button>
-                      )
                     )}
                   </div>
                 </div>

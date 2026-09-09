@@ -14,10 +14,6 @@ export interface TotalsPanelProps {
   discountInput: string;
   /** Callback when the user changes the discount */
   onDiscountChange: (value: string) => void;
-  /** Whether the business is VAT-registered (controls whether the VAT line shows) */
-  vatRegistered: boolean;
-  /** VAT rate percent — defaults to 12 */
-  vatRatePercent?: number;
   /**
    * After a server save, the server's recomputed totals replace the client preview.
    * A mismatch is never resolved in the client's favour (§3.3).
@@ -67,8 +63,6 @@ export function TotalsPanel({
   items,
   discountInput,
   onDiscountChange,
-  vatRegistered,
-  vatRatePercent = 12,
   serverTotals,
   disabled,
 }: TotalsPanelProps) {
@@ -80,10 +74,8 @@ export function TotalsPanel({
     return computeTotals({
       items: parsedItems,
       discountCentavos,
-      vatRegistered,
-      vatRatePercent,
     });
-  }, [items, discountInput, vatRegistered, vatRatePercent]);
+  }, [items, discountInput]);
 
   // Use server totals when available, otherwise client preview
   const totals = serverTotals ?? clientTotals;
@@ -171,18 +163,6 @@ export function TotalsPanel({
             </span>
             <span className="text-red-600 font-medium font-mono text-right shrink-0">
               −{formatMoney(totals.discountCentavos)}
-            </span>
-          </div>
-        )}
-
-        {/* VAT — only when business is VAT-registered (§5.2) */}
-        {vatRegistered && (
-          <div className="flex items-center justify-between text-sm gap-2">
-            <span className="text-[var(--color-muted)] shrink-0">
-              VAT ({totals.vatRatePercent}%)
-            </span>
-            <span className="font-medium font-mono text-[var(--color-text)] text-right truncate">
-              {formatMoney(totals.vatCentavos)}
             </span>
           </div>
         )}

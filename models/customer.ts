@@ -29,11 +29,6 @@ const CustomerSchema = new Schema<ICustomer>(
       default: '',
       trim: true,
     },
-    tin: {
-      type: String,
-      default: '',
-      trim: true,
-    },
     notes: {
       type: String,
       default: '',

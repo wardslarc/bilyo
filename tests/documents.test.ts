@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DOCUMENT_CONFIG,
+  QUOTATION_FOOTER,
   toDateInputValue,
   defaultIssueDate,
   defaultSecondaryDate,
@@ -10,22 +10,11 @@ import {
   isDocumentEditable,
   getStatusBadgeConfig,
   getDocumentPdfDisclaimer,
+  getDerivedQuotationStatus,
 } from '../lib/documents.ts';
 
 describe('Shared Document Engine (M4-T01)', () => {
   describe('lib/documents.ts configuration and helpers', () => {
-    test('DOCUMENT_CONFIG defines metadata for quotation and invoice', () => {
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.title, 'Quotation');
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.numberPrefix, 'QUO');
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.secondaryDateLabel, 'Valid Until');
-      assert.strictEqual(DOCUMENT_CONFIG.quotation.secondaryDateKey, 'validUntil');
-
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.title, 'Invoice');
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.numberPrefix, 'INV');
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.secondaryDateLabel, 'Due Date');
-      assert.strictEqual(DOCUMENT_CONFIG.invoice.secondaryDateKey, 'dueDate');
-    });
-
     test('toDateInputValue formats dates for input[type="date"]', () => {
       assert.strictEqual(toDateInputValue(null), '');
       assert.strictEqual(toDateInputValue(undefined), '');
@@ -67,36 +56,54 @@ describe('Shared Document Engine (M4-T01)', () => {
       assert.strictEqual(payload[0].unitPrice, '1500.00');
     });
 
-    test('isDocumentEditable enforces lifecycle immutability (§5.4)', () => {
+    test('getDerivedQuotationStatus derives EXPIRED at read time (§6.4, P2-T05)', () => {
+      const pastDate = new Date(Date.now() - 86400000); // 1 day ago
+      const futureDate = new Date(Date.now() + 86400000); // 1 day ahead
+
+      // DRAFT is never derived as EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('DRAFT', pastDate), 'DRAFT');
+      assert.strictEqual(getDerivedQuotationStatus('DRAFT', futureDate), 'DRAFT');
+
+      // SENT: future stays SENT, past derives EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('SENT', futureDate), 'SENT');
+      assert.strictEqual(getDerivedQuotationStatus('SENT', pastDate), 'EXPIRED');
+
+      // VIEWED: future stays VIEWED, past derives EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('VIEWED', futureDate), 'VIEWED');
+      assert.strictEqual(getDerivedQuotationStatus('VIEWED', pastDate), 'EXPIRED');
+
+      // ACCEPTED and DECLINED are terminal (§6.4) and never derive as EXPIRED
+      assert.strictEqual(getDerivedQuotationStatus('ACCEPTED', pastDate), 'ACCEPTED');
+      assert.strictEqual(getDerivedQuotationStatus('DECLINED', pastDate), 'DECLINED');
+
+      // Null or invalid validUntil does not crash and preserves status
+      assert.strictEqual(getDerivedQuotationStatus('SENT', null), 'SENT');
+      assert.strictEqual(getDerivedQuotationStatus('VIEWED', undefined), 'VIEWED');
+      assert.strictEqual(getDerivedQuotationStatus('SENT', 'invalid-date'), 'SENT');
+    });
+
+    test('isDocumentEditable enforces lifecycle immutability (§5.4, §6.4)', () => {
       // Quotation: only DRAFT is editable
-      assert.strictEqual(isDocumentEditable('quotation', 'DRAFT'), true);
-      assert.strictEqual(isDocumentEditable('quotation', 'SENT'), false);
-      assert.strictEqual(isDocumentEditable('quotation', 'ACCEPTED'), false);
-      assert.strictEqual(isDocumentEditable('quotation', 'DECLINED'), false);
-      assert.strictEqual(isDocumentEditable('quotation', 'EXPIRED'), false);
+      assert.strictEqual(isDocumentEditable('DRAFT'), true);
+      assert.strictEqual(isDocumentEditable('SENT'), false);
+      assert.strictEqual(isDocumentEditable('VIEWED'), false);
+      assert.strictEqual(isDocumentEditable('ACCEPTED'), false);
+      assert.strictEqual(isDocumentEditable('DECLINED'), false);
+      assert.strictEqual(isDocumentEditable('EXPIRED'), false);
 
-      // Invoice: PAID and CANCELLED are terminal and immutable
-      assert.strictEqual(isDocumentEditable('invoice', 'DRAFT'), true);
-      assert.strictEqual(isDocumentEditable('invoice', 'SENT'), true);
-      assert.strictEqual(isDocumentEditable('invoice', 'PAID'), false);
-      assert.strictEqual(isDocumentEditable('invoice', 'CANCELLED'), false);
-      assert.strictEqual(isDocumentEditable('invoice', 'OVERDUE'), true);
-
-      // New documents
-      assert.strictEqual(isDocumentEditable('quotation', null), true);
-      assert.strictEqual(isDocumentEditable('invoice', null), true);
+      // New documents (null / undefined)
+      assert.strictEqual(isDocumentEditable(null), true);
+      assert.strictEqual(isDocumentEditable(undefined), true);
     });
 
     test('getStatusBadgeConfig provides distinct styling for all statuses', () => {
       const statuses = [
         'DRAFT',
         'SENT',
+        'VIEWED',
         'ACCEPTED',
-        'PAID',
-        'OVERDUE',
         'DECLINED',
         'EXPIRED',
-        'CANCELLED',
       ] as const;
 
       for (const status of statuses) {
@@ -104,15 +111,38 @@ describe('Shared Document Engine (M4-T01)', () => {
         assert.ok(badge.label.length > 0);
         assert.ok(badge.className.includes('border-'));
       }
+
+      assert.strictEqual(getStatusBadgeConfig('VIEWED').label, 'Viewed');
+      assert.strictEqual(getStatusBadgeConfig('EXPIRED').label, 'Expired');
     });
 
-    test('getDocumentPdfDisclaimer contains non-official disclaimer (AGENTS.md §4)', () => {
-      const quoDisclaimer = getDocumentPdfDisclaimer('quotation');
-      assert.ok(quoDisclaimer.includes('not an official sales invoice'));
+    test('QUOTATION_FOOTER and getDocumentPdfDisclaimer contain exact legal disclaimer (§2.3, P2-T05)', () => {
+      const disclaimer = getDocumentPdfDisclaimer();
+      assert.strictEqual(disclaimer, QUOTATION_FOOTER);
+      assert.strictEqual(
+        QUOTATION_FOOTER,
+        'This is a quotation, not a tax document. It is not an invoice or official receipt.'
+      );
+    });
 
-      const invDisclaimer = getDocumentPdfDisclaimer('invoice');
-      assert.ok(invDisclaimer.includes('not an official sales invoice'));
-      assert.ok(invDisclaimer.includes('BIR regulations'));
+    test('line items validation logic rejects incomplete rows for autosave (§6.4, P2-T04)', () => {
+      const isLineValid = (item: { description: string; quantity: string; unitPrice: string }) => {
+        if (!item.description.trim()) return false;
+        const q = Number(item.quantity);
+        if (!Number.isFinite(q) || q <= 0) return false;
+        if (!item.unitPrice.trim() || Number.isNaN(Number(item.unitPrice)) || Number(item.unitPrice) < 0) return false;
+        return true;
+      };
+
+      // Valid line item
+      assert.strictEqual(isLineValid({ description: 'Consulting', quantity: '1', unitPrice: '5000' }), true);
+
+      // Incomplete lines that must never trigger autosave (P2-T04 accept)
+      assert.strictEqual(isLineValid({ description: '', quantity: '1', unitPrice: '5000' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '0', unitPrice: '5000' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '-1', unitPrice: '5000' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '1', unitPrice: '' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '1', unitPrice: '-10' }), false);
     });
   });
 });

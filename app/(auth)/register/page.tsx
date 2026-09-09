@@ -66,7 +66,7 @@ export default function RegisterPage() {
         await signIn('credentials', {
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
-          callbackUrl: '/onboarding/mfa',
+          callbackUrl: '/dashboard',
         });
       } catch {
         router.push('/login?registered=1');
@@ -81,7 +81,7 @@ export default function RegisterPage() {
           Create your account
         </h1>
         <p className="text-sm text-[var(--color-muted)] mt-1">
-          Start creating quotations and invoices in minutes
+          Start sending quotations and closing sales in minutes
         </p>
       </div>
 

@@ -22,8 +22,6 @@ describe('Password Reset Flow (M1-T06)', () => {
       passwordHash,
       name: 'Reset Test User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     userId = user._id.toString();
   });

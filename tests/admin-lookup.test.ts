@@ -2,10 +2,10 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateLookupQuery, type AdminLookupMatch } from '../lib/admin/lookup.ts';
 
-describe('Admin Support Lookup (M7-T04)', () => {
+describe('Admin Quotation Lookup (P1-T06)', () => {
   describe('Query Validation & Guards (validateLookupQuery)', () => {
     test('rejects queries shorter than 4 characters', () => {
-      const shortQueries = ['', 'a', 'ab', 'abc', 'INV', 'quo', '123', '   '];
+      const shortQueries = ['', 'a', 'ab', 'abc', 'quo', '123', '   '];
       for (const q of shortQueries) {
         const res = validateLookupQuery(q);
         assert.strictEqual(res.valid, false, `Expected "${q}" to be rejected`);
@@ -15,8 +15,8 @@ describe('Admin Support Lookup (M7-T04)', () => {
       }
     });
 
-    test('rejects bare prefixes that could dump all invoices or quotations', () => {
-      const barePrefixes = ['INV-', 'inv-', 'QUO-', 'quo-', '  INV-  ', '  QUO-  '];
+    test('rejects bare prefixes that could dump all quotations', () => {
+      const barePrefixes = ['QUO-', 'quo-', '  QUO-  ', 'Q-', 'q-'];
       for (const q of barePrefixes) {
         const res = validateLookupQuery(q);
         assert.strictEqual(res.valid, false, `Expected bare prefix "${q}" to be rejected`);
@@ -26,8 +26,8 @@ describe('Admin Support Lookup (M7-T04)', () => {
       }
     });
 
-    test('accepts full document numbers', () => {
-      const validNumbers = ['INV-000001', 'INV-000042', 'QUO-000001', 'QUO-000100'];
+    test('accepts full quotation numbers in old and new formats', () => {
+      const validNumbers = ['QUO-000001', 'QUO-000100', 'Q-2026-0001', 'Q-2027-0042'];
       for (const q of validNumbers) {
         const res = validateLookupQuery(q);
         assert.strictEqual(res.valid, true, `Expected "${q}" to be valid`);
@@ -37,28 +37,21 @@ describe('Admin Support Lookup (M7-T04)', () => {
       }
     });
 
-    test('normalizes shorthand document numbers with 6-digit zero padding', () => {
-      const res1 = validateLookupQuery('INV-42');
+    test('normalizes shorthand quotation numbers with zero padding', () => {
+      const res1 = validateLookupQuery('quo-7');
       assert.strictEqual(res1.valid, true);
       if (res1.valid) {
-        assert.ok(res1.candidateNumbers.includes('INV-000042'));
-        assert.ok(res1.candidateNumbers.includes('INV-42'));
+        assert.ok(res1.candidateNumbers.includes('QUO-000007'));
       }
 
-      const res2 = validateLookupQuery('quo-7');
+      const res2 = validateLookupQuery('Q-2026-12');
       assert.strictEqual(res2.valid, true);
       if (res2.valid) {
-        assert.ok(res2.candidateNumbers.includes('QUO-000007'));
-      }
-
-      const res3 = validateLookupQuery('INV-1');
-      assert.strictEqual(res3.valid, true);
-      if (res3.valid) {
-        assert.ok(res3.candidateNumbers.includes('INV-000001'));
+        assert.ok(res2.candidateNumbers.includes('Q-2026-0012'));
       }
     });
 
-    test('accepts 12-character public tokens', () => {
+    test('accepts 12-character public tokens and codes', () => {
       const token = 'aB3_d9Xz1234';
       const res = validateLookupQuery(token);
       assert.strictEqual(res.valid, true);
@@ -69,11 +62,11 @@ describe('Admin Support Lookup (M7-T04)', () => {
   });
 
   describe('Lookup Results Handling & Routing', () => {
-    test('resolves single match redirect URL correctly', () => {
+    test('resolves single match redirect URL to /admin/quotations/[id]', () => {
       const match: AdminLookupMatch = {
         id: '507f1f77bcf86cd799439011',
-        kind: 'invoice',
-        number: 'INV-000042',
+        kind: 'quotation',
+        number: 'Q-2026-0042',
         status: 'SENT',
         userId: 'user-123',
         userEmail: 'freelancer@example.com',
@@ -84,17 +77,17 @@ describe('Admin Support Lookup (M7-T04)', () => {
         createdAt: new Date('2026-03-01'),
       };
 
-      const redirectPath = `/admin/documents/${match.kind}/${match.id}`;
-      assert.strictEqual(redirectPath, '/admin/documents/invoice/507f1f77bcf86cd799439011');
+      const redirectPath = `/admin/quotations/${match.id}`;
+      assert.strictEqual(redirectPath, '/admin/quotations/507f1f77bcf86cd799439011');
     });
 
-    test('handles multiple matches across different accounts for same sequential number', () => {
+    test('handles multiple matches across different accounts for same number', () => {
       const matches: AdminLookupMatch[] = [
         {
-          id: 'doc-1',
-          kind: 'invoice',
-          number: 'INV-000001',
-          status: 'PAID',
+          id: 'quo-1',
+          kind: 'quotation',
+          number: 'Q-2026-0001',
+          status: 'ACCEPTED',
           userId: 'user-A',
           userEmail: 'alice@example.com',
           businessName: 'Alice Design',
@@ -104,9 +97,9 @@ describe('Admin Support Lookup (M7-T04)', () => {
           createdAt: new Date('2026-01-01'),
         },
         {
-          id: 'doc-2',
-          kind: 'invoice',
-          number: 'INV-000001',
+          id: 'quo-2',
+          kind: 'quotation',
+          number: 'Q-2026-0001',
           status: 'SENT',
           userId: 'user-B',
           userEmail: 'bob@example.com',
@@ -127,12 +120,12 @@ describe('Admin Support Lookup (M7-T04)', () => {
       const emptyResult = {
         ok: true,
         matches: [],
-        query: 'INV-999999',
+        query: 'Q-2026-9999',
       };
 
       assert.strictEqual(emptyResult.ok, true);
       assert.strictEqual(emptyResult.matches.length, 0);
-      assert.strictEqual(emptyResult.query, 'INV-999999');
+      assert.strictEqual(emptyResult.query, 'Q-2026-9999');
     });
   });
 });

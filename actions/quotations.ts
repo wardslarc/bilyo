@@ -2,15 +2,18 @@
 
 import dbConnect from '../lib/mongodb.ts';
 import { Quotation } from '../models/quotation.ts';
-import { Invoice } from '../models/invoice.ts';
 import { Customer } from '../models/customer.ts';
 import { Business } from '../models/business.ts';
-import { serializeInvoice, type SerializedInvoice } from '../lib/documents.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
-import { quotationSchema, type QuotationInput } from '../lib/validation/quotation.ts';
+import {
+  quotationSchema,
+  type QuotationInput,
+  markPaidInputSchema,
+  type MarkPaidInput,
+} from '../lib/validation/quotation.ts';
 import { computeTotals, type ComputedTotals } from '../lib/totals.ts';
 import { nextNumber } from '../lib/numbering.ts';
-import { checkCanCreateQuotation, checkCanCreateInvoice } from '../lib/plan.ts';
+import { recordEvent } from '../lib/events.ts';
 import type { ActionResult } from '../types/index.ts';
 
 // --- Serialized types for client transport ---
@@ -30,32 +33,29 @@ export interface SerializedQuotation {
   items: SerializedLineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   status: string;
   issueDate: string;
   validUntil: string;
   notes: string;
   terms: string;
-  publicToken: string | null;
+  publicCode: string | null;
+  publicToken?: string | null;
   customerSnapshot: {
     name: string;
     email?: string;
     phone?: string;
     address?: string;
-    tin?: string;
   } | null;
   businessSnapshot: {
     businessName: string;
     address?: string;
     email?: string;
     phone?: string;
-    tin?: string;
-    vatRegistered: boolean;
     logoUrl?: string | null;
   } | null;
-  convertedInvoiceId: string | null;
+  paidAt?: string | null;
+  paidAmountCentavos?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,8 +64,6 @@ export interface SerializedQuotation {
 export interface SerializedTotals {
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
 }
 
@@ -99,22 +97,20 @@ function serializeQuotation(doc: any): SerializedQuotation {
     })),
     subtotalCentavos: Number(doc.subtotalCentavos ?? 0),
     discountCentavos: Number(doc.discountCentavos ?? 0),
-    vatRatePercent: Number(doc.vatRatePercent ?? 12),
-    vatCentavos: Number(doc.vatCentavos ?? 0),
     totalCentavos: Number(doc.totalCentavos ?? 0),
     status: String(doc.status ?? 'DRAFT'),
     issueDate: doc.issueDate ? new Date(doc.issueDate as string | number | Date).toISOString() : new Date().toISOString(),
     validUntil: doc.validUntil ? new Date(doc.validUntil as string | number | Date).toISOString() : new Date().toISOString(),
     notes: String(doc.notes ?? ''),
     terms: String(doc.terms ?? ''),
-    publicToken: doc.publicToken ? String(doc.publicToken) : null,
+    publicCode: doc.publicCode ? String(doc.publicCode) : (doc.publicToken ? String(doc.publicToken) : null),
+    publicToken: doc.publicCode ? String(doc.publicCode) : (doc.publicToken ? String(doc.publicToken) : null),
     customerSnapshot: customerSnapshot
       ? {
           name: String(customerSnapshot.name ?? ''),
           email: String(customerSnapshot.email ?? ''),
           phone: String(customerSnapshot.phone ?? ''),
           address: String(customerSnapshot.address ?? ''),
-          tin: String(customerSnapshot.tin ?? ''),
         }
       : null,
     businessSnapshot: businessSnapshot
@@ -123,12 +119,11 @@ function serializeQuotation(doc: any): SerializedQuotation {
           address: String(businessSnapshot.address ?? ''),
           email: String(businessSnapshot.email ?? ''),
           phone: String(businessSnapshot.phone ?? ''),
-          tin: String(businessSnapshot.tin ?? ''),
-          vatRegistered: Boolean(businessSnapshot.vatRegistered),
           logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
         }
       : null,
-    convertedInvoiceId: doc.convertedInvoiceId ? String(doc.convertedInvoiceId) : null,
+    paidAt: doc.paidAt ? new Date(doc.paidAt as string | number | Date).toISOString() : null,
+    paidAmountCentavos: doc.paidAmountCentavos != null ? Number(doc.paidAmountCentavos) : null,
     createdAt: doc.createdAt ? new Date(doc.createdAt as string | number | Date).toISOString() : new Date().toISOString(),
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt as string | number | Date).toISOString() : new Date().toISOString(),
   };
@@ -169,15 +164,6 @@ export async function createQuotation(
       };
     }
 
-    // Server-side plan limit check (§5.10, M8-T01)
-    const limitCheck = await checkCanCreateQuotation(user.id);
-    if (!limitCheck.allowed) {
-      return {
-        ok: false,
-        error: limitCheck.error || 'Quotation creation limit reached for your plan',
-      };
-    }
-
     const data = parseResult.data;
 
     await dbConnect();
@@ -206,7 +192,6 @@ export async function createQuotation(
         unitPriceCentavos: item.unitPrice,
       })),
       discountCentavos: data.discount,
-      vatRegistered: business.vatRegistered,
     });
 
     // Atomic sequential number assignment (§5.3)
@@ -219,14 +204,20 @@ export async function createQuotation(
       items: totals.items,
       subtotalCentavos: totals.subtotalCentavos,
       discountCentavos: totals.discountCentavos,
-      vatRatePercent: totals.vatRatePercent,
-      vatCentavos: totals.vatCentavos,
       totalCentavos: totals.totalCentavos,
       status: 'DRAFT',
       issueDate: data.issueDate,
       validUntil: data.validUntil,
       notes: data.notes,
       terms: data.terms,
+    });
+
+    // Append CREATED event (§6.6, P2-T03)
+    await recordEvent({
+      quotationId: doc._id,
+      userId: user.id,
+      type: 'CREATED',
+      actor: 'OWNER',
     });
 
     await safeRevalidate('/dashboard/quotations');
@@ -290,7 +281,7 @@ export async function updateQuotation(
       return { ok: false, error: 'Customer not found' };
     }
 
-    // Fetch business for VAT status
+    // Fetch business
     const business = await Business.findOne({ userId: user.id }).lean();
     if (!business) {
       return { ok: false, error: 'Please set up your business profile first' };
@@ -304,19 +295,16 @@ export async function updateQuotation(
         unitPriceCentavos: item.unitPrice,
       })),
       discountCentavos: data.discount,
-      vatRegistered: business.vatRegistered,
     });
 
     const doc = await Quotation.findOneAndUpdate(
-      { _id: id, userId: user.id },
+      { _id: id, userId: user.id, status: 'DRAFT' },
       {
         $set: {
           customerId: data.customerId,
           items: totals.items,
           subtotalCentavos: totals.subtotalCentavos,
           discountCentavos: totals.discountCentavos,
-          vatRatePercent: totals.vatRatePercent,
-          vatCentavos: totals.vatCentavos,
           totalCentavos: totals.totalCentavos,
           issueDate: data.issueDate,
           validUntil: data.validUntil,
@@ -434,9 +422,9 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
       return { ok: false, error: `Cannot send a quotation that is ${doc.status.toLowerCase()}` };
     }
 
-    // Generate public token
+    // Generate 12-char URL-safe public code (§6.7)
     const { randomBytes } = await import('crypto');
-    const publicToken = randomBytes(9).toString('base64url').slice(0, 12);
+    const publicCode = randomBytes(9).toString('base64url').slice(0, 12);
 
     // Snapshot business + customer on first SENT (§3.9)
     const customer = await Customer.findOne({
@@ -451,7 +439,9 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
     }
 
     doc.status = 'SENT';
-    doc.publicToken = publicToken;
+    doc.sentAt = new Date();
+    doc.publicCode = publicCode;
+    doc.publicToken = publicCode;
 
     // Only snapshot if not already set (idempotent for re-sends, though status check prevents it)
     if (!doc.customerSnapshot) {
@@ -460,7 +450,6 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
         email: customer.email || '',
         phone: customer.phone || '',
         address: customer.address || '',
-        tin: customer.tin || '',
       };
     }
     if (!doc.businessSnapshot) {
@@ -469,13 +458,19 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
         address: business.address || '',
         email: business.email || '',
         phone: business.phone || '',
-        tin: business.tin || '',
-        vatRegistered: business.vatRegistered,
         logoUrl: business.logoUrl || null,
       };
     }
 
     await doc.save();
+
+    // Append SENT event (§6.6, P2-T03)
+    await recordEvent({
+      quotationId: doc._id,
+      userId: user.id,
+      type: 'SENT',
+      actor: 'OWNER',
+    });
 
     await safeRevalidate('/dashboard/quotations');
     await safeRevalidate(`/dashboard/quotations/${id}`);
@@ -501,7 +496,7 @@ export async function acceptQuotation(id: string): Promise<ActionResult<Serializ
     await dbConnect();
 
     const doc = await Quotation.findOneAndUpdate(
-      { _id: id, userId: user.id, status: 'SENT' },
+      { _id: id, userId: user.id, status: { $in: ['SENT', 'VIEWED'] } },
       { $set: { status: 'ACCEPTED' } },
       { returnDocument: 'after', lean: true }
     );
@@ -534,7 +529,7 @@ export async function declineQuotation(id: string): Promise<ActionResult<Seriali
     await dbConnect();
 
     const doc = await Quotation.findOneAndUpdate(
-      { _id: id, userId: user.id, status: 'SENT' },
+      { _id: id, userId: user.id, status: { $in: ['SENT', 'VIEWED'] } },
       { $set: { status: 'DECLINED' } },
       { returnDocument: 'after', lean: true }
     );
@@ -557,140 +552,170 @@ export async function declineQuotation(id: string): Promise<ActionResult<Seriali
 }
 
 /**
- * Convert a quotation to an invoice (§5.4, §8.2, M4-T05).
- * - Copies items, totals, and both snapshots.
- * - Generates sequential atomic number for the invoice.
- * - Sets sourceQuotationId on the invoice and convertedInvoiceId on the quotation.
- * - Sets quotation status to 'ACCEPTED'.
- * - IDEMPOTENT: If already converted, opens the existing invoice without creating another.
+ * Track when a quotation is viewed via its public link (§6.4, P3-T03).
+ * First public render sets viewedAt, moves SENT → VIEWED, appends one VIEWED event.
+ * Guards:
+ * - Owner previewing their own link does not count.
+ * - Second view appends nothing.
+ * - Already responded (ACCEPTED/DECLINED) does not regress to VIEWED.
  */
-export async function convertQuotationToInvoice(
-  quotationId: string
-): Promise<ActionResult<SerializedInvoice>> {
+export async function recordQuotationView(
+  code: string,
+  viewerUserId?: string | null
+): Promise<boolean> {
+  try {
+    if (!code) return false;
+
+    await dbConnect();
+
+    // Check existing quotation
+    const existing = await Quotation.findOne({
+      $or: [{ publicCode: code }, { publicToken: code }],
+    })
+      .select('_id userId status viewedAt publicCodeRevokedAt publicTokenRevokedAt')
+      .lean();
+
+    if (!existing) return false;
+
+    // Do not track if link revoked
+    if (existing.publicCodeRevokedAt || existing.publicTokenRevokedAt) {
+      return false;
+    }
+
+    // Guard: owner previewing their own link does not count (§6.4, P3-T03)
+    if (viewerUserId && existing.userId.toString() === viewerUserId) {
+      return false;
+    }
+
+    // If already viewed or already answered (ACCEPTED/DECLINED), do not update
+    if (existing.viewedAt || existing.status !== 'SENT') {
+      return false;
+    }
+
+    const now = new Date();
+
+    // Atomic state transition SENT -> VIEWED
+    const updated = await Quotation.findOneAndUpdate(
+      {
+        _id: existing._id,
+        status: 'SENT',
+        viewedAt: null,
+      },
+      {
+        $set: {
+          status: 'VIEWED',
+          viewedAt: now,
+        },
+      },
+      { returnDocument: 'after', lean: true }
+    );
+
+    if (!updated) {
+      return false;
+    }
+
+    // Append append-only VIEWED event (§6.6, P3-T03)
+    await recordEvent({
+      quotationId: updated._id,
+      userId: updated.userId,
+      type: 'VIEWED',
+      actor: 'CLIENT',
+    });
+
+    await safeRevalidate(`/dashboard/quotations/${existing._id}`);
+    await safeRevalidate('/dashboard/quotations');
+
+    return true;
+  } catch (error) {
+    console.error('recordQuotationView error:', error);
+    return false;
+  }
+}
+
+/**
+ * Mark an ACCEPTED quotation as paid or clear payment status (§6.8, P4-T04).
+ * Strictly scoped by session userId.
+ * Toggling on sets paidAt + paidAmountCentavos (defaulting to totalCentavos) and records MARKED_PAID.
+ * Toggling off clears both fields and records UNMARKED_PAID.
+ * No invoice, receipt, or numbering is generated.
+ */
+export async function markQuotationPaid(
+  id: string,
+  input: MarkPaidInput
+): Promise<ActionResult<SerializedQuotation>> {
   try {
     const user = await requireUser();
     await assertNotSuspended(user.id);
 
+    const parseResult = markPaidInputSchema.safeParse(input);
+    if (!parseResult.success) {
+      return {
+        ok: false,
+        error: 'Validation failed',
+        fieldErrors: extractFieldErrors(parseResult.error.issues),
+      };
+    }
+
+    const { paid, amount } = parseResult.data;
+
     await dbConnect();
 
-    const quotation = await Quotation.findOne({ _id: quotationId, userId: user.id });
-    if (!quotation) {
+    // Strictly scoped by userId from session (AGENTS.md §4.1)
+    const quote = await Quotation.findOne({ _id: id, userId: user.id });
+    if (!quote) {
       return { ok: false, error: 'Quotation not found' };
     }
 
-    // Idempotency (§8.2, acceptance criteria): if already converted, return existing invoice
-    if (quotation.convertedInvoiceId) {
-      const existingInvoice = await Invoice.findOne({
-        _id: quotation.convertedInvoiceId,
-        userId: user.id,
-      }).lean();
-
-      if (existingInvoice) {
-        return {
-          ok: true,
-          data: serializeInvoice(existingInvoice),
-        };
-      }
-    }
-
-    // Only SENT or ACCEPTED quotations may be converted (§5.4)
-    if (quotation.status !== 'SENT' && quotation.status !== 'ACCEPTED') {
+    // Only accepted quotations can be marked as paid (§6.8)
+    if (quote.status !== 'ACCEPTED') {
       return {
         ok: false,
-        error: 'Only sent or accepted quotations can be converted to an invoice',
+        error: 'Only accepted quotations can be marked as paid',
       };
     }
 
-    // Server-side plan limit check: conversion creates a new invoice (§5.10, M8-T01)
-    const limitCheck = await checkCanCreateInvoice(user.id);
-    if (!limitCheck.allowed) {
-      return {
-        ok: false,
-        error: limitCheck.error || 'Invoice creation limit reached for your plan',
-      };
-    }
+    if (paid) {
+      const paidAmountCentavos = amount !== undefined ? amount : quote.totalCentavos;
+      quote.paidAt = new Date();
+      quote.paidAmountCentavos = paidAmountCentavos;
+      await quote.save();
 
-    // Ensure customer snapshot exists (§3.9, §5.4)
-    let customerSnapshot = quotation.customerSnapshot;
-    if (!customerSnapshot) {
-      const customer = await Customer.findOne({
-        _id: quotation.customerId,
+      // Record append-only event (§6.6, §6.8)
+      await recordEvent({
+        quotationId: quote._id,
         userId: user.id,
-      }).lean();
+        type: 'MARKED_PAID',
+        actor: 'OWNER',
+        metadata: { paidAmountCentavos },
+      });
+    } else {
+      quote.paidAt = null;
+      quote.paidAmountCentavos = null;
+      await quote.save();
 
-      if (customer) {
-        customerSnapshot = {
-          name: customer.name,
-          email: customer.email || '',
-          phone: customer.phone || '',
-          address: customer.address || '',
-          tin: customer.tin || '',
-        };
-      }
+      // Record append-only event (§6.6, §6.8)
+      await recordEvent({
+        quotationId: quote._id,
+        userId: user.id,
+        type: 'UNMARKED_PAID',
+        actor: 'OWNER',
+      });
     }
 
-    // Ensure business snapshot exists (§3.9, §5.4)
-    let businessSnapshot = quotation.businessSnapshot;
-    if (!businessSnapshot) {
-      const business = await Business.findOne({ userId: user.id }).lean();
-      if (business) {
-        businessSnapshot = {
-          businessName: business.businessName,
-          address: business.address || '',
-          email: business.email || '',
-          phone: business.phone || '',
-          tin: business.tin || '',
-          vatRegistered: business.vatRegistered,
-          logoUrl: business.logoUrl || null,
-        };
-      }
-    }
-
-    // Atomic sequential invoice number (§5.3)
-    const invoiceNumber = await nextNumber(user.id, 'INVOICE');
-
-    const issueDate = new Date();
-    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Net 30 default
-
-    // Create the new invoice in DRAFT status
-    const invoice = await Invoice.create({
-      userId: user.id,
-      customerId: quotation.customerId,
-      number: invoiceNumber,
-      sourceQuotationId: quotation._id,
-      items: quotation.items,
-      subtotalCentavos: quotation.subtotalCentavos,
-      discountCentavos: quotation.discountCentavos,
-      vatRatePercent: quotation.vatRatePercent,
-      vatCentavos: quotation.vatCentavos,
-      totalCentavos: quotation.totalCentavos,
-      status: 'DRAFT',
-      issueDate,
-      dueDate,
-      notes: quotation.notes || '',
-      terms: quotation.terms || '',
-      customerSnapshot,
-      businessSnapshot,
-    });
-
-    // Update quotation: set convertedInvoiceId and transition to ACCEPTED (§5.4)
-    quotation.convertedInvoiceId = invoice._id;
-    quotation.status = 'ACCEPTED';
-    await quotation.save();
-
+    await safeRevalidate(`/dashboard/quotations/${id}`);
     await safeRevalidate('/dashboard/quotations');
-    await safeRevalidate(`/dashboard/quotations/${quotationId}`);
-    await safeRevalidate('/dashboard/invoices');
+    await safeRevalidate('/dashboard');
+    if (quote.customerId) {
+      await safeRevalidate(`/dashboard/clients/${quote.customerId}`);
+    }
 
-    return {
-      ok: true,
-      data: serializeInvoice(invoice),
-    };
+    return { ok: true, data: serializeQuotation(quote.toObject()) };
   } catch (error) {
     if (error instanceof AuthGuardError) {
       return { ok: false, error: error.message };
     }
-    console.error('convertQuotationToInvoice error:', (error as Error).message);
-    return { ok: false, error: 'Failed to convert quotation to invoice' };
+    console.error('markQuotationPaid error:', (error as Error).message);
+    return { ok: false, error: 'Failed to update payment status' };
   }
 }
+

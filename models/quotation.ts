@@ -32,7 +32,6 @@ const CustomerSnapshotSchema = new Schema<ICustomerSnapshot>(
     email: { type: String, default: '', trim: true },
     phone: { type: String, default: '', trim: true },
     address: { type: String, default: '', trim: true },
-    tin: { type: String, default: '', trim: true },
   },
   { _id: false }
 );
@@ -43,8 +42,6 @@ const BusinessSnapshotSchema = new Schema<IBusinessSnapshot>(
     address: { type: String, default: '', trim: true },
     email: { type: String, default: '', trim: true },
     phone: { type: String, default: '', trim: true },
-    tin: { type: String, default: '', trim: true },
-    vatRegistered: { type: Boolean, required: true },
     logoUrl: { type: String, default: null },
   },
   { _id: false }
@@ -96,19 +93,6 @@ const QuotationSchema = new Schema<IQuotation>(
         message: 'discountCentavos must be an integer',
       },
     },
-    vatRatePercent: {
-      type: Number,
-      default: 12,
-      required: true,
-    },
-    vatCentavos: {
-      type: Number,
-      default: 0,
-      validate: {
-        validator: Number.isInteger,
-        message: 'vatCentavos must be an integer',
-      },
-    },
     totalCentavos: {
       type: Number,
       required: true,
@@ -119,7 +103,7 @@ const QuotationSchema = new Schema<IQuotation>(
     },
     status: {
       type: String,
-      enum: ['DRAFT', 'SENT', 'ACCEPTED', 'DECLINED', 'EXPIRED'],
+      enum: ['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'DECLINED'],
       default: 'DRAFT',
       required: true,
     },
@@ -131,11 +115,6 @@ const QuotationSchema = new Schema<IQuotation>(
       type: Date,
       required: true,
     },
-    convertedInvoiceId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Invoice',
-      default: null,
-    },
     notes: {
       type: String,
       default: '',
@@ -143,6 +122,14 @@ const QuotationSchema = new Schema<IQuotation>(
     terms: {
       type: String,
       default: '',
+    },
+    publicCode: {
+      type: String,
+      default: null,
+    },
+    publicCodeRevokedAt: {
+      type: Date,
+      default: null,
     },
     publicToken: {
       type: String,
@@ -152,15 +139,51 @@ const QuotationSchema = new Schema<IQuotation>(
       type: Date,
       default: null,
     },
+    sentAt: {
+      type: Date,
+      default: null,
+    },
+    viewedAt: {
+      type: Date,
+      default: null,
+    },
+    respondedAt: {
+      type: Date,
+      default: null,
+    },
+    respondedByName: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    responseIp: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+    paidAmountCentavos: {
+      type: Number,
+      default: null,
+      validate: {
+        validator: (v: number | null) => v === null || Number.isInteger(v),
+        message: 'paidAmountCentavos must be an integer or null',
+      },
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Indexes per DEVELOPMENT_PLAN.md §6
+// Indexes per DEVELOPMENT_PLAN.md §6 & §7
 QuotationSchema.index({ userId: 1, createdAt: -1 });
 QuotationSchema.index({ userId: 1, number: 1 }, { unique: true });
+QuotationSchema.index({ userId: 1, status: 1, validUntil: 1 });
+QuotationSchema.index({ publicCode: 1 }, { unique: true, sparse: true });
 QuotationSchema.index({ publicToken: 1 }, { unique: true, sparse: true });
 QuotationSchema.index({ number: 1 });
 

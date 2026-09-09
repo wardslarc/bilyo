@@ -41,7 +41,7 @@ describe('Admin User Moderation Actions (M7-T05)', () => {
         '1234567890',
         'Account reported for phishing activities in ticket #42',
         'User requested temporary account freeze pending audit',
-        'Copyright infringement notice verified for invoice link',
+        'Copyright infringement notice verified for quote link',
       ];
 
       for (const reason of validReasons) {

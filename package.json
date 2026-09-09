@@ -1,5 +1,5 @@
 {
-  "name": "invoiceflow-ph",
+  "name": "bilyo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --env-file=.env.local --test tests/*.test.ts",
     "grant-admin": "node --env-file=.env.local scripts/grant-admin.ts",
-    "reset-mfa": "node --env-file=.env.local scripts/reset-mfa.ts"
+    "reset-mfa": "node --env-file=.env.local scripts/reset-mfa.ts",
+    "migrate-counter-index": "node --env-file=.env.local scripts/migrate-counter-index.ts",
+    "rename-public-token": "node --env-file=.env.local scripts/rename-public-token.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",

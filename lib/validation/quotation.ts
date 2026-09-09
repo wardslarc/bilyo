@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { pesosToCentavos } from '../money.ts';
 
 /**
- * Line-item schema shared between quotation and invoice validation.
+ * Line-item schema for quotation validation.
  * Unit price is typed in pesos, transformed to centavos at the boundary.
  */
 export const lineItemInputSchema = z.object({
@@ -43,7 +43,7 @@ export const lineItemInputSchema = z.object({
 export const quotationSchema = z.object({
   customerId: z
     .string()
-    .min(1, 'Please select a customer'),
+    .min(1, 'Please select a client'),
   items: z
     .array(lineItemInputSchema)
     .min(1, 'At least one line item is required'),
@@ -85,3 +85,35 @@ export const quotationSchema = z.object({
 
 export type QuotationInput = z.input<typeof quotationSchema>;
 export type QuotationData = z.output<typeof quotationSchema>;
+
+/**
+ * Validation schema for marking a quotation as paid / unpaid (§6.8, P4-T04).
+ * Optional amount is typed in pesos and converted to integer centavos.
+ * Defaults to the quotation's totalCentavos if omitted.
+ */
+export const markPaidInputSchema = z.object({
+  paid: z.boolean(),
+  amount: z
+    .union([z.string(), z.number()])
+    .optional()
+    .refine(
+      (val) => {
+        if (val === undefined || val === null || val === '') return true;
+        try {
+          const centavos = pesosToCentavos(val);
+          return Number.isInteger(centavos) && centavos > 0;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Payment amount must be a valid positive amount' }
+    )
+    .transform((val) => {
+      if (val === undefined || val === null || val === '') return undefined;
+      return pesosToCentavos(val);
+    }),
+});
+
+export type MarkPaidInput = z.input<typeof markPaidInputSchema>;
+export type MarkPaidData = z.output<typeof markPaidInputSchema>;
+

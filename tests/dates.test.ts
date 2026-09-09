@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatDateTime, isInvoiceOverdue } from '../lib/dates.ts';
+import { formatDate, formatDateTime, getManilaYear } from '../lib/dates.ts';
 
 describe('lib/dates.ts', () => {
   describe('formatDate', () => {
@@ -29,21 +29,20 @@ describe('lib/dates.ts', () => {
     });
   });
 
-  describe('isInvoiceOverdue', () => {
-    test('returns false if status is not SENT', () => {
-      const pastDue = new Date('2020-01-01T00:00:00Z');
-      assert.strictEqual(isInvoiceOverdue(pastDue, 'DRAFT'), false);
-      assert.strictEqual(isInvoiceOverdue(pastDue, 'PAID'), false);
-      assert.strictEqual(isInvoiceOverdue(pastDue, 'CANCELLED'), false);
+  describe('getManilaYear', () => {
+    test('returns correct calendar year for standard Manila dates', () => {
+      const date = new Date('2026-06-15T12:00:00Z');
+      assert.strictEqual(getManilaYear(date), 2026);
     });
 
-    test('derives overdue when status is SENT and dueDate < today', () => {
-      const now = new Date('2026-09-15T10:00:00Z');
-      const pastDueDate = new Date('2026-09-10T00:00:00Z');
-      const futureDueDate = new Date('2026-09-20T00:00:00Z');
+    test('handles New Year boundary between UTC and Asia/Manila (UTC+8)', () => {
+      // 2026-12-31T15:59:59Z is 2026-12-31 23:59:59 in Manila (Year 2026)
+      const endOf2026 = new Date('2026-12-31T15:59:59Z');
+      assert.strictEqual(getManilaYear(endOf2026), 2026);
 
-      assert.strictEqual(isInvoiceOverdue(pastDueDate, 'SENT', now), true);
-      assert.strictEqual(isInvoiceOverdue(futureDueDate, 'SENT', now), false);
+      // 2026-12-31T16:00:00Z is 2027-01-01 00:00:00 in Manila (Year 2027)
+      const startOf2027 = new Date('2026-12-31T16:00:00Z');
+      assert.strictEqual(getManilaYear(startOf2027), 2027);
     });
   });
 });

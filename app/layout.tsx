@@ -24,9 +24,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bilyo — Quotations and invoices for Philippine freelancers",
+  title: "Bilyo — Turn quotations into confirmed sales",
   description:
-    "Build a quotation, turn it into an invoice, and send it as a link your client opens in a browser — or a PDF. Peso-exact, 12% VAT handled.",
+    "Send quotations as a link your client accepts on their phone in one tap. Built for Philippine service businesses.",
 };
 
 export default function RootLayout({

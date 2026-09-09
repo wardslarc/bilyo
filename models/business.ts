@@ -30,16 +30,6 @@ const BusinessSchema = new Schema<IBusiness>(
       default: '',
       trim: true,
     },
-    tin: {
-      type: String,
-      default: '',
-      trim: true,
-    },
-    vatRegistered: {
-      type: Boolean,
-      default: false,
-      required: true,
-    },
     logoUrl: {
       type: String,
       default: null,

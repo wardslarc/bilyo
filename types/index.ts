@@ -2,8 +2,6 @@ import type { Types } from 'mongoose';
 
 // User & Auth Types
 export type UserRole = 'USER' | 'ADMIN';
-export type Plan = 'FREE' | 'FREELANCER' | 'BUSINESS';
-export type PlanSource = 'DEFAULT' | 'BILLING' | 'ADMIN';
 
 export interface IUser {
   _id: Types.ObjectId;
@@ -11,14 +9,6 @@ export interface IUser {
   passwordHash: string;
   name: string;
   emailVerifiedAt?: Date | null;
-
-  // Plan (§5.10)
-  plan: Plan;
-  planSource: PlanSource;
-  planOverrideExpiresAt?: Date | null;
-  planOverrideReason?: string | null;
-  billingCustomerId?: string | null;
-  billingPlan?: Plan | null;
 
   // MFA (§5.11)
   mfaEnabledAt?: Date | null;
@@ -41,6 +31,7 @@ export interface IUser {
   // Support Signals
   lastLoginAt?: Date | null;
   lastActiveAt?: Date | null;
+  lastSeenEventsAt?: Date | null;
 
   createdAt: Date;
   updatedAt: Date;
@@ -54,8 +45,6 @@ export interface IBusiness {
   address?: string;
   email?: string;
   phone?: string;
-  tin?: string;
-  vatRegistered: boolean;
   logoUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -69,21 +58,7 @@ export interface ICustomer {
   email?: string;
   phone?: string;
   address?: string;
-  tin?: string;
   notes?: string;
-  archived: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Product
-export interface IProduct {
-  _id: Types.ObjectId;
-  userId: Types.ObjectId;
-  name: string;
-  description?: string;
-  unitPriceCentavos: number;
-  unit?: string;
   archived: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -95,7 +70,6 @@ export interface ICustomerSnapshot {
   email?: string;
   phone?: string;
   address?: string;
-  tin?: string;
 }
 
 export interface IBusinessSnapshot {
@@ -103,8 +77,6 @@ export interface IBusinessSnapshot {
   address?: string;
   email?: string;
   phone?: string;
-  tin?: string;
-  vatRegistered: boolean;
   logoUrl?: string | null;
 }
 
@@ -115,36 +87,11 @@ export interface ILineItem {
   amountCentavos: number;
 }
 
-// Document Statuses
-export type QuotationStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
-export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+// Document Statuses (§6.4: stored statuses)
+export type QuotationStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'DECLINED';
 
-// Invoice
-export interface IInvoice {
-  _id: Types.ObjectId;
-  userId: Types.ObjectId;
-  customerId: Types.ObjectId;
-  number: string;
-  customerSnapshot?: ICustomerSnapshot;
-  businessSnapshot?: IBusinessSnapshot;
-  items: ILineItem[];
-  subtotalCentavos: number;
-  discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
-  totalCentavos: number;
-  status: InvoiceStatus;
-  issueDate: Date;
-  dueDate: Date;
-  paidAt?: Date | null;
-  notes?: string;
-  terms?: string;
-  publicToken?: string | null;
-  publicTokenRevokedAt?: Date | null;
-  sourceQuotationId?: Types.ObjectId | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Read-time display status including derived EXPIRED (§6.4)
+export type DerivedQuotationStatus = QuotationStatus | 'EXPIRED';
 
 // Quotation
 export interface IQuotation {
@@ -157,28 +104,35 @@ export interface IQuotation {
   items: ILineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   status: QuotationStatus;
   issueDate: Date;
   validUntil: Date;
-  convertedInvoiceId?: Types.ObjectId | null;
   notes?: string;
   terms?: string;
+  publicCode?: string | null;
+  publicCodeRevokedAt?: Date | null;
   publicToken?: string | null;
   publicTokenRevokedAt?: Date | null;
+  sentAt?: Date | null;
+  viewedAt?: Date | null;
+  respondedAt?: Date | null;
+  respondedByName?: string | null;
+  responseIp?: string | null;
+  paidAt?: Date | null;
+  paidAmountCentavos?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Atomic Numbering Counter
-export type CounterKind = 'INVOICE' | 'QUOTATION';
+export type CounterKind = 'QUOTATION';
 
 export interface ICounter {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   kind: CounterKind;
+  year: number;
   seq: number;
 }
 
@@ -227,3 +181,27 @@ export interface IAdminAuditLog {
 export type ActionResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
+
+// Quotation Event Types (§6.6)
+export type EventType =
+  | 'CREATED'
+  | 'SENT'
+  | 'VIEWED'
+  | 'ACCEPTED'
+  | 'DECLINED'
+  | 'MARKED_PAID'
+  | 'UNMARKED_PAID'
+  | 'LINK_REVOKED';
+
+export type EventActor = 'OWNER' | 'CLIENT' | 'ADMIN' | 'SYSTEM';
+
+// Quotation Event (Append-only, §6.6, §7)
+export interface IEvent {
+  _id: Types.ObjectId;
+  quotationId: Types.ObjectId;
+  userId: Types.ObjectId;
+  type: EventType;
+  actor: EventActor;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}

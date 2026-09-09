@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-const tinPattern = /^(\d{3}-\d{3}-\d{3}(-\d{3,5})?|\d{9,15})$/;
-
 export const customerSchema = z.object({
   name: z
     .string()
@@ -27,14 +25,6 @@ export const customerSchema = z.object({
     .string()
     .trim()
     .max(250, 'Address must be 250 characters or fewer')
-    .optional()
-    .default(''),
-  tin: z
-    .string()
-    .trim()
-    .refine((val) => val === '' || tinPattern.test(val), {
-      message: 'TIN must be in 000-000-000-000 format or 9–12 digits',
-    })
     .optional()
     .default(''),
   notes: z

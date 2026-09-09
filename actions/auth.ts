@@ -62,14 +62,12 @@ export async function registerUser(
       throw new Error('Failed to generate valid bcrypt hash');
     }
 
-    // Create user with default role & plan
+    // Create user with default role
     const newUser = await User.create({
       name,
       email,
       passwordHash,
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
 
     return {

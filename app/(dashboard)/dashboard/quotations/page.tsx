@@ -16,7 +16,7 @@ export default async function QuotationsPage() {
         <div>
           <h1 className="text-xl font-semibold text-[var(--color-text)]">Quotations</h1>
           <p className="text-xs text-[var(--color-muted)] mt-0.5">
-            Create and manage quotations for your customers.
+            Create and manage quotations for your clients.
           </p>
         </div>
         <Link

@@ -607,7 +607,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* `git status --short` is empty afterwards; `git diff --shortstat` and
   `git diff --shortstat -w` agree on the next commit.
 
-- [ ] **P1-T01 · Delete the invoice surface** (3.5h)
+- [x] **P1-T01 · Delete the invoice surface** (3.5h)
   **The grep is the spec.** `grep -rlniE "\binvoice" app actions components lib models types tests middleware.ts`
   returns **74 files** today. The task is done when it returns zero. Work the list; do not guess at it.
   *Files (delete):* `app/(dashboard)/dashboard/invoices/**` · `app/i/[token]/**` ·
@@ -642,7 +642,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   and `npm run test` pass; the dashboard nav has no invoice entry; `/dashboard/invoices` and
   `/i/anything` 404.
 
-- [ ] **P1-T02 · Delete the products catalogue** (1h)
+- [x] **P1-T02 · Delete the products catalogue** (1h)
   *Files (delete):* `app/(dashboard)/dashboard/products/**` · `actions/products.ts` ·
   `models/product.ts` · `lib/validation/product.ts` · `components/dashboard/ProductForm.tsx` ·
   `components/dashboard/ProductList.tsx` · `tests/products.test.ts`
@@ -654,7 +654,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* line items are typed free-hand; `grep -rlniE "\bproducts?\b" app actions components lib models types tests`
   returns nothing; build and tests pass.
 
-- [ ] **P1-T03 · Delete plan limits** (1.5h)
+- [x] **P1-T03 · Delete plan limits** (1.5h)
   *Files (delete):* `lib/plan.ts` · `components/dashboard/PlanLimitAlert.tsx` · `tests/plan.test.ts` ·
   `tests/plan-limits.test.ts`
   *Files (edit):* every create action that called a limit check (`actions/quotations.ts`,
@@ -669,7 +669,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   `PLAN_LIMITS` or `effectivePlan` symbol survives; existing `PLAN_OVERRIDE_*` **audit rows are
   untouched** (the enum keeps the strings, the UI stops producing them).
 
-- [ ] **P1-T04 · Remove VAT and TIN** (2h)
+- [x] **P1-T04 · Remove VAT and TIN** (2h)
   *Files:* `lib/totals.ts` · `models/quotation.ts` · `models/business.ts` · `models/customer.ts` ·
   `lib/validation/business.ts` · `lib/validation/customer.ts` · `lib/validation/quotation.ts` ·
   `components/documents/totals-panel.tsx` · `components/documents/quotation-form.tsx` ·
@@ -686,7 +686,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   page renders a VAT row or a TIN; `grep -rlniE "\bvat\b|\btin\b" app components lib models types`
   returns nothing.
 
-- [ ] **P1-T05 · Make MFA optional** (1.5h)
+- [x] **P1-T05 · Make MFA optional** (1.5h)
   *Files (delete):* `app/(onboarding)/**` · `lib/onboarding-gate.ts` ·
   `tests/onboarding-gate.test.ts` · `components/onboarding/MfaEnrolmentFlow.tsx` (move its
   enrolment UI into the security page first)
@@ -700,7 +700,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   enrols is still challenged at `/login/mfa` on the next sign-in; an already-enrolled account is not
   disabled by this change; no secret or code appears in any log or error.
 
-- [ ] **P1-T06 · De-invoice the admin console** (1h)
+- [x] **P1-T06 · De-invoice the admin console** (1h)
   *Files:* `app/(admin)/admin/documents/[kind]/[id]/page.tsx` → `app/(admin)/admin/quotations/[id]/page.tsx` ·
   `app/(admin)/admin/users/[id]/documents/page.tsx` → `.../quotations/page.tsx` · `lib/admin/lookup.ts` ·
   `lib/admin/metrics.ts` · `components/admin/PlatformMetricsTiles.tsx`
@@ -709,7 +709,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* admin lookup finds a quote by number **or** public code; every admin read still appends
   an audit row; no admin path references an invoice.
 
-- [ ] **P1-T07 · Marketing copy pass** (1h)
+- [x] **P1-T07 · Marketing copy pass** (1h)
   *Files:* `app/(marketing)/page.tsx` · `app/(marketing)/pricing/page.tsx` ·
   `components/marketing/*` (`invoice-preview.tsx` → `quote-preview.tsx`) · `README.md` ·
   `package.json` (`name: "bilyo"`)
@@ -722,7 +722,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
 
 ### P2 — Quotation core (6–8 hrs) · *Weekend 1 in the brief*
 
-- [ ] **P2-T01 · New numbering** (2h)
+- [x] **P2-T01 · New numbering** (2h)
   *Files:* `lib/numbering.ts` · `models/counter.ts` · `tests/numbering.test.ts`
   *Do:* `Q-YYYY-NNNN`, per user per `Asia/Manila` year (§6.3). Drop the `INVOICE` kind. Replace the
   `{userId, kind}` unique index with `{userId, kind, year}`; write the index change as a documented
@@ -730,7 +730,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* two concurrent creates never collide (test with `Promise.all` on 20 creates); the first
   quote of 2027 is `Q-2027-0001`; **existing `QUO-000001` documents are unchanged and still open**.
 
-- [ ] **P2-T02 · `publicToken` → `publicCode`** (1h)
+- [x] **P2-T02 · `publicToken` → `publicCode`** (1h)
   *Files:* `models/quotation.ts` · `lib/public-projection.ts` · `app/q/[token]` → `app/q/[code]` ·
   `app/api/public/q/[token]` → `[code]` · `actions/quotations.ts`
   *Do:* rename the field and the route segment; keep the 12-char generator and the unique sparse
@@ -739,7 +739,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* links already sent to clients still resolve after the script runs; a 13-char or malformed
   code 404s; the code is not sequential and not derived from the id.
 
-- [ ] **P2-T03 · The `Event` collection** (2h)
+- [x] **P2-T03 · The `Event` collection** (2h)
   *Files:* `models/event.ts` · `lib/events.ts` · `types/index.ts` · `models/index.ts`
   *Do:* the §7 schema and `recordEvent({ quotationId, userId, type, actor, metadata })`. Wire
   `CREATED` and `SENT` into `actions/quotations.ts` now; the rest land with their features. Append
@@ -747,7 +747,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* creating and sending a quote produces exactly two rows in order; there is no update or
   delete path on `events`; a failed quotation write leaves no orphan event.
 
-- [ ] **P2-T04 · Editor simplification + autosave** (2h)
+- [x] **P2-T04 · Editor simplification + autosave** (2h)
   *Files:* `components/documents/quotation-form.tsx` · `components/documents/line-item-builder.tsx` ·
   `components/documents/totals-panel.tsx` · `actions/quotations.ts`
   *Do:* one page: client picker with inline create, line items with drag-free `sortOrder`, discount,
@@ -756,7 +756,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* a refresh mid-edit loses nothing; autosave never fires on an invalid line; the server's
   stored total is recomputed from items, never trusted from the client.
 
-- [ ] **P2-T05 · Footer constant and status pipeline** (1h)
+- [x] **P2-T05 · Footer constant and status pipeline** (1h)
   *Files:* `lib/documents.ts` · `models/quotation.ts` · `lib/pdf/quotation-document.tsx`
   *Do:* `QUOTATION_FOOTER` as the single source of the §2.3 sentence, rendered on the detail page,
   the public page and the PDF. Add `VIEWED` to the status enum and to the badge config; keep
@@ -772,7 +772,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
 Build this one properly. It is the only screen the buyer's customer ever sees and the only reason a
 user would pick Bilyo over a Word template.
 
-- [ ] **P3-T01 · Redesign the public page, phone-first** (3h)
+- [x] **P3-T01 · Redesign the public page, phone-first** (3h)
   *Files:* `app/q/[code]/page.tsx` · `components/public/quote-page.tsx` (new, replacing the shared
   `public-document-view.tsx`) · `components/public/quote-header.tsx`
   *Do:* logo and business name, the client's name, line items that stay readable at 390px, a total
@@ -782,7 +782,7 @@ user would pick Bilyo over a Word template.
   *Accept:* renders correctly at 390px with a 6-item quote and a long business name; Lighthouse
   mobile performance ≥ 90; nothing in the payload contains the owner's account email or any ObjectId.
 
-- [ ] **P3-T02 · Accept / Decline** (3h)
+- [x] **P3-T02 · Accept / Decline** (3h)
   *Files:* `components/public/response-form.tsx` · `actions/public-response.ts` (new) ·
   `lib/validation/response.ts` · `models/quotation.ts`
   *Do:* two large buttons. Either opens a small dialog asking for the responder's name, then
@@ -794,14 +794,14 @@ user would pick Bilyo over a Word template.
   not a second write; an expired quote shows no buttons and its action is rejected server-side even
   if called directly; an accepted quote's items can no longer be edited by the owner.
 
-- [ ] **P3-T03 · View tracking** (1h)
+- [x] **P3-T03 · View tracking** (1h)
   *Files:* `app/q/[code]/page.tsx` · `lib/events.ts` · `actions/quotations.ts`
   *Do:* first public render sets `viewedAt`, moves `SENT` → `VIEWED`, appends one `VIEWED` event.
   Guard so the owner previewing their own link does not count, and so a second view appends nothing.
   *Accept:* opening the link twice yields one `VIEWED` event and one timestamp; an `ACCEPTED` quote
   opened again does not regress to `VIEWED`.
 
-- [ ] **P3-T04 · Owner notification, in-app** (2h)
+- [x] **P3-T04 · Owner notification, in-app** (2h)
   *Files:* `components/dashboard/NeedsAttention.tsx` (new) · `lib/metrics.ts` ·
   `app/(dashboard)/dashboard/page.tsx` · `app/(dashboard)/dashboard/layout.tsx`
   *Do:* a "Needs your attention" list at the top of the dashboard, plus a count badge in the nav,
@@ -810,7 +810,7 @@ user would pick Bilyo over a Word template.
   *Accept:* an accept or decline appears in the owner's dashboard within one refresh; the badge
   clears when the list is opened; the query is `userId`-scoped.
 
-- [ ] **P3-T05 · Timeline on the quote detail page** (1h)
+- [x] **P3-T05 · Timeline on the quote detail page** (1h)
   *Files:* `app/(dashboard)/dashboard/quotations/[id]/page.tsx` · `components/quotations/timeline.tsx`
   *Do:* read `events` for the quotation, render Created · Sent · Viewed · Accepted/Declined ·
   Marked paid with `Asia/Manila` timestamps and the actor. Copy-link button beside it.
@@ -821,7 +821,7 @@ user would pick Bilyo over a Word template.
 
 ### P4 — Dashboard, clients, PDF, mark-paid (6–8 hrs) · *Weekend 3 · then deploy*
 
-- [ ] **P4-T01 · The four numbers** (2.5h)
+- [x] **P4-T01 · The four numbers** (2.5h)
   *Files:* `lib/metrics.ts` · `app/(dashboard)/dashboard/page.tsx` ·
   `components/dashboard/StatTiles.tsx` · `tests/metrics.test.ts`
   *Do:* **Quoted this month** (count + peso total of quotations with `sentAt` in the current
@@ -831,12 +831,12 @@ user would pick Bilyo over a Word template.
   *Accept:* a quote sent at 23:30 on 31 August (Manila) counts in August, not September; the tiles
   answer §1.1 in under two seconds on a 200-quote account; drafts are excluded from every figure.
 
-- [ ] **P4-T02 · Recent quotes by status** (1h)
+- [x] **P4-T02 · Recent quotes by status** (1h)
   *Files:* `components/dashboard/RecentDocuments.tsx` → `RecentQuotations.tsx` ·
   `components/dashboard/QuotationList.tsx`
   *Accept:* status chips filter without a full page load; the empty state offers the create CTA.
 
-- [ ] **P4-T03 · Clients list and detail** (1.5h)
+- [x] **P4-T03 · Clients list and detail** (1.5h)
   *Files:* `app/(dashboard)/dashboard/clients/**` (renamed from `customers`) ·
   `components/dashboard/CustomerList.tsx` → `ClientList.tsx` ·
   `components/dashboard/CustomerForm.tsx` → `ClientForm.tsx` · `actions/customers.ts`
@@ -845,7 +845,7 @@ user would pick Bilyo over a Word template.
   *Accept:* `/dashboard/customers` redirects to `/dashboard/clients`; no user-visible string says
   "customer"; the history list is `userId`-scoped, not just `clientId`-scoped.
 
-- [ ] **P4-T04 · Mark as paid** (1h)
+- [x] **P4-T04 · Mark as paid** (1h)
   *Files:* `actions/quotations.ts` · `components/quotations/mark-paid-toggle.tsx` ·
   `models/quotation.ts` · `lib/validation/quotation.ts`
   *Do:* §6.8. Available only on `ACCEPTED`. Optional amount, defaulting to the total.
@@ -853,7 +853,7 @@ user would pick Bilyo over a Word template.
   centavos; **no document, number, or receipt is generated**; the public page does not show payment
   status.
 
-- [ ] **P4-T05 · PDF and print view** (1.5h)
+- [x] **P4-T05 · PDF and print view** (1.5h)
   *Files:* `lib/pdf/quotation-document.tsx` · `lib/pdf/shared/document-layout.tsx` ·
   `app/api/quotations/[id]/pdf/route.ts` · `app/api/public/q/[code]/pdf/route.ts`
   *Do:* A4, logo, business block, client block, items, subtotal/discount/total, validity, notes, and

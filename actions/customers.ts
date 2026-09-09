@@ -2,9 +2,9 @@
 
 import dbConnect from '../lib/mongodb.ts';
 import { Customer } from '../models/customer.ts';
+import { Quotation } from '../models/quotation.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
 import { customerSchema, type CustomerInput } from '../lib/validation/customer.ts';
-import { checkCanCreateCustomer } from '../lib/plan.ts';
 import type { ActionResult } from '../types/index.ts';
 
 export interface SerializedCustomer {
@@ -14,11 +14,31 @@ export interface SerializedCustomer {
   email: string;
   phone: string;
   address: string;
-  tin: string;
   notes: string;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ClientQuotationSummary {
+  id: string;
+  number: string;
+  status: string;
+  totalCentavos: number;
+  subtotalCentavos: number;
+  discountCentavos: number;
+  issueDate: string;
+  validUntil: string;
+  createdAt: string;
+}
+
+import { computeClientQuotationStats, type ClientQuotationStats } from '../lib/clients.ts';
+export type { ClientQuotationStats };
+
+export interface ClientWithHistory {
+  client: SerializedCustomer;
+  quotations: ClientQuotationSummary[];
+  stats: ClientQuotationStats;
 }
 
 async function safeRevalidate(path: string) {
@@ -69,7 +89,6 @@ export async function getCustomers(options?: {
       email: doc.email || '',
       phone: doc.phone || '',
       address: doc.address || '',
-      tin: doc.tin || '',
       notes: doc.notes || '',
       archived: Boolean(doc.archived),
       createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -110,7 +129,6 @@ export async function getCustomer(id: string): Promise<ActionResult<SerializedCu
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -148,15 +166,6 @@ export async function createCustomer(
       return { ok: false, error: 'Validation failed', fieldErrors };
     }
 
-    // Server-side plan limit check (§5.10, M8-T01)
-    const limitCheck = await checkCanCreateCustomer(user.id);
-    if (!limitCheck.allowed) {
-      return {
-        ok: false,
-        error: limitCheck.error || 'Customer creation limit reached for your plan',
-      };
-    }
-
     const data = parseResult.data;
 
     await dbConnect();
@@ -166,11 +175,11 @@ export async function createCustomer(
       email: data.email || '',
       phone: data.phone || '',
       address: data.address || '',
-      tin: data.tin || '',
       notes: data.notes || '',
       archived: Boolean(data.archived),
     });
 
+    await safeRevalidate('/dashboard/clients');
     await safeRevalidate('/dashboard/customers');
 
     return {
@@ -182,7 +191,6 @@ export async function createCustomer(
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt.toISOString(),
@@ -232,7 +240,6 @@ export async function updateCustomer(
           email: data.email || '',
           phone: data.phone || '',
           address: data.address || '',
-          tin: data.tin || '',
           notes: data.notes || '',
           ...(data.archived !== undefined ? { archived: data.archived } : {}),
         },
@@ -244,6 +251,8 @@ export async function updateCustomer(
       return { ok: false, error: 'Customer not found' };
     }
 
+    await safeRevalidate('/dashboard/clients');
+    await safeRevalidate(`/dashboard/clients/${id}`);
     await safeRevalidate('/dashboard/customers');
     await safeRevalidate(`/dashboard/customers/${id}`);
 
@@ -256,7 +265,6 @@ export async function updateCustomer(
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -284,15 +292,6 @@ export async function archiveCustomer(
     await assertNotSuspended(user.id);
 
     await dbConnect();
-    if (!archived) {
-      const limitCheck = await checkCanCreateCustomer(user.id);
-      if (!limitCheck.allowed) {
-        return {
-          ok: false,
-          error: limitCheck.error || 'Customer limit reached for your plan',
-        };
-      }
-    }
 
     const doc = await Customer.findOneAndUpdate(
       { _id: id, userId: user.id },
@@ -304,6 +303,8 @@ export async function archiveCustomer(
       return { ok: false, error: 'Customer not found' };
     }
 
+    await safeRevalidate('/dashboard/clients');
+    await safeRevalidate(`/dashboard/clients/${id}`);
     await safeRevalidate('/dashboard/customers');
 
     return {
@@ -315,7 +316,6 @@ export async function archiveCustomer(
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -330,3 +330,73 @@ export async function archiveCustomer(
     return { ok: false, error: 'Failed to archive customer' };
   }
 }
+
+/**
+ * Fetch a single client and their quotation history, strictly scoped by session userId (AGENTS.md §4.1).
+ */
+export async function getClientWithHistory(
+  id: string
+): Promise<ActionResult<ClientWithHistory | null>> {
+  try {
+    const user = await requireUser();
+    await assertNotSuspended(user.id);
+
+    await dbConnect();
+    const clientDoc = await Customer.findOne({ _id: id, userId: user.id }).lean();
+
+    if (!clientDoc) {
+      return { ok: true, data: null };
+    }
+
+    // Double-scoped by customerId AND userId per AGENTS.md §4.1
+    const quoteDocs = await Quotation.find({
+      customerId: id,
+      userId: user.id,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const client: SerializedCustomer = {
+      id: clientDoc._id.toString(),
+      userId: clientDoc.userId.toString(),
+      name: clientDoc.name,
+      email: clientDoc.email || '',
+      phone: clientDoc.phone || '',
+      address: clientDoc.address || '',
+      notes: clientDoc.notes || '',
+      archived: Boolean(clientDoc.archived),
+      createdAt: clientDoc.createdAt ? new Date(clientDoc.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: clientDoc.updatedAt ? new Date(clientDoc.updatedAt).toISOString() : new Date().toISOString(),
+    };
+
+    const quotations: ClientQuotationSummary[] = quoteDocs.map((doc) => ({
+      id: doc._id.toString(),
+      number: doc.number,
+      status: doc.status,
+      totalCentavos: doc.totalCentavos,
+      subtotalCentavos: doc.subtotalCentavos,
+      discountCentavos: doc.discountCentavos || 0,
+      issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : new Date().toISOString(),
+      validUntil: doc.validUntil ? new Date(doc.validUntil).toISOString() : new Date().toISOString(),
+      createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+    }));
+
+    const stats = computeClientQuotationStats(quotations);
+
+    return {
+      ok: true,
+      data: {
+        client,
+        quotations,
+        stats,
+      },
+    };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('getClientWithHistory error:', (error as Error).message);
+    return { ok: false, error: 'Failed to load client details' };
+  }
+}
+

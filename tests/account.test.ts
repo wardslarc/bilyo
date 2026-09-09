@@ -8,7 +8,6 @@ import {
 import {
   sanitizeUserExport,
   escapeCsvField,
-  formatInvoicesCsv,
   formatQuotationsCsv,
   formatCustomersCsv,
 } from '../lib/export.ts';
@@ -111,8 +110,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
         name: 'Maria Santos',
         email: 'maria@example.ph',
         role: 'USER',
-        plan: 'FREE',
-        planSource: 'DEFAULT',
         passwordHash: '$2a$10$e8K7...SECRET_PASSWORD_HASH',
         mfaSecretEncrypted: 'aes:gcm:RADIOACTIVE_MFA_SECRET',
         mfaPendingSecretEncrypted: 'aes:gcm:RADIOACTIVE_PENDING',
@@ -130,7 +127,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
       assert.strictEqual(sanitized.id, '507f1f77bcf86cd799439011');
       assert.strictEqual(sanitized.name, 'Maria Santos');
       assert.strictEqual(sanitized.email, 'maria@example.ph');
-      assert.strictEqual(sanitized.plan, 'FREE');
 
       // CRITICAL: Must NEVER leak password hashes or MFA secrets
       const exportedKeys = Object.keys(sanitized);
@@ -152,36 +148,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
       assert.strictEqual(escapeCsvField(undefined), '');
     });
 
-    test('formatInvoicesCsv: formats headers, converts centavos to pesos, and maps fields', () => {
-      const invoices = [
-        {
-          invoiceNumber: 'INV-000001',
-          customerSnapshot: { name: 'Acme Corp, Inc.' },
-          issueDate: new Date('2026-03-01T00:00:00Z'),
-          dueDate: new Date('2026-03-15T00:00:00Z'),
-          status: 'SENT',
-          subtotalCentavos: 1000000, // 10,000.00
-          discountCentavos: 100000,  // 1,000.00
-          vatCentavos: 108000,       // 1,080.00
-          totalCentavos: 1008000,    // 10,080.00
-          paidAt: null,
-          notes: 'Standard 15 days terms',
-        },
-      ];
-
-      const csv = formatInvoicesCsv(invoices as unknown as Record<string, unknown>[]);
-      const lines = csv.split('\r\n');
-
-      assert.strictEqual(
-        lines[0],
-        'Invoice Number,Customer,Issue Date,Due Date,Status,Subtotal (PHP),Discount (PHP),VAT (PHP),Total (PHP),Paid Date,Notes'
-      );
-      assert.ok(lines[1].includes('INV-000001'));
-      assert.ok(lines[1].includes('"Acme Corp, Inc."'));
-      assert.ok(lines[1].includes('10000.00'));
-      assert.ok(lines[1].includes('10080.00'));
-    });
-
     test('formatQuotationsCsv: generates correct columns and peso amounts', () => {
       const quotations = [
         {
@@ -192,8 +158,7 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
           status: 'DRAFT',
           subtotalCentavos: 2500000,
           discountCentavos: 0,
-          vatCentavos: 300000,
-          totalCentavos: 2800000,
+          totalCentavos: 2500000,
           notes: 'Valid for 30 days',
         },
       ];
@@ -203,11 +168,10 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
 
       assert.strictEqual(
         lines[0],
-        'Quotation Number,Customer,Issue Date,Valid Until,Status,Subtotal (PHP),Discount (PHP),VAT (PHP),Total (PHP),Notes'
+        'Quotation Number,Customer,Issue Date,Valid Until,Status,Subtotal (PHP),Discount (PHP),Total (PHP),Notes'
       );
       assert.ok(lines[1].includes('QUO-000001'));
       assert.ok(lines[1].includes('25000.00'));
-      assert.ok(lines[1].includes('28000.00'));
     });
 
     test('formatCustomersCsv: formats customer rows properly', () => {
@@ -217,7 +181,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
           company: 'Clara Essentials',
           email: 'maria@clara.ph',
           phone: '09171234567',
-          taxId: '123-456-789-000',
           address: 'Makati City, Metro Manila',
           archivedAt: null,
         },
@@ -226,7 +189,7 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
       const csv = formatCustomersCsv(customers as unknown as Record<string, unknown>[]);
       const lines = csv.split('\r\n');
 
-      assert.strictEqual(lines[0], 'Name,Company,Email,Phone,Tax ID,Address,Archived');
+      assert.strictEqual(lines[0], 'Name,Company,Email,Phone,Address,Archived');
       assert.ok(lines[1].includes('"Makati City, Metro Manila"'));
       assert.ok(lines[1].includes('maria@clara.ph'));
       assert.ok(lines[1].endsWith('No'));

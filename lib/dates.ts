@@ -64,24 +64,6 @@ export function getManilaStartOfDay(refDate: Date = new Date()): Date {
   return new Date(Date.UTC(year, month, day, -8, 0, 0, 0));
 }
 
-/**
- * Derives whether an invoice is OVERDUE (§5.4):
- * status === 'SENT' && dueDate < today (in Asia/Manila)
- */
-export function isInvoiceOverdue(
-  dueDate: Date | string | number,
-  status: string,
-  now: Date = new Date()
-): boolean {
-  if (status !== 'SENT') {
-    return false;
-  }
-
-  const d = typeof dueDate === 'object' ? dueDate : new Date(dueDate);
-  const todayManila = getManilaStartOfDay(now);
-
-  return d.getTime() < todayManila.getTime();
-}
 
 /**
  * Gets the start and end Date of the calendar month in Asia/Manila (UTC+8).
@@ -104,4 +86,16 @@ export function getManilaMonthRange(refDate: Date = new Date()): {
   const endOfMonth = new Date(Date.UTC(year, month + 1, 1, -8, 0, 0, -1));
 
   return { startOfMonth, endOfMonth };
+}
+
+/**
+ * Gets the current calendar year in Asia/Manila (UTC+8).
+ */
+export function getManilaYear(refDate: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MANILA_TZ,
+    year: 'numeric',
+  }).formatToParts(refDate);
+
+  return Number.parseInt(parts.find((p) => p.type === 'year')?.value || '1970', 10);
 }

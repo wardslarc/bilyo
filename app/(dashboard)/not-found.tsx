@@ -12,7 +12,7 @@ export default function DashboardNotFound() {
         <div className="space-y-1.5">
           <h2 className="text-lg font-bold text-[var(--color-text)]">Record not found</h2>
           <p className="text-xs text-[var(--color-muted)] leading-relaxed">
-            The document, invoice, customer, or quotation you requested does not exist or belongs to another account.
+            The document, client, or quotation you requested does not exist or belongs to another account.
           </p>
         </div>
 
@@ -24,10 +24,10 @@ export default function DashboardNotFound() {
             ← Back to Dashboard
           </Link>
           <Link
-            href="/dashboard/invoices"
+            href="/dashboard/quotations"
             className="w-full sm:w-auto px-5 py-2.5 bg-[var(--color-paper-sunk)] hover:bg-[var(--color-line)] text-[var(--color-text)] font-medium text-xs rounded-lg transition-colors"
           >
-            View Invoices
+            View Quotations
           </Link>
         </div>
       </div>

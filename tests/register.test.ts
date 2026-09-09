@@ -33,7 +33,7 @@ describe('actions/auth.ts - registerUser', () => {
     assert.ok(invalidResult.fieldErrors?.password);
   });
 
-  test('creates a user with normalized email, bcrypt cost 10, role USER, plan FREE', async () => {
+  test('creates a user with normalized email, bcrypt cost 10, role USER', async () => {
     const mixedCaseEmail = `Register.${Date.now()}@Example.COM`;
     const result = await registerUser({
       name: 'Test Registrant',
@@ -52,8 +52,6 @@ describe('actions/auth.ts - registerUser', () => {
     assert.strictEqual(userInDb.name, 'Test Registrant');
     assert.strictEqual(userInDb.email, mixedCaseEmail.toLowerCase().trim());
     assert.strictEqual(userInDb.role, 'USER');
-    assert.strictEqual(userInDb.plan, 'FREE');
-    assert.strictEqual(userInDb.planSource, 'DEFAULT');
 
     // Stored hash must start with $2 and not be plain password
     assert.ok(userInDb.passwordHash.startsWith('$2'));

@@ -7,7 +7,7 @@ interface SupportLookupFormProps {
   initialQuery?: string;
 }
 
-const BARE_PREFIXES = ['INV', 'INV-', 'QUO', 'QUO-'];
+const BARE_PREFIXES = ['QUO', 'QUO-', 'Q', 'Q-'];
 
 export function SupportLookupForm({ initialQuery = '' }: SupportLookupFormProps) {
   const [query, setQuery] = useState(initialQuery);
@@ -25,7 +25,7 @@ export function SupportLookupForm({ initialQuery = '' }: SupportLookupFormProps)
     }
 
     if (BARE_PREFIXES.includes(trimmed.toUpperCase())) {
-      setError('Bare prefixes like "INV-" or "QUO-" are not allowed. Enter a full document number (e.g. INV-000042) or a public token.');
+      setError('Bare prefixes like "QUO-" or "Q-" are not allowed. Enter a full quotation number (e.g. Q-2026-0001 or QUO-000042) or a public code.');
       return;
     }
 
@@ -67,7 +67,7 @@ export function SupportLookupForm({ initialQuery = '' }: SupportLookupFormProps)
               setQuery(e.target.value);
               if (error) setError(null);
             }}
-            placeholder="Document number (e.g. INV-000042, QUO-000001) or public token..."
+            placeholder="Quotation number (e.g. Q-2026-0001, QUO-000042) or public code..."
             className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-mono"
             disabled={isSubmitting}
             autoFocus

@@ -13,7 +13,6 @@ interface AdminUserListProps {
   totalPages: number;
   limit: number;
   currentSearch: string;
-  currentPlan: string;
   currentStatus: string;
   currentActive30: boolean;
 }
@@ -25,7 +24,6 @@ export function AdminUserList({
   totalPages,
   limit,
   currentSearch,
-  currentPlan,
   currentStatus,
   currentActive30,
 }: AdminUserListProps) {
@@ -117,20 +115,6 @@ export function AdminUserList({
 
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Plan Filter */}
-            <div>
-              <select
-                value={currentPlan}
-                onChange={(e) => updateFilters({ plan: e.target.value })}
-                className="px-3 py-2 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-              >
-                <option value="ALL">All Plans</option>
-                <option value="FREE">Free</option>
-                <option value="FREELANCER">Freelancer</option>
-                <option value="BUSINESS">Business</option>
-              </select>
-            </div>
-
             {/* Status Filter */}
             <div>
               <select
@@ -173,11 +157,8 @@ export function AdminUserList({
                 <th scope="col" className="py-3.5 px-4">
                   Business
                 </th>
-                <th scope="col" className="py-3.5 px-4">
-                  Plan
-                </th>
                 <th scope="col" className="py-3.5 px-4 text-center">
-                  Docs
+                  Quotes
                 </th>
                 <th scope="col" className="py-3.5 px-4">
                   Signed Up
@@ -196,7 +177,7 @@ export function AdminUserList({
             <tbody className="divide-y divide-slate-100">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
                     <p className="text-sm font-medium">No users found</p>
                     <p className="text-xs text-slate-400 mt-1">
                       Try clearing search terms or changing your filters.
@@ -222,27 +203,10 @@ export function AdminUserList({
                       {user.businessName}
                     </td>
 
-                    {/* Plan + Override Badge */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800">
-                          {user.plan}
-                        </span>
-                        {user.isPlanOverridden && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                            ADMIN
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Documents Count */}
+                    {/* Quotations Count */}
                     <td className="py-3 px-4 text-center whitespace-nowrap">
-                      <span className="font-semibold text-slate-900">
-                        {user.documentsCount}
-                      </span>
-                      <span className="text-[11px] text-slate-400 ml-1">
-                        ({user.invoicesCount}i / {user.quotationsCount}q)
+                      <span className="font-semibold text-slate-900 font-mono">
+                        {user.quotationsCount}
                       </span>
                     </td>
 

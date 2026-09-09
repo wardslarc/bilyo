@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'User Detail · Bilyo Admin',
-  description: 'Inspect user profile, business setup, plan configuration, and document breakdown.',
+  description: 'Inspect user profile, business setup, and document breakdown.',
 };
 
 interface AdminUserDetailPageProps {
@@ -97,8 +97,8 @@ export default async function AdminUserDetailPage({
 
         <div className="flex items-center gap-3">
           <Link
-            href={`/admin/users/${id}/documents`}
-            className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+            href={`/admin/users/${id}/quotations`}
+            className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
           >
             <svg
               className="w-4 h-4 mr-2 text-slate-500"
@@ -113,7 +113,7 @@ export default async function AdminUserDetailPage({
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            View Documents ({counts.invoices.total + counts.quotations.total})
+            View Quotations ({counts.quotations.total})
           </Link>
         </div>
       </div>
@@ -360,26 +360,6 @@ export default async function AdminUserDetailPage({
                   {business.phone || '—'}
                 </dd>
               </div>
-              <div>
-                <dt className="text-xs font-medium text-slate-500">TIN</dt>
-                <dd className="text-slate-700 mt-0.5 font-mono text-xs">
-                  {business.tin || '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-slate-500">VAT Registered</dt>
-                <dd className="mt-0.5">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      business.vatRegistered
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {business.vatRegistered ? 'VAT Registered (12%)' : 'Non-VAT'}
-                  </span>
-                </dd>
-              </div>
             </dl>
           ) : (
             <div className="py-6 text-center text-sm text-slate-500">
@@ -389,197 +369,60 @@ export default async function AdminUserDetailPage({
         </div>
       </div>
 
-      {/* Plan & Subscription Configuration */}
-      <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-          <svg
-            className="w-5 h-5 text-slate-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-          </svg>
-          <h2 className="font-semibold text-slate-900">Subscription & Plan Status</h2>
+      {/* Quotations Metrics Breakdown */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-purple-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <h2 className="font-semibold text-slate-900">Quotations</h2>
+          </div>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+            {counts.quotations.total} Total
+          </span>
         </div>
 
-        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div>
-            <dt className="text-xs font-medium text-slate-500">Assigned Plan</dt>
-            <dd className="mt-1">
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${
-                  user.plan === 'BUSINESS'
-                    ? 'bg-indigo-100 text-indigo-800'
-                    : user.plan === 'FREELANCER'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-800'
-                }`}
-              >
-                {user.plan}
-              </span>
-            </dd>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-xs text-slate-500 font-medium">Draft</span>
+            <p className="text-lg font-bold text-slate-700 mt-1">
+              {counts.quotations.draft}
+            </p>
           </div>
-
-          <div>
-            <dt className="text-xs font-medium text-slate-500">Plan Origin / Source</dt>
-            <dd className="mt-1 text-slate-800 font-medium flex items-center gap-1.5">
-              <span>{user.planSource}</span>
-              {user.isPlanOverridden && (
-                <span className="text-[10px] font-semibold tracking-wide bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
-                  ADMIN OVERRIDE
-                </span>
-              )}
-            </dd>
+          <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
+            <span className="text-xs text-blue-600 font-medium">Sent</span>
+            <p className="text-lg font-bold text-blue-800 mt-1">
+              {counts.quotations.sent}
+            </p>
           </div>
-
-          <div>
-            <dt className="text-xs font-medium text-slate-500">Override Expiration</dt>
-            <dd className="mt-1 text-slate-700">
-              {user.planOverrideExpiresAt
-                ? formatDate(user.planOverrideExpiresAt)
-                : 'Permanent / None'}
-            </dd>
+          <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
+            <span className="text-xs text-emerald-600 font-medium">Accepted</span>
+            <p className="text-lg font-bold text-emerald-800 mt-1">
+              {counts.quotations.accepted}
+            </p>
           </div>
-
-          {user.planOverrideReason && (
-            <div className="sm:col-span-3 bg-purple-50 p-3 rounded border border-purple-200 text-xs text-purple-900">
-              <span className="font-semibold">Override Reason:</span>{' '}
-              {user.planOverrideReason}
-            </div>
-          )}
-
-          {user.billingCustomerId && (
-            <div className="sm:col-span-3 text-xs text-slate-500">
-              Billing Customer Reference:{' '}
-              <span className="font-mono text-slate-700">
-                {user.billingCustomerId}
-              </span>
-            </div>
-          )}
-        </dl>
-      </div>
-
-      {/* Document Metrics Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Invoices Breakdown */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <h2 className="font-semibold text-slate-900">Invoices</h2>
-            </div>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-              {counts.invoices.total} Total
-            </span>
+          <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100">
+            <span className="text-xs text-rose-600 font-medium">Declined</span>
+            <p className="text-lg font-bold text-rose-800 mt-1">
+              {counts.quotations.declined}
+            </p>
           </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 text-center">
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-500 font-medium">Draft</span>
-              <p className="text-lg font-bold text-slate-700 mt-1">
-                {counts.invoices.draft}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
-              <span className="text-xs text-blue-600 font-medium">Sent</span>
-              <p className="text-lg font-bold text-blue-800 mt-1">
-                {counts.invoices.sent}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
-              <span className="text-xs text-emerald-600 font-medium">Paid</span>
-              <p className="text-lg font-bold text-emerald-800 mt-1">
-                {counts.invoices.paid}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100">
-              <span className="text-xs text-rose-600 font-medium">Overdue</span>
-              <p className="text-lg font-bold text-rose-800 mt-1">
-                {counts.invoices.overdue}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-400 font-medium">Cancelled</span>
-              <p className="text-lg font-bold text-slate-500 mt-1">
-                {counts.invoices.cancelled}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quotations Breakdown */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <h2 className="font-semibold text-slate-900">Quotations</h2>
-            </div>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              {counts.quotations.total} Total
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 text-center">
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-500 font-medium">Draft</span>
-              <p className="text-lg font-bold text-slate-700 mt-1">
-                {counts.quotations.draft}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
-              <span className="text-xs text-blue-600 font-medium">Sent</span>
-              <p className="text-lg font-bold text-blue-800 mt-1">
-                {counts.quotations.sent}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
-              <span className="text-xs text-emerald-600 font-medium">Accepted</span>
-              <p className="text-lg font-bold text-emerald-800 mt-1">
-                {counts.quotations.accepted}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100">
-              <span className="text-xs text-rose-600 font-medium">Declined</span>
-              <p className="text-lg font-bold text-rose-800 mt-1">
-                {counts.quotations.declined}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-400 font-medium">Expired</span>
-              <p className="text-lg font-bold text-slate-500 mt-1">
-                {counts.quotations.expired}
-              </p>
-            </div>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-xs text-slate-400 font-medium">Expired</span>
+            <p className="text-lg font-bold text-slate-500 mt-1">
+              {counts.quotations.expired}
+            </p>
           </div>
         </div>
       </div>

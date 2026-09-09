@@ -2,19 +2,14 @@ import dbConnect from '../mongodb.ts';
 import { User } from '../../models/user.ts';
 import { Business } from '../../models/business.ts';
 import { Customer } from '../../models/customer.ts';
-import { Invoice } from '../../models/invoice.ts';
 import { Quotation } from '../../models/quotation.ts';
 import { AdminAuditLog } from '../../models/admin-audit-log.ts';
 import { requireAdmin } from './guard.ts';
-import { isInvoiceOverdue } from '../dates.ts';
-import { effectivePlan, isPlanOverrideActive } from '../plan.ts';
-
 
 export interface GetAdminUsersParams {
   page?: number;
   limit?: number;
   search?: string;
-  plan?: 'FREE' | 'FREELANCER' | 'BUSINESS' | 'ALL';
   status?: 'ACTIVE' | 'SUSPENDED' | 'DELETION' | 'ALL';
   activeIn30Days?: boolean;
 }
@@ -24,11 +19,6 @@ export interface AdminUserListItem {
   name: string;
   email: string;
   businessName: string;
-  plan: 'FREE' | 'FREELANCER' | 'BUSINESS';
-  planSource: 'DEFAULT' | 'BILLING' | 'ADMIN';
-  isPlanOverridden: boolean;
-  documentsCount: number;
-  invoicesCount: number;
   quotationsCount: number;
   signedUpAt: Date;
   lastActiveAt: Date | null;
@@ -49,17 +39,11 @@ export interface AdminUsersListResult {
  */
 export function buildUsersFilter(params: {
   search?: string;
-  plan?: string;
   status?: string;
   activeIn30Days?: boolean;
   matchingBusinessUserIds?: unknown[];
 }): Record<string, unknown> {
   const conditions: Record<string, unknown>[] = [];
-
-  // Plan filter
-  if (params.plan && params.plan !== 'ALL') {
-    conditions.push({ plan: params.plan });
-  }
 
   // Status filter
   if (params.status === 'SUSPENDED') {
@@ -82,32 +66,28 @@ export function buildUsersFilter(params: {
   }
 
   // Search filter (email or business name)
-  const trimmedSearch = params.search?.trim();
-  if (trimmedSearch) {
-    const searchConditions: Record<string, unknown>[] = [
-      { email: { $regex: trimmedSearch, $options: 'i' } },
-      { name: { $regex: trimmedSearch, $options: 'i' } },
+  if (params.search) {
+    const searchRegex = new RegExp(params.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const userConditions: Record<string, unknown>[] = [
+      { email: searchRegex },
+      { name: searchRegex },
     ];
 
     if (params.matchingBusinessUserIds && params.matchingBusinessUserIds.length > 0) {
-      searchConditions.push({ _id: { $in: params.matchingBusinessUserIds } });
+      userConditions.push({ _id: { $in: params.matchingBusinessUserIds } });
     }
 
-    conditions.push({ $or: searchConditions });
+    conditions.push({ $or: userConditions });
   }
 
-  if (conditions.length === 0) {
-    return {};
-  }
-  if (conditions.length === 1) {
-    return conditions[0]!;
-  }
+  if (conditions.length === 0) return {};
+  if (conditions.length === 1) return conditions[0]!;
   return { $and: conditions };
 }
 
 /**
- * Server-side paginated user listing for platform admins (AGENTS.md §3.7, DEVELOPMENT_PLAN.md §5.8, M7-T02).
- * Database-level pagination via skip/limit and countDocuments, sub-second response on large datasets.
+ * Lists users for administrative management (M7-T02).
+ * Cross-user query strictly guarded by requireAdmin() (AGENTS.md §4.9).
  */
 export async function getAdminUsersList(
   params: GetAdminUsersParams = {}
@@ -115,53 +95,39 @@ export async function getAdminUsersList(
   await requireAdmin();
   await dbConnect();
 
-  const page = Math.max(1, Number(params.page) || 1);
-  const limit = Math.min(100, Math.max(1, Number(params.limit) || 25));
+  const page = Math.max(1, params.page || 1);
+  const limit = Math.min(100, Math.max(1, params.limit || 25));
   const skip = (page - 1) * limit;
 
-  // If search query is present, check matching businesses to find their userIds
+  // If search query is provided, first find matching businesses
   let matchingBusinessUserIds: unknown[] = [];
-  const search = params.search?.trim();
-  if (search) {
-    const matchingBusinesses = await Business.find({
-      businessName: { $regex: search, $options: 'i' },
-    })
-      .select('userId')
-      .lean();
-    matchingBusinessUserIds = matchingBusinesses.map((b) => b.userId);
+  if (params.search) {
+    const searchRegex = new RegExp(params.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const businesses = await Business.find({ businessName: searchRegex }).select('userId').lean();
+    matchingBusinessUserIds = businesses.map((b) => b.userId);
   }
 
-  const query = buildUsersFilter({
-    search,
-    plan: params.plan,
+  const filter = buildUsersFilter({
+    search: params.search,
     status: params.status,
     activeIn30Days: params.activeIn30Days,
     matchingBusinessUserIds,
   });
 
-  const [total, rawUsers] = await Promise.all([
-    User.countDocuments(query),
-    User.find(query)
+  const [rawUsers, total] = await Promise.all([
+    User.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select(
-        '_id name email role plan planSource planOverrideExpiresAt suspendedAt deletionRequestedAt createdAt lastLoginAt lastActiveAt'
-      )
       .lean(),
+    User.countDocuments(filter),
   ]);
 
+  // Bulk-load businesses and document counts for page results
   const userIds = rawUsers.map((u) => u._id);
 
-  // Fetch associated business names and document counts in batch parallel queries
-  const [businesses, invoiceCounts, quotationCounts] = await Promise.all([
-    Business.find({ userId: { $in: userIds } })
-      .select('userId businessName')
-      .lean(),
-    Invoice.aggregate([
-      { $match: { userId: { $in: userIds } } },
-      { $group: { _id: '$userId', count: { $sum: 1 } } },
-    ]),
+  const [businesses, quotationCounts] = await Promise.all([
+    Business.find({ userId: { $in: userIds } }).select('userId businessName').lean(),
     Quotation.aggregate([
       { $match: { userId: { $in: userIds } } },
       { $group: { _id: '$userId', count: { $sum: 1 } } },
@@ -173,11 +139,6 @@ export async function getAdminUsersList(
     businessMap.set(b.userId.toString(), b.businessName);
   }
 
-  const invoiceMap = new Map<string, number>();
-  for (const inv of invoiceCounts) {
-    invoiceMap.set(inv._id.toString(), inv.count);
-  }
-
   const quotationMap = new Map<string, number>();
   for (const quo of quotationCounts) {
     quotationMap.set(quo._id.toString(), quo.count);
@@ -185,7 +146,6 @@ export async function getAdminUsersList(
 
   const users: AdminUserListItem[] = rawUsers.map((u) => {
     const uid = u._id.toString();
-    const invCount = invoiceMap.get(uid) || 0;
     const quoCount = quotationMap.get(uid) || 0;
 
     let status: 'ACTIVE' | 'SUSPENDED' | 'DELETION_REQUESTED' = 'ACTIVE';
@@ -200,11 +160,6 @@ export async function getAdminUsersList(
       name: u.name,
       email: u.email,
       businessName: businessMap.get(uid) || '—',
-      plan: effectivePlan(u),
-      planSource: u.planSource || 'DEFAULT',
-      isPlanOverridden: isPlanOverrideActive(u),
-      documentsCount: invCount + quoCount,
-      invoicesCount: invCount,
       quotationsCount: quoCount,
       signedUpAt: u.createdAt,
       lastActiveAt: u.lastActiveAt || u.lastLoginAt || null,
@@ -227,13 +182,6 @@ export interface AdminUserDetail {
     name: string;
     email: string;
     role: 'USER' | 'ADMIN';
-    plan: 'FREE' | 'FREELANCER' | 'BUSINESS';
-    planSource: 'DEFAULT' | 'BILLING' | 'ADMIN';
-    isPlanOverridden: boolean;
-    planOverrideExpiresAt: Date | null;
-    planOverrideReason: string | null;
-    billingCustomerId: string | null;
-    billingPlan: 'FREE' | 'FREELANCER' | 'BUSINESS' | null;
     suspendedAt: Date | null;
     suspendedReason: string | null;
     suspendedByUserId: string | null;
@@ -251,20 +199,10 @@ export interface AdminUserDetail {
     address: string;
     email: string;
     phone: string;
-    tin: string;
-    vatRegistered: boolean;
     logoUrl: string | null;
     createdAt: Date;
   } | null;
   counts: {
-    invoices: {
-      total: number;
-      draft: number;
-      sent: number;
-      paid: number;
-      overdue: number;
-      cancelled: number;
-    };
     quotations: {
       total: number;
       draft: number;
@@ -293,11 +231,10 @@ export async function getAdminUserDetail(
   await requireAdmin();
   await dbConnect();
 
-  const [dbUser, business, invoices, quotations, recentAudits] =
+  const [dbUser, business, quotations, recentAudits] =
     await Promise.all([
       User.findById(userId).lean(),
       Business.findOne({ userId }).lean(),
-      Invoice.find({ userId }).select('status dueDate').lean(),
       Quotation.find({ userId }).select('status validUntil').lean(),
       AdminAuditLog.find({ targetUserId: userId })
         .sort({ createdAt: -1 })
@@ -309,28 +246,8 @@ export async function getAdminUserDetail(
     return null;
   }
 
-  // Calculate invoice counts
-  const now = new Date();
-  let invDraft = 0;
-  let invSent = 0;
-  let invPaid = 0;
-  let invOverdue = 0;
-  let invCancelled = 0;
-
-  for (const inv of invoices) {
-    if (inv.status === 'PAID') invPaid++;
-    else if (inv.status === 'CANCELLED') invCancelled++;
-    else if (inv.status === 'DRAFT') invDraft++;
-    else if (inv.status === 'SENT') {
-      if (inv.dueDate && isInvoiceOverdue(inv.dueDate, inv.status)) {
-        invOverdue++;
-      } else {
-        invSent++;
-      }
-    }
-  }
-
   // Calculate quotation counts
+  const now = new Date();
   let quoDraft = 0;
   let quoSent = 0;
   let quoAccepted = 0;
@@ -340,9 +257,9 @@ export async function getAdminUserDetail(
   for (const quo of quotations) {
     if (quo.status === 'ACCEPTED') quoAccepted++;
     else if (quo.status === 'DECLINED') quoDeclined++;
-    else if (quo.status === 'EXPIRED' || (quo.validUntil && new Date(quo.validUntil) < now)) {
+    else if ((quo.status === 'SENT' || quo.status === 'VIEWED') && quo.validUntil && new Date(quo.validUntil) < now) {
       quoExpired++;
-    } else if (quo.status === 'SENT') quoSent++;
+    } else if (quo.status === 'SENT' || quo.status === 'VIEWED') quoSent++;
     else if (quo.status === 'DRAFT') quoDraft++;
   }
 
@@ -352,13 +269,6 @@ export async function getAdminUserDetail(
       name: dbUser.name,
       email: dbUser.email,
       role: dbUser.role || 'USER',
-      plan: effectivePlan(dbUser),
-      planSource: dbUser.planSource || 'DEFAULT',
-      isPlanOverridden: isPlanOverrideActive(dbUser),
-      planOverrideExpiresAt: dbUser.planOverrideExpiresAt || null,
-      planOverrideReason: dbUser.planOverrideReason || null,
-      billingCustomerId: dbUser.billingCustomerId || null,
-      billingPlan: dbUser.billingPlan || null,
       suspendedAt: dbUser.suspendedAt || null,
       suspendedReason: dbUser.suspendedReason || null,
       suspendedByUserId: dbUser.suspendedByUserId || null,
@@ -377,21 +287,11 @@ export async function getAdminUserDetail(
           address: business.address || '',
           email: business.email || '',
           phone: business.phone || '',
-          tin: business.tin || '',
-          vatRegistered: Boolean(business.vatRegistered),
           logoUrl: business.logoUrl || null,
           createdAt: business.createdAt,
         }
       : null,
     counts: {
-      invoices: {
-        total: invoices.length,
-        draft: invDraft,
-        sent: invSent,
-        paid: invPaid,
-        overdue: invOverdue,
-        cancelled: invCancelled,
-      },
       quotations: {
         total: quotations.length,
         draft: quoDraft,
@@ -411,25 +311,25 @@ export async function getAdminUserDetail(
   };
 }
 
-export interface AdminUserDocumentListItem {
+export interface AdminUserQuotationListItem {
   id: string;
   number: string;
-  kind: 'invoice' | 'quotation';
   customerName: string;
   issueDate: Date;
-  dueDateOrValidUntil: Date | null;
+  validUntil: Date | null;
   status: string;
   totalCentavos: number;
+  publicCode?: string;
   publicToken: string;
   createdAt: Date;
 }
 
 /**
- * Loads all invoices and quotations for an identified user (AGENTS.md §3.7, M7-T03).
+ * Loads all quotations for an identified user (AGENTS.md §4.9).
  */
-export async function getAdminUserDocuments(
+export async function getAdminUserQuotations(
   userId: string
-): Promise<{ user: { id: string; name: string; email: string }; documents: AdminUserDocumentListItem[] } | null> {
+): Promise<{ user: { id: string; name: string; email: string }; quotations: AdminUserQuotationListItem[] } | null> {
   await requireAdmin();
   await dbConnect();
 
@@ -438,18 +338,10 @@ export async function getAdminUserDocuments(
     return null;
   }
 
-  const [invoices, quotations] = await Promise.all([
-    Invoice.find({ userId }).sort({ createdAt: -1 }).lean(),
-    Quotation.find({ userId }).sort({ createdAt: -1 }).lean(),
-  ]);
+  const quotations = await Quotation.find({ userId }).sort({ createdAt: -1 }).lean();
 
-  // Collect customer IDs for documents without snapshot names
+  // Collect customer IDs for quotations without snapshot names
   const customerIds = new Set<string>();
-  for (const inv of invoices) {
-    if (!inv.customerSnapshot?.name && inv.customerId) {
-      customerIds.add(inv.customerId.toString());
-    }
-  }
   for (const quo of quotations) {
     if (!quo.customerSnapshot?.name && quo.customerId) {
       customerIds.add(quo.customerId.toString());
@@ -466,44 +358,22 @@ export async function getAdminUserDocuments(
     }
   }
 
-  const docList: AdminUserDocumentListItem[] = [];
-
-  for (const inv of invoices) {
-    const cust = inv.customerSnapshot as { name?: string } | undefined;
-    const customerName = cust?.name || customerMap.get(inv.customerId?.toString()) || '—';
-    docList.push({
-      id: inv._id.toString(),
-      number: inv.number,
-      kind: 'invoice',
-      customerName,
-      issueDate: inv.issueDate,
-      dueDateOrValidUntil: inv.dueDate || null,
-      status: inv.status,
-      totalCentavos: inv.totalCentavos,
-      publicToken: inv.publicToken || '',
-      createdAt: inv.createdAt,
-    });
-  }
-
-  for (const quo of quotations) {
+  const quoList: AdminUserQuotationListItem[] = quotations.map((quo) => {
     const cust = quo.customerSnapshot as { name?: string } | undefined;
     const customerName = cust?.name || customerMap.get(quo.customerId?.toString()) || '—';
-    docList.push({
+    return {
       id: quo._id.toString(),
       number: quo.number,
-      kind: 'quotation',
       customerName,
       issueDate: quo.issueDate,
-      dueDateOrValidUntil: quo.validUntil || null,
+      validUntil: quo.validUntil || null,
       status: quo.status,
       totalCentavos: quo.totalCentavos,
-      publicToken: quo.publicToken || '',
+      publicCode: quo.publicCode || quo.publicToken || '',
+      publicToken: quo.publicCode || quo.publicToken || '',
       createdAt: quo.createdAt,
-    });
-  }
-
-  // Sort unified documents newest first
-  docList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    };
+  });
 
   return {
     user: {
@@ -511,26 +381,22 @@ export async function getAdminUserDocuments(
       name: user.name,
       email: user.email,
     },
-    documents: docList,
+    quotations: quoList,
   };
 }
 
-export interface AdminDocumentDetail {
+export interface AdminQuotationDetail {
   id: string;
-  kind: 'invoice' | 'quotation';
   number: string;
   status: string;
   issueDate: Date;
-  dueDateOrValidUntil: Date | null;
-  paidAt?: Date | null;
+  validUntil: Date | null;
   userId: string;
   business: {
     businessName: string;
     address: string;
     email: string;
     phone: string;
-    tin: string;
-    vatRegistered: boolean;
     logoUrl: string | null;
   };
   customer: {
@@ -539,7 +405,6 @@ export interface AdminDocumentDetail {
     email?: string;
     phone?: string;
     address?: string;
-    taxId?: string;
   };
   items: Array<{
     description: string;
@@ -549,152 +414,82 @@ export interface AdminDocumentDetail {
   }>;
   subtotalCentavos: number;
   discountCentavos: number;
-  vatCentavos: number;
   totalCentavos: number;
   notes?: string;
   terms?: string;
+  publicCode?: string;
+  publicCodeRevokedAt?: Date | null;
   publicToken: string;
   publicTokenRevokedAt?: Date | null;
   createdAt: Date;
 }
 
 /**
- * Loads full document content for platform staff inspection (AGENTS.md §3.7, M7-T03).
- * Crucially, displays document content even if public link is revoked or disabled.
+ * Loads full quotation content for platform staff inspection (AGENTS.md §4.9).
+ * Crucially, displays quotation content even if public link is revoked or disabled.
  */
-export async function getAdminDocument(
-  kind: 'invoice' | 'quotation',
+export async function getAdminQuotation(
   id: string
-): Promise<AdminDocumentDetail | null> {
+): Promise<AdminQuotationDetail | null> {
   await requireAdmin();
   await dbConnect();
 
-  if (kind === 'invoice') {
-    const invoice = await Invoice.findById(id).lean();
-    if (!invoice) return null;
+  const quotation = await Quotation.findById(id).lean();
+  if (!quotation) return null;
 
-    let bSnap = invoice.businessSnapshot as Record<string, unknown> | undefined;
-    if (!bSnap?.businessName) {
-      const liveBiz = await Business.findOne({ userId: invoice.userId }).lean();
-      if (liveBiz) {
-        bSnap = liveBiz as unknown as Record<string, unknown>;
-      }
+  let bSnap = quotation.businessSnapshot as Record<string, unknown> | undefined;
+  if (!bSnap?.businessName) {
+    const liveBiz = await Business.findOne({ userId: quotation.userId }).lean();
+    if (liveBiz) {
+      bSnap = liveBiz as unknown as Record<string, unknown>;
     }
-
-    let cSnap = invoice.customerSnapshot as Record<string, unknown> | undefined;
-    if (!cSnap?.name && invoice.customerId) {
-      const liveCust = await Customer.findById(invoice.customerId).lean();
-      if (liveCust) {
-        cSnap = liveCust as unknown as Record<string, unknown>;
-      }
-    }
-
-    return {
-      id: invoice._id.toString(),
-      kind: 'invoice',
-      number: invoice.number,
-      status: invoice.status,
-      issueDate: invoice.issueDate,
-      dueDateOrValidUntil: invoice.dueDate || null,
-      paidAt: invoice.paidAt || null,
-      userId: invoice.userId.toString(),
-      business: {
-        businessName: (bSnap?.businessName as string) || '—',
-        address: (bSnap?.address as string) || '',
-        email: (bSnap?.email as string) || '',
-        phone: (bSnap?.phone as string) || '',
-        tin: (bSnap?.tin as string) || '',
-        vatRegistered: Boolean(bSnap?.vatRegistered),
-        logoUrl: (bSnap?.logoUrl as string) || null,
-      },
-      customer: {
-        name: (cSnap?.name as string) || '—',
-        company: (cSnap?.company as string) || undefined,
-        email: (cSnap?.email as string) || undefined,
-        phone: (cSnap?.phone as string) || undefined,
-        address: (cSnap?.address as string) || undefined,
-        taxId: (cSnap?.tin as string) || (cSnap?.taxId as string) || undefined,
-      },
-      items: invoice.items.map((it) => ({
-        description: it.description,
-        quantity: it.quantity,
-        unitPriceCentavos: it.unitPriceCentavos,
-        amountCentavos: it.amountCentavos,
-      })),
-      subtotalCentavos: invoice.subtotalCentavos,
-      discountCentavos: invoice.discountCentavos,
-      vatCentavos: invoice.vatCentavos,
-      totalCentavos: invoice.totalCentavos,
-      notes: invoice.notes,
-      terms: invoice.terms,
-      publicToken: invoice.publicToken || '',
-      publicTokenRevokedAt: invoice.publicTokenRevokedAt || null,
-      createdAt: invoice.createdAt,
-    };
   }
 
-  if (kind === 'quotation') {
-    const quotation = await Quotation.findById(id).lean();
-    if (!quotation) return null;
-
-    let bSnap = quotation.businessSnapshot as Record<string, unknown> | undefined;
-    if (!bSnap?.businessName) {
-      const liveBiz = await Business.findOne({ userId: quotation.userId }).lean();
-      if (liveBiz) {
-        bSnap = liveBiz as unknown as Record<string, unknown>;
-      }
+  let cSnap = quotation.customerSnapshot as Record<string, unknown> | undefined;
+  if (!cSnap?.name && quotation.customerId) {
+    const liveCust = await Customer.findById(quotation.customerId).lean();
+    if (liveCust) {
+      cSnap = liveCust as unknown as Record<string, unknown>;
     }
-
-    let cSnap = quotation.customerSnapshot as Record<string, unknown> | undefined;
-    if (!cSnap?.name && quotation.customerId) {
-      const liveCust = await Customer.findById(quotation.customerId).lean();
-      if (liveCust) {
-        cSnap = liveCust as unknown as Record<string, unknown>;
-      }
-    }
-
-    return {
-      id: quotation._id.toString(),
-      kind: 'quotation',
-      number: quotation.number,
-      status: quotation.status,
-      issueDate: quotation.issueDate,
-      dueDateOrValidUntil: quotation.validUntil || null,
-      userId: quotation.userId.toString(),
-      business: {
-        businessName: (bSnap?.businessName as string) || '—',
-        address: (bSnap?.address as string) || '',
-        email: (bSnap?.email as string) || '',
-        phone: (bSnap?.phone as string) || '',
-        tin: (bSnap?.tin as string) || '',
-        vatRegistered: Boolean(bSnap?.vatRegistered),
-        logoUrl: (bSnap?.logoUrl as string) || null,
-      },
-      customer: {
-        name: (cSnap?.name as string) || '—',
-        company: (cSnap?.company as string) || undefined,
-        email: (cSnap?.email as string) || undefined,
-        phone: (cSnap?.phone as string) || undefined,
-        address: (cSnap?.address as string) || undefined,
-        taxId: (cSnap?.tin as string) || (cSnap?.taxId as string) || undefined,
-      },
-      items: quotation.items.map((it) => ({
-        description: it.description,
-        quantity: it.quantity,
-        unitPriceCentavos: it.unitPriceCentavos,
-        amountCentavos: it.amountCentavos,
-      })),
-      subtotalCentavos: quotation.subtotalCentavos,
-      discountCentavos: quotation.discountCentavos,
-      vatCentavos: quotation.vatCentavos,
-      totalCentavos: quotation.totalCentavos,
-      notes: quotation.notes,
-      terms: quotation.terms,
-      publicToken: quotation.publicToken || '',
-      publicTokenRevokedAt: quotation.publicTokenRevokedAt || null,
-      createdAt: quotation.createdAt,
-    };
   }
 
-  return null;
+  return {
+    id: quotation._id.toString(),
+    number: quotation.number,
+    status: quotation.status,
+    issueDate: quotation.issueDate,
+    validUntil: quotation.validUntil || null,
+    userId: quotation.userId.toString(),
+    business: {
+      businessName: (bSnap?.businessName as string) || '—',
+      address: (bSnap?.address as string) || '',
+      email: (bSnap?.email as string) || '',
+      phone: (bSnap?.phone as string) || '',
+      logoUrl: (bSnap?.logoUrl as string) || null,
+    },
+    customer: {
+      name: (cSnap?.name as string) || '—',
+      company: (cSnap?.company as string) || undefined,
+      email: (cSnap?.email as string) || undefined,
+      phone: (cSnap?.phone as string) || undefined,
+      address: (cSnap?.address as string) || undefined,
+    },
+    items: quotation.items.map((it) => ({
+      description: it.description,
+      quantity: it.quantity,
+      unitPriceCentavos: it.unitPriceCentavos,
+      amountCentavos: it.amountCentavos,
+    })),
+    subtotalCentavos: quotation.subtotalCentavos,
+    discountCentavos: quotation.discountCentavos,
+    totalCentavos: quotation.totalCentavos,
+    notes: quotation.notes,
+    terms: quotation.terms,
+    publicCode: quotation.publicCode || quotation.publicToken || '',
+    publicCodeRevokedAt: quotation.publicCodeRevokedAt || quotation.publicTokenRevokedAt || null,
+    publicToken: quotation.publicCode || quotation.publicToken || '',
+    publicTokenRevokedAt: quotation.publicCodeRevokedAt || quotation.publicTokenRevokedAt || null,
+    createdAt: quotation.createdAt,
+  };
 }
+

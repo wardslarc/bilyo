@@ -78,13 +78,6 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
         'application/json'
       );
 
-      // Download Invoices CSV
-      triggerDownload(
-        `bilyo-invoices-${dateStr}.csv`,
-        res.data.invoicesCsv,
-        'text/csv;charset=utf-8;'
-      );
-
       // Download Quotations CSV
       triggerDownload(
         `bilyo-quotations-${dateStr}.csv`,
@@ -192,16 +185,13 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
               Manage your credentials, data portability, and account security.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              {currentUser.plan} Plan
-            </span>
-            {currentUser.role === 'ADMIN' && (
+          {currentUser.role === 'ADMIN' && (
+            <div className="flex items-center gap-2">
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                 ADMIN
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 text-sm">
@@ -444,8 +434,8 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
             </span>
           </div>
           <p className="text-xs text-neutral-500 mt-1">
-            Export a full copy of your account data, business profile, customers, products,
-            quotations, and invoices in portable formats (JSON and CSV).
+            Export a full copy of your account data, business profile, clients,
+            and quotations in portable formats (JSON and CSV).
           </p>
         </div>
 

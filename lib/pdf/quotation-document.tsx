@@ -5,7 +5,7 @@ import {
   type PdfBusinessInfo,
   type PdfCustomerInfo,
 } from './shared/document-layout.tsx';
-import { getDocumentPdfDisclaimer } from '../documents.ts';
+import { QUOTATION_FOOTER } from '../documents.ts';
 
 // Re-export shared types for backward compatibility
 export type LineItem = PdfLineItem;
@@ -17,8 +17,6 @@ export interface QuotationDocumentProps {
   items: LineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   issueDate: string | Date;
   validUntil: string | Date;
@@ -33,8 +31,6 @@ export function QuotationDocument({
   items,
   subtotalCentavos,
   discountCentavos,
-  vatRatePercent,
-  vatCentavos,
   totalCentavos,
   issueDate,
   validUntil,
@@ -53,15 +49,13 @@ export function QuotationDocument({
       items={items}
       subtotalCentavos={subtotalCentavos}
       discountCentavos={discountCentavos}
-      vatRatePercent={vatRatePercent}
-      vatCentavos={vatCentavos}
       totalCentavos={totalCentavos}
       issueDate={issueDate}
       secondaryDateLabel="Valid Until"
       secondaryDate={validUntil}
       notes={notes}
       terms={terms}
-      disclaimer={getDocumentPdfDisclaimer('quotation')}
+      disclaimer={QUOTATION_FOOTER}
     />
   );
 }
