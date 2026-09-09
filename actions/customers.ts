@@ -13,7 +13,6 @@ export interface SerializedCustomer {
   email: string;
   phone: string;
   address: string;
-  tin: string;
   notes: string;
   archived: boolean;
   createdAt: string;
@@ -68,7 +67,6 @@ export async function getCustomers(options?: {
       email: doc.email || '',
       phone: doc.phone || '',
       address: doc.address || '',
-      tin: doc.tin || '',
       notes: doc.notes || '',
       archived: Boolean(doc.archived),
       createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -109,7 +107,6 @@ export async function getCustomer(id: string): Promise<ActionResult<SerializedCu
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -156,7 +153,6 @@ export async function createCustomer(
       email: data.email || '',
       phone: data.phone || '',
       address: data.address || '',
-      tin: data.tin || '',
       notes: data.notes || '',
       archived: Boolean(data.archived),
     });
@@ -172,7 +168,6 @@ export async function createCustomer(
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt.toISOString(),
@@ -222,7 +217,6 @@ export async function updateCustomer(
           email: data.email || '',
           phone: data.phone || '',
           address: data.address || '',
-          tin: data.tin || '',
           notes: data.notes || '',
           ...(data.archived !== undefined ? { archived: data.archived } : {}),
         },
@@ -246,7 +240,6 @@ export async function updateCustomer(
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -296,7 +289,6 @@ export async function archiveCustomer(
         email: doc.email || '',
         phone: doc.phone || '',
         address: doc.address || '',
-        tin: doc.tin || '',
         notes: doc.notes || '',
         archived: Boolean(doc.archived),
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),

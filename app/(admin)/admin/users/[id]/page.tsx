@@ -360,26 +360,6 @@ export default async function AdminUserDetailPage({
                   {business.phone || '—'}
                 </dd>
               </div>
-              <div>
-                <dt className="text-xs font-medium text-slate-500">TIN</dt>
-                <dd className="text-slate-700 mt-0.5 font-mono text-xs">
-                  {business.tin || '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-slate-500">VAT Registered</dt>
-                <dd className="mt-0.5">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      business.vatRegistered
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {business.vatRegistered ? 'VAT Registered (12%)' : 'Non-VAT'}
-                  </span>
-                </dd>
-              </div>
             </dl>
           ) : (
             <div className="py-6 text-center text-sm text-slate-500">

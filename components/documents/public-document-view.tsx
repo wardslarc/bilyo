@@ -82,11 +82,6 @@ export function PublicDocumentView({
               {doc.business.phone && (
                 <p className="text-xs text-neutral-500">{doc.business.phone}</p>
               )}
-              {doc.business.tin && (
-                <p className="text-xs text-neutral-500">
-                  TIN: {doc.business.tin}
-                </p>
-              )}
             </div>
 
             <div className="sm:text-right space-y-1">
@@ -118,9 +113,6 @@ export function PublicDocumentView({
               )}
               {doc.customer.phone && (
                 <p className="text-neutral-500">{doc.customer.phone}</p>
-              )}
-              {doc.customer.tin && (
-                <p className="text-neutral-500">TIN: {doc.customer.tin}</p>
               )}
             </div>
 
@@ -215,15 +207,6 @@ export function PublicDocumentView({
                   <span>Discount</span>
                   <span className="font-mono font-medium">
                     -{formatMoney(doc.discountCentavos)}
-                  </span>
-                </div>
-              )}
-
-              {doc.business.vatRegistered && (
-                <div className="flex justify-between text-neutral-600">
-                  <span>VAT ({doc.vatRatePercent}%)</span>
-                  <span className="font-mono font-medium">
-                    {formatMoney(doc.vatCentavos)}
                   </span>
                 </div>
               )}

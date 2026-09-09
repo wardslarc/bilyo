@@ -27,8 +27,6 @@ export interface SerializedQuotation {
   items: SerializedLineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   status: string;
   issueDate: string;
@@ -41,15 +39,12 @@ export interface SerializedQuotation {
     email?: string;
     phone?: string;
     address?: string;
-    tin?: string;
   } | null;
   businessSnapshot: {
     businessName: string;
     address?: string;
     email?: string;
     phone?: string;
-    tin?: string;
-    vatRegistered: boolean;
     logoUrl?: string | null;
   } | null;
   createdAt: string;
@@ -60,8 +55,6 @@ export interface SerializedQuotation {
 export interface SerializedTotals {
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
 }
 
@@ -95,8 +88,6 @@ function serializeQuotation(doc: any): SerializedQuotation {
     })),
     subtotalCentavos: Number(doc.subtotalCentavos ?? 0),
     discountCentavos: Number(doc.discountCentavos ?? 0),
-    vatRatePercent: Number(doc.vatRatePercent ?? 12),
-    vatCentavos: Number(doc.vatCentavos ?? 0),
     totalCentavos: Number(doc.totalCentavos ?? 0),
     status: String(doc.status ?? 'DRAFT'),
     issueDate: doc.issueDate ? new Date(doc.issueDate as string | number | Date).toISOString() : new Date().toISOString(),
@@ -110,7 +101,6 @@ function serializeQuotation(doc: any): SerializedQuotation {
           email: String(customerSnapshot.email ?? ''),
           phone: String(customerSnapshot.phone ?? ''),
           address: String(customerSnapshot.address ?? ''),
-          tin: String(customerSnapshot.tin ?? ''),
         }
       : null,
     businessSnapshot: businessSnapshot
@@ -119,8 +109,6 @@ function serializeQuotation(doc: any): SerializedQuotation {
           address: String(businessSnapshot.address ?? ''),
           email: String(businessSnapshot.email ?? ''),
           phone: String(businessSnapshot.phone ?? ''),
-          tin: String(businessSnapshot.tin ?? ''),
-          vatRegistered: Boolean(businessSnapshot.vatRegistered),
           logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
         }
       : null,
@@ -192,7 +180,6 @@ export async function createQuotation(
         unitPriceCentavos: item.unitPrice,
       })),
       discountCentavos: data.discount,
-      vatRegistered: business.vatRegistered,
     });
 
     // Atomic sequential number assignment (§5.3)
@@ -205,8 +192,6 @@ export async function createQuotation(
       items: totals.items,
       subtotalCentavos: totals.subtotalCentavos,
       discountCentavos: totals.discountCentavos,
-      vatRatePercent: totals.vatRatePercent,
-      vatCentavos: totals.vatCentavos,
       totalCentavos: totals.totalCentavos,
       status: 'DRAFT',
       issueDate: data.issueDate,
@@ -276,7 +261,7 @@ export async function updateQuotation(
       return { ok: false, error: 'Customer not found' };
     }
 
-    // Fetch business for VAT status
+    // Fetch business
     const business = await Business.findOne({ userId: user.id }).lean();
     if (!business) {
       return { ok: false, error: 'Please set up your business profile first' };
@@ -290,7 +275,6 @@ export async function updateQuotation(
         unitPriceCentavos: item.unitPrice,
       })),
       discountCentavos: data.discount,
-      vatRegistered: business.vatRegistered,
     });
 
     const doc = await Quotation.findOneAndUpdate(
@@ -301,8 +285,6 @@ export async function updateQuotation(
           items: totals.items,
           subtotalCentavos: totals.subtotalCentavos,
           discountCentavos: totals.discountCentavos,
-          vatRatePercent: totals.vatRatePercent,
-          vatCentavos: totals.vatCentavos,
           totalCentavos: totals.totalCentavos,
           issueDate: data.issueDate,
           validUntil: data.validUntil,
@@ -446,7 +428,6 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
         email: customer.email || '',
         phone: customer.phone || '',
         address: customer.address || '',
-        tin: customer.tin || '',
       };
     }
     if (!doc.businessSnapshot) {
@@ -455,8 +436,6 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
         address: business.address || '',
         email: business.email || '',
         phone: business.phone || '',
-        tin: business.tin || '',
-        vatRegistered: business.vatRegistered,
         logoUrl: business.logoUrl || null,
       };
     }

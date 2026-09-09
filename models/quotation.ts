@@ -32,7 +32,6 @@ const CustomerSnapshotSchema = new Schema<ICustomerSnapshot>(
     email: { type: String, default: '', trim: true },
     phone: { type: String, default: '', trim: true },
     address: { type: String, default: '', trim: true },
-    tin: { type: String, default: '', trim: true },
   },
   { _id: false }
 );
@@ -43,8 +42,6 @@ const BusinessSnapshotSchema = new Schema<IBusinessSnapshot>(
     address: { type: String, default: '', trim: true },
     email: { type: String, default: '', trim: true },
     phone: { type: String, default: '', trim: true },
-    tin: { type: String, default: '', trim: true },
-    vatRegistered: { type: Boolean, required: true },
     logoUrl: { type: String, default: null },
   },
   { _id: false }
@@ -94,19 +91,6 @@ const QuotationSchema = new Schema<IQuotation>(
       validate: {
         validator: Number.isInteger,
         message: 'discountCentavos must be an integer',
-      },
-    },
-    vatRatePercent: {
-      type: Number,
-      default: 12,
-      required: true,
-    },
-    vatCentavos: {
-      type: Number,
-      default: 0,
-      validate: {
-        validator: Number.isInteger,
-        message: 'vatCentavos must be an integer',
       },
     },
     totalCentavos: {

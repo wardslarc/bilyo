@@ -29,7 +29,7 @@ import {
 export interface QuotationFormProps {
   /** Pass for editing an existing quotation */
   initialQuotation?: SerializedQuotation | null;
-  /** Pre-loaded business profile (for VAT status) */
+  /** Pre-loaded business profile */
   business: SerializedBusiness;
 }
 
@@ -154,8 +154,6 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
           })),
           subtotalCentavos: saved.subtotalCentavos,
           discountCentavos: saved.discountCentavos,
-          vatRatePercent: saved.vatRatePercent,
-          vatCentavos: saved.vatCentavos,
           totalCentavos: saved.totalCentavos,
         });
 
@@ -239,9 +237,14 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Customer + Dates card */}
         <div className="bg-white border border-[var(--color-line)] rounded-xl shadow-sm p-5 sm:p-6 space-y-5">
-          <h2 className="text-sm font-semibold text-[var(--color-text)] border-b border-[var(--color-line-soft)] pb-3">
-            Details
-          </h2>
+          <div className="flex items-center justify-between border-b border-[var(--color-line-soft)] pb-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text)]">
+              Details
+            </h2>
+            <span className="text-xs text-[var(--color-muted)]">
+              From: <strong className="text-[var(--color-text)]">{business.businessName}</strong>
+            </span>
+          </div>
 
           {/* Customer */}
           <div>
@@ -363,7 +366,6 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
           items={items}
           discountInput={discountInput}
           onDiscountChange={handleDiscountChange}
-          vatRegistered={business.vatRegistered}
           serverTotals={serverTotals}
           disabled={isLocked || isPending}
         />

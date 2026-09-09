@@ -183,7 +183,6 @@ export function CustomerList({ initialCustomers }: CustomerListProps) {
                   <th className="px-5 py-3 font-medium">Customer</th>
                   <th className="px-5 py-3 font-medium">Email</th>
                   <th className="px-5 py-3 font-medium">Phone</th>
-                  <th className="px-5 py-3 font-medium">TIN</th>
                   <th className="px-5 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -215,7 +214,6 @@ export function CustomerList({ initialCustomers }: CustomerListProps) {
                     </td>
                     <td className="px-5 py-3.5 text-neutral-600 text-xs">{c.email || '—'}</td>
                     <td className="px-5 py-3.5 text-neutral-600 text-xs">{c.phone || '—'}</td>
-                    <td className="px-5 py-3.5 text-neutral-600 text-xs font-mono">{c.tin || '—'}</td>
                     <td className="px-5 py-3.5 text-right space-x-2 text-xs">
                       <Link
                         href={`/dashboard/customers/${c.id}/edit`}
@@ -277,12 +275,6 @@ export function CustomerList({ initialCustomers }: CustomerListProps) {
                     <div className="flex items-center gap-2">
                       <span className="text-neutral-400">Phone:</span>
                       <span>{c.phone}</span>
-                    </div>
-                  )}
-                  {c.tin && (
-                    <div className="flex items-center gap-2 font-mono">
-                      <span className="text-neutral-400">TIN:</span>
-                      <span>{c.tin}</span>
                     </div>
                   )}
                 </div>

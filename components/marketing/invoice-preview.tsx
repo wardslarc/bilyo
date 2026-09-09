@@ -18,7 +18,6 @@ const SAMPLE_ITEMS = [
 const SAMPLE_TOTALS = [
   { label: "Subtotal", amount: "44,200.00" },
   { label: "Discount", amount: "−2,000.00" },
-  { label: "VAT (12%)", amount: "5,064.00" },
 ];
 
 export function InvoicePreview() {
@@ -66,9 +65,7 @@ export function InvoicePreview() {
               Escalo Design Studio
             </span>
             <span className="text-muted text-[13px] leading-relaxed">
-              Quezon City · TIN 123-456-789-000
-              <br />
-              VAT-registered
+              Quezon City · hello@escalo.ph
             </span>
           </div>
           <div className="flex flex-col gap-1">
@@ -133,7 +130,7 @@ export function InvoicePreview() {
                 Total due
               </span>
               <span className="font-mono text-xl font-medium lg:text-[22px]">
-                ₱47,264.00
+                ₱42,200.00
               </span>
             </div>
           </div>

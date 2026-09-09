@@ -29,8 +29,6 @@ export async function GET(
     items: doc.items,
     subtotalCentavos: doc.subtotalCentavos,
     discountCentavos: doc.discountCentavos,
-    vatRatePercent: doc.vatRatePercent,
-    vatCentavos: doc.vatCentavos,
     totalCentavos: doc.totalCentavos,
     issueDate: doc.issueDate,
     validUntil: doc.secondaryDate,

@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Business Profile & Settings · Bilyo',
-  description: 'Manage your business details, address, TIN, and VAT settings for quotations.',
+  description: 'Manage your business details, address, and logo for quotations.',
 };
 
 interface SettingsPageProps {

@@ -17,8 +17,6 @@ export interface QuotationDocumentProps {
   items: LineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   issueDate: string | Date;
   validUntil: string | Date;
@@ -33,8 +31,6 @@ export function QuotationDocument({
   items,
   subtotalCentavos,
   discountCentavos,
-  vatRatePercent,
-  vatCentavos,
   totalCentavos,
   issueDate,
   validUntil,
@@ -53,8 +49,6 @@ export function QuotationDocument({
       items={items}
       subtotalCentavos={subtotalCentavos}
       discountCentavos={discountCentavos}
-      vatRatePercent={vatRatePercent}
-      vatCentavos={vatCentavos}
       totalCentavos={totalCentavos}
       issueDate={issueDate}
       secondaryDateLabel="Valid Until"

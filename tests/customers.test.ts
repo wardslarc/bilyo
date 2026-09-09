@@ -59,21 +59,6 @@ describe('Customers CRUD (M2-T03)', () => {
       }
     });
 
-    test('accepts valid PH TIN shapes and blanks', () => {
-      const valid = ['', '123-456-789', '123-456-789-000', '123456789012'];
-      for (const tin of valid) {
-        const res = customerSchema.safeParse({ name: 'Valid Customer', tin });
-        assert.strictEqual(res.success, true);
-      }
-    });
-
-    test('rejects malformed TIN', () => {
-      const invalid = ['abc-xyz', '12345'];
-      for (const tin of invalid) {
-        const res = customerSchema.safeParse({ name: 'Customer', tin });
-        assert.strictEqual(res.success, false);
-      }
-    });
 
     test('validates email format or empty string', () => {
       assert.strictEqual(customerSchema.safeParse({ name: 'C', email: '' }).success, true);
@@ -97,7 +82,6 @@ describe('Customers CRUD (M2-T03)', () => {
         email: 'billing@alpha.com',
         phone: '09171112233',
         address: 'Makati City',
-        tin: '111-222-333-000',
         notes: 'VIP Client',
       });
 
@@ -271,15 +255,12 @@ describe('Customers CRUD (M2-T03)', () => {
           name: 'Alpha Corp Philippines',
           email: 'billing@alpha.ph',
           address: 'BGC, Taguig',
-          tin: '111-222-333-000',
         },
         businessSnapshot: {
           businessName: 'My Company',
           address: 'Manila',
           email: 'me@company.com',
           phone: '09170000000',
-          tin: '000-000-000-000',
-          vatRegistered: false,
           logoUrl: null,
         },
         items: [
@@ -292,8 +273,6 @@ describe('Customers CRUD (M2-T03)', () => {
         ],
         subtotalCentavos: 100000,
         discountCentavos: 0,
-        vatRatePercent: 0,
-        vatCentavos: 0,
         totalCentavos: 100000,
         issueDate: new Date(),
         validUntil: new Date(Date.now() + 86400000 * 30),

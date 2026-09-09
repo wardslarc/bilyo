@@ -44,8 +44,6 @@ export interface IBusiness {
   address?: string;
   email?: string;
   phone?: string;
-  tin?: string;
-  vatRegistered: boolean;
   logoUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -59,7 +57,6 @@ export interface ICustomer {
   email?: string;
   phone?: string;
   address?: string;
-  tin?: string;
   notes?: string;
   archived: boolean;
   createdAt: Date;
@@ -72,7 +69,6 @@ export interface ICustomerSnapshot {
   email?: string;
   phone?: string;
   address?: string;
-  tin?: string;
 }
 
 export interface IBusinessSnapshot {
@@ -80,8 +76,6 @@ export interface IBusinessSnapshot {
   address?: string;
   email?: string;
   phone?: string;
-  tin?: string;
-  vatRegistered: boolean;
   logoUrl?: string | null;
 }
 
@@ -106,8 +100,6 @@ export interface IQuotation {
   items: ILineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   status: QuotationStatus;
   issueDate: Date;

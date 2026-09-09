@@ -10,29 +10,24 @@ export interface ComputeLineItemInput {
 export interface ComputeTotalsInput {
   items: ComputeLineItemInput[];
   discountCentavos?: number;
-  vatRegistered: boolean;
-  vatRatePercent?: number;
 }
 
 export interface ComputedTotals {
   items: ILineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
 }
 
 /**
- * Recomputes totals from line items server-side (§3.3, §5.1, §5.2).
- * Rounding: compute line amounts first, sum, apply discount, then apply VAT.
+ * Recomputes totals from line items server-side (§3.3, §5.1).
+ * Formula: subtotal -> discount -> total.
  * Round half-up to the nearest centavo at each stored step.
+ * No tax computation (AGENTS.md §3, §4.3).
  */
 export function computeTotals({
   items,
   discountCentavos = 0,
-  vatRegistered,
-  vatRatePercent = 12,
 }: ComputeTotalsInput): ComputedTotals {
   // 1. Line amounts
   const computedItems: ILineItem[] = items.map((item) => {
@@ -53,25 +48,16 @@ export function computeTotals({
     0
   );
 
-  // 3. Discount applied before VAT (§5.2)
+  // 3. Discount
   const safeDiscount = Math.max(0, Math.min(discountCentavos, subtotalCentavos));
-  const taxableCentavos = subtotalCentavos - safeDiscount;
 
-  // 4. VAT (12% only if vatRegistered)
-  let vatCentavos = 0;
-  if (vatRegistered) {
-    vatCentavos = roundHalfUp(taxableCentavos * (vatRatePercent / 100));
-  }
-
-  // 5. Total
-  const totalCentavos = taxableCentavos + vatCentavos;
+  // 4. Total: subtotal - discount
+  const totalCentavos = subtotalCentavos - safeDiscount;
 
   return {
     items: computedItems,
     subtotalCentavos,
     discountCentavos: safeDiscount,
-    vatRatePercent,
-    vatCentavos,
     totalCentavos,
   };
 }

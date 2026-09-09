@@ -16,8 +16,6 @@ export interface PdfBusinessInfo {
   address?: string;
   email?: string;
   phone?: string;
-  tin?: string;
-  vatRegistered: boolean;
   logoUrl?: string | null;
 }
 
@@ -26,7 +24,6 @@ export interface PdfCustomerInfo {
   email?: string;
   phone?: string;
   address?: string;
-  tin?: string;
 }
 
 export interface BaseDocumentLayoutProps {
@@ -38,8 +35,6 @@ export interface BaseDocumentLayoutProps {
   items: PdfLineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   issueDate: string | Date;
   secondaryDateLabel: string; // e.g. 'Valid Until' or 'Due Date'
@@ -74,7 +69,6 @@ export function DocumentHeader({
         {business.address && <Text style={styles.infoTextMuted}>{business.address}</Text>}
         {business.email && <Text style={styles.infoTextMuted}>{business.email}</Text>}
         {business.phone && <Text style={styles.infoTextMuted}>{business.phone}</Text>}
-        {business.tin && <Text style={styles.infoTextMuted}>TIN: {business.tin}</Text>}
       </View>
       <View style={styles.headerRight}>
         <Text style={styles.docTitle}>{title}</Text>
@@ -105,7 +99,6 @@ export function DocumentInfoSection({
         {customer.address && <Text style={styles.infoText}>{customer.address}</Text>}
         {customer.email && <Text style={styles.infoTextMuted}>{customer.email}</Text>}
         {customer.phone && <Text style={styles.infoTextMuted}>{customer.phone}</Text>}
-        {customer.tin && <Text style={styles.infoTextMuted}>TIN: {customer.tin}</Text>}
       </View>
       <View style={styles.infoBlock}>
         <Text style={styles.infoLabel}>Details</Text>
@@ -168,16 +161,10 @@ export function DocumentItemsTable({ items }: { items: PdfLineItem[] }) {
 export function DocumentTotalsBlock({
   subtotalCentavos,
   discountCentavos,
-  vatRegistered,
-  vatRatePercent,
-  vatCentavos,
   totalCentavos,
 }: {
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRegistered: boolean;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
 }) {
   return (
@@ -196,14 +183,6 @@ export function DocumentTotalsBlock({
             <Text style={{ ...styles.totalsValue, color: '#dc2626' }}>
               -{formatMoney(discountCentavos)}
             </Text>
-          </View>
-        )}
-
-        {/* VAT — only when business is VAT-registered (§5.2) */}
-        {vatRegistered && (
-          <View style={styles.totalsRow}>
-            <Text style={styles.totalsLabel}>VAT ({vatRatePercent}%)</Text>
-            <Text style={styles.totalsValue}>{formatMoney(vatCentavos)}</Text>
           </View>
         )}
 
@@ -269,8 +248,6 @@ export function BaseDocumentLayout({
   items,
   subtotalCentavos,
   discountCentavos,
-  vatRatePercent,
-  vatCentavos,
   totalCentavos,
   issueDate,
   secondaryDateLabel,
@@ -299,9 +276,6 @@ export function BaseDocumentLayout({
         <DocumentTotalsBlock
           subtotalCentavos={subtotalCentavos}
           discountCentavos={discountCentavos}
-          vatRegistered={business.vatRegistered}
-          vatRatePercent={vatRatePercent}
-          vatCentavos={vatCentavos}
           totalCentavos={totalCentavos}
         />
         <DocumentNotesAndTerms notes={notes} terms={terms} />

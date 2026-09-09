@@ -1,10 +1,5 @@
 import { z } from 'zod';
 
-// Philippine Tax Identification Number (TIN) pattern:
-// Standard: 000-000-000 or 000-000-000-000 (9 to 12 digits, optional 3-5 digit branch code).
-// Accepts empty/blank strings as well.
-const tinPattern = /^(\d{3}-\d{3}-\d{3}(-\d{3,5})?|\d{9,15})$/;
-
 export const businessProfileSchema = z.object({
   businessName: z
     .string()
@@ -32,15 +27,6 @@ export const businessProfileSchema = z.object({
     .max(30, 'Phone number must be 30 characters or fewer')
     .optional()
     .default(''),
-  tin: z
-    .string()
-    .trim()
-    .refine((val) => val === '' || tinPattern.test(val), {
-      message: 'TIN must be in 000-000-000-000 format or 9–12 digits',
-    })
-    .optional()
-    .default(''),
-  vatRegistered: z.boolean(),
   logoUrl: z
     .string()
     .trim()

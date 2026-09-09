@@ -17,8 +17,6 @@ export interface PublicBusiness {
   address?: string;
   email?: string;
   phone?: string;
-  tin?: string;
-  vatRegistered: boolean;
   logoUrl?: string | null;
 }
 
@@ -27,7 +25,6 @@ export interface PublicCustomer {
   email?: string;
   phone?: string;
   address?: string;
-  tin?: string;
 }
 
 /**
@@ -48,8 +45,6 @@ export interface PublicDocumentProjection {
   items: PublicLineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
-  vatRatePercent: number;
-  vatCentavos: number;
   totalCentavos: number;
   notes?: string;
   terms?: string;
@@ -108,8 +103,6 @@ export async function getPublicQuotationByToken(
     address: quotation.businessSnapshot?.address,
     email: quotation.businessSnapshot?.email,
     phone: quotation.businessSnapshot?.phone,
-    tin: quotation.businessSnapshot?.tin,
-    vatRegistered: quotation.businessSnapshot?.vatRegistered ?? false,
     logoUrl: quotation.businessSnapshot?.logoUrl,
   };
 
@@ -121,8 +114,6 @@ export async function getPublicQuotationByToken(
         address: b.address,
         email: b.email,
         phone: b.phone,
-        tin: b.tin,
-        vatRegistered: b.vatRegistered,
         logoUrl: b.logoUrl,
       };
     }
@@ -133,7 +124,6 @@ export async function getPublicQuotationByToken(
     email: quotation.customerSnapshot?.email,
     phone: quotation.customerSnapshot?.phone,
     address: quotation.customerSnapshot?.address,
-    tin: quotation.customerSnapshot?.tin,
   };
 
   if (!quotation.customerSnapshot) {
@@ -144,7 +134,6 @@ export async function getPublicQuotationByToken(
         email: c.email,
         phone: c.phone,
         address: c.address,
-        tin: c.tin,
       };
     }
   }
@@ -173,8 +162,6 @@ export async function getPublicQuotationByToken(
     })),
     subtotalCentavos: quotation.subtotalCentavos,
     discountCentavos: quotation.discountCentavos,
-    vatRatePercent: quotation.vatRatePercent,
-    vatCentavos: quotation.vatCentavos,
     totalCentavos: quotation.totalCentavos,
     notes: quotation.notes,
     terms: quotation.terms,

@@ -261,13 +261,6 @@ export default async function AdminDocumentPage({
             <div className="text-xs text-slate-500 space-y-0.5">
               {doc.business.email && <div>Email: {doc.business.email}</div>}
               {doc.business.phone && <div>Phone: {doc.business.phone}</div>}
-              {doc.business.tin && <div>TIN: {doc.business.tin}</div>}
-              <div>
-                Tax Status:{' '}
-                <span className="font-medium text-slate-700">
-                  {doc.business.vatRegistered ? 'VAT Registered (12%)' : 'Non-VAT'}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -305,7 +298,6 @@ export default async function AdminDocumentPage({
             <div className="text-xs text-slate-500 space-y-0.5">
               {doc.customer.email && <div>Email: {doc.customer.email}</div>}
               {doc.customer.phone && <div>Phone: {doc.customer.phone}</div>}
-              {doc.customer.taxId && <div>TIN: {doc.customer.taxId}</div>}
             </div>
           </div>
         </div>
@@ -378,10 +370,6 @@ export default async function AdminDocumentPage({
                 <span className="font-mono">-{formatMoney(doc.discountCentavos)}</span>
               </div>
             )}
-            <div className="flex justify-between text-slate-600">
-              <span>VAT (12%)</span>
-              <span className="font-mono">{formatMoney(doc.vatCentavos)}</span>
-            </div>
             <div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
               <span>Total</span>
               <span className="font-mono text-emerald-700">

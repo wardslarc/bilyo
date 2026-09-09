@@ -85,7 +85,6 @@ export function formatQuotationsCsv(quotations: Record<string, unknown>[]): stri
     { key: 'status', label: 'Status' },
     { key: 'subtotalPesos', label: 'Subtotal (PHP)' },
     { key: 'discountPesos', label: 'Discount (PHP)' },
-    { key: 'vatPesos', label: 'VAT (PHP)' },
     { key: 'totalPesos', label: 'Total (PHP)' },
     { key: 'notes', label: 'Notes' },
   ];
@@ -100,7 +99,6 @@ export function formatQuotationsCsv(quotations: Record<string, unknown>[]): stri
       status: q.status,
       subtotalPesos: centavosToPesos((q.subtotalCentavos as number) || 0).toFixed(2),
       discountPesos: centavosToPesos((q.discountCentavos as number) || 0).toFixed(2),
-      vatPesos: centavosToPesos((q.vatCentavos as number) || 0).toFixed(2),
       totalPesos: centavosToPesos((q.totalCentavos as number) || 0).toFixed(2),
       notes: q.notes || '',
     };
@@ -115,7 +113,6 @@ export function formatCustomersCsv(customers: Record<string, unknown>[]): string
     { key: 'company', label: 'Company' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
-    { key: 'taxId', label: 'Tax ID' },
     { key: 'address', label: 'Address' },
     { key: 'archived', label: 'Archived' },
   ];
@@ -125,7 +122,6 @@ export function formatCustomersCsv(customers: Record<string, unknown>[]): string
     company: c.company || '',
     email: c.email || '',
     phone: c.phone || '',
-    taxId: c.taxId || '',
     address: c.address || '',
     archived: c.archivedAt ? 'Yes' : 'No',
   }));

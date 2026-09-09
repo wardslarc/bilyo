@@ -10,8 +10,8 @@ const TRUST_POINTS = [
     body: "Amounts are stored as whole centavos, never floats.",
   },
   {
-    title: "12% VAT, when it applies",
-    body: "Not VAT-registered? The line simply doesn't print.",
+    title: "Straightforward totals",
+    body: "Line items, clean discounts, and clear totals without hidden formulas.",
   },
   {
     title: "Sequential numbering",
@@ -26,7 +26,7 @@ const TRUST_POINTS = [
 const FEATURES = [
   {
     title: "Accepted quote, instant invoice",
-    body: "One click carries the line items, discount, VAT and client details across. The quotation stays on file as accepted, linked to the invoice it became. Nothing is retyped, nothing drifts.",
+    body: "One click carries the line items, discount, and client details across. The quotation stays on file as accepted, linked to the invoice it became. Nothing is retyped, nothing drifts.",
     icon: (
       <>
         <path d="M4 8h11" />
@@ -62,12 +62,12 @@ const STEPS = [
   {
     number: "01",
     title: "Add your business",
-    body: "Business name, address, TIN, and whether you're VAT-registered. Save your regular clients and the services you sell so you stop typing them.",
+    body: "Business name, address, and contact details. Save your regular clients and the services you sell so you stop typing them.",
   },
   {
     number: "02",
     title: "Build the document",
-    body: "Pick a client, add line items from your saved services or type them fresh. Subtotal, discount and VAT compute as you go — and are checked again on the server when you save.",
+    body: "Pick a client, add line items from your saved services or type them fresh. Subtotal and discount compute as you go — and are checked again on the server when you save.",
   },
   {
     number: "03",
@@ -102,8 +102,8 @@ export default function LandingPage() {
 
               <p className="text-paper/75 max-w-135 text-[17px] leading-relaxed lg:text-xl">
                 Build a quotation, turn it into an invoice, and send it as a
-                link your client opens in a browser — or a PDF. Peso-exact, 12%
-                VAT handled, and you can see what is still unpaid.
+                link your client opens in a browser — or a PDF. Peso-exact,
+                easy to approve, and you can see what is confirmed.
               </p>
 
               <div className="flex w-full flex-col gap-3 pt-1 lg:w-auto lg:flex-row lg:items-center lg:gap-4 lg:pt-2">

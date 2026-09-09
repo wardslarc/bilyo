@@ -26,7 +26,6 @@ export function CustomerForm({ initialCustomer }: CustomerFormProps) {
     email: initialCustomer?.email || '',
     phone: initialCustomer?.phone || '',
     address: initialCustomer?.address || '',
-    tin: initialCustomer?.tin || '',
     notes: initialCustomer?.notes || '',
     archived: initialCustomer?.archived || false,
   });
@@ -207,30 +206,6 @@ export function CustomerForm({ initialCustomer }: CustomerFormProps) {
           />
           {fieldErrors.address && (
             <p className="mt-1 text-xs text-red-600">{fieldErrors.address}</p>
-          )}
-        </div>
-
-        {/* TIN */}
-        <div>
-          <label htmlFor="tin" className="block text-xs font-medium text-neutral-700 mb-1">
-            Tax Identification Number (TIN)
-          </label>
-          <input
-            id="tin"
-            name="tin"
-            type="text"
-            value={formData.tin || ''}
-            onChange={handleChange}
-            placeholder="000-000-000-000"
-            className={`w-full px-3.5 py-2.5 text-sm rounded-lg border ${
-              fieldErrors.tin ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
-            } focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
-          />
-          <p className="mt-1 text-xs text-neutral-400">
-            Accepts PH standard 000-000-000 or 000-000-000-000 format.
-          </p>
-          {fieldErrors.tin && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.tin}</p>
           )}
         </div>
 

@@ -158,8 +158,7 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
           status: 'DRAFT',
           subtotalCentavos: 2500000,
           discountCentavos: 0,
-          vatCentavos: 300000,
-          totalCentavos: 2800000,
+          totalCentavos: 2500000,
           notes: 'Valid for 30 days',
         },
       ];
@@ -169,11 +168,10 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
 
       assert.strictEqual(
         lines[0],
-        'Quotation Number,Customer,Issue Date,Valid Until,Status,Subtotal (PHP),Discount (PHP),VAT (PHP),Total (PHP),Notes'
+        'Quotation Number,Customer,Issue Date,Valid Until,Status,Subtotal (PHP),Discount (PHP),Total (PHP),Notes'
       );
       assert.ok(lines[1].includes('QUO-000001'));
       assert.ok(lines[1].includes('25000.00'));
-      assert.ok(lines[1].includes('28000.00'));
     });
 
     test('formatCustomersCsv: formats customer rows properly', () => {
@@ -183,7 +181,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
           company: 'Clara Essentials',
           email: 'maria@clara.ph',
           phone: '09171234567',
-          taxId: '123-456-789-000',
           address: 'Makati City, Metro Manila',
           archivedAt: null,
         },
@@ -192,7 +189,7 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
       const csv = formatCustomersCsv(customers as unknown as Record<string, unknown>[]);
       const lines = csv.split('\r\n');
 
-      assert.strictEqual(lines[0], 'Name,Company,Email,Phone,Tax ID,Address,Archived');
+      assert.strictEqual(lines[0], 'Name,Company,Email,Phone,Address,Archived');
       assert.ok(lines[1].includes('"Makati City, Metro Manila"'));
       assert.ok(lines[1].includes('maria@clara.ph'));
       assert.ok(lines[1].endsWith('No'));

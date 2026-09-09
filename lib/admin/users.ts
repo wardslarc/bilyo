@@ -217,8 +217,6 @@ export interface AdminUserDetail {
     address: string;
     email: string;
     phone: string;
-    tin: string;
-    vatRegistered: boolean;
     logoUrl: string | null;
     createdAt: Date;
   } | null;
@@ -322,8 +320,6 @@ export async function getAdminUserDetail(
           address: business.address || '',
           email: business.email || '',
           phone: business.phone || '',
-          tin: business.tin || '',
-          vatRegistered: Boolean(business.vatRegistered),
           logoUrl: business.logoUrl || null,
           createdAt: business.createdAt,
         }
@@ -449,8 +445,6 @@ export interface AdminDocumentDetail {
     address: string;
     email: string;
     phone: string;
-    tin: string;
-    vatRegistered: boolean;
     logoUrl: string | null;
   };
   customer: {
@@ -459,7 +453,6 @@ export interface AdminDocumentDetail {
     email?: string;
     phone?: string;
     address?: string;
-    taxId?: string;
   };
   items: Array<{
     description: string;
@@ -469,7 +462,6 @@ export interface AdminDocumentDetail {
   }>;
   subtotalCentavos: number;
   discountCentavos: number;
-  vatCentavos: number;
   totalCentavos: number;
   notes?: string;
   terms?: string;
@@ -526,8 +518,6 @@ export async function getAdminDocument(
         address: (bSnap?.address as string) || '',
         email: (bSnap?.email as string) || '',
         phone: (bSnap?.phone as string) || '',
-        tin: (bSnap?.tin as string) || '',
-        vatRegistered: Boolean(bSnap?.vatRegistered),
         logoUrl: (bSnap?.logoUrl as string) || null,
       },
       customer: {
@@ -536,7 +526,6 @@ export async function getAdminDocument(
         email: (cSnap?.email as string) || undefined,
         phone: (cSnap?.phone as string) || undefined,
         address: (cSnap?.address as string) || undefined,
-        taxId: (cSnap?.tin as string) || (cSnap?.taxId as string) || undefined,
       },
       items: quotation.items.map((it) => ({
         description: it.description,
@@ -546,7 +535,6 @@ export async function getAdminDocument(
       })),
       subtotalCentavos: quotation.subtotalCentavos,
       discountCentavos: quotation.discountCentavos,
-      vatCentavos: quotation.vatCentavos,
       totalCentavos: quotation.totalCentavos,
       notes: quotation.notes,
       terms: quotation.terms,

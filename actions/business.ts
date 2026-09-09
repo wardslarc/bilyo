@@ -19,8 +19,6 @@ export interface SerializedBusiness {
   address: string;
   email: string;
   phone: string;
-  tin: string;
-  vatRegistered: boolean;
   logoUrl: string | null;
   createdAt: string;
   updatedAt: string;
@@ -63,8 +61,6 @@ export async function getBusinessProfile(): Promise<ActionResult<SerializedBusin
         address: doc.address || '',
         email: doc.email || '',
         phone: doc.phone || '',
-        tin: doc.tin || '',
-        vatRegistered: Boolean(doc.vatRegistered),
         logoUrl: doc.logoUrl || null,
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
         updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
@@ -119,8 +115,6 @@ export async function saveBusinessProfile(
           address: data.address || '',
           email: data.email || '',
           phone: data.phone || '',
-          tin: data.tin || '',
-          vatRegistered: data.vatRegistered,
           logoUrl: data.logoUrl || null,
         },
         $setOnInsert: {
@@ -151,8 +145,6 @@ export async function saveBusinessProfile(
         address: doc.address || '',
         email: doc.email || '',
         phone: doc.phone || '',
-        tin: doc.tin || '',
-        vatRegistered: Boolean(doc.vatRegistered),
         logoUrl: doc.logoUrl || null,
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
         updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),

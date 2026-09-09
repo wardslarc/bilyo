@@ -669,7 +669,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   `PLAN_LIMITS` or `effectivePlan` symbol survives; existing `PLAN_OVERRIDE_*` **audit rows are
   untouched** (the enum keeps the strings, the UI stops producing them).
 
-- [ ] **P1-T04 · Remove VAT and TIN** (2h)
+- [x] **P1-T04 · Remove VAT and TIN** (2h)
   *Files:* `lib/totals.ts` · `models/quotation.ts` · `models/business.ts` · `models/customer.ts` ·
   `lib/validation/business.ts` · `lib/validation/customer.ts` · `lib/validation/quotation.ts` ·
   `components/documents/totals-panel.tsx` · `components/documents/quotation-form.tsx` ·

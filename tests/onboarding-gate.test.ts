@@ -37,7 +37,6 @@ describe('Onboarding Gate (M2-T02)', () => {
     await Business.create({
       userId: userWithBiz._id,
       businessName: 'Existing Company Inc.',
-      vatRegistered: false,
     });
   });
 
@@ -87,7 +86,6 @@ describe('Onboarding Gate (M2-T02)', () => {
     await Business.create({
       userId: userNoBizId,
       businessName: 'Newly Formed Agency',
-      vatRegistered: true,
     });
 
     // After saving: no redirect
