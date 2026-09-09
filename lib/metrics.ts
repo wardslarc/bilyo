@@ -4,8 +4,24 @@ import { Quotation } from '../models/quotation.ts';
 import { Event } from '../models/event.ts';
 import { User } from '../models/user.ts';
 import { getDerivedQuotationStatus } from './documents.ts';
+import { getManilaMonthRange } from './dates.ts';
 
 export interface DashboardMetrics {
+  // The Four Numbers (§1.1, §12 P4-T01)
+  quotedThisMonth: {
+    count: number;
+    totalCentavos: number;
+  };
+  acceptedThisMonth: {
+    count: number;
+    totalCentavos: number;
+  };
+  awaitingResponse: {
+    count: number;
+    totalCentavos: number; // Potential value of awaiting set
+  };
+
+  // Overview counts
   totalQuotationCount: number;
   draftCount: number;
   sentCount: number;
@@ -19,17 +35,29 @@ export interface DashboardMetrics {
 export interface MetricQuotationItem {
   status: string;
   totalCentavos: number;
-  validUntil?: Date | string | number;
+  validUntil?: Date | string | number | null;
+  sentAt?: Date | string | number | null;
+  respondedAt?: Date | string | number | null;
+  createdAt?: Date | string | number;
 }
 
 /**
- * Pure in-memory calculation of quotation metrics.
- * Used for unit testing and validation without hitting the database.
+ * Pure in-memory calculation of the four numbers dashboard metrics (§1.1, §12 P4-T01).
+ * Quoted this month (sentAt in current Manila month)
+ * Accepted this month (count + total)
+ * Awaiting response (SENT+VIEWED, not expired)
+ * Potential value (peso total of awaiting set)
+ * Drafts are excluded from every figure.
  */
 export function computeQuotationMetricsFromList(
   quotations: MetricQuotationItem[],
   now: Date = new Date()
 ): DashboardMetrics {
+  const { startOfMonth, endOfMonth } = getManilaMonthRange(now);
+  const startMs = startOfMonth.getTime();
+  const endMs = endOfMonth.getTime();
+  const nowMs = now.getTime();
+
   let draftCount = 0;
   let sentCount = 0;
   let acceptedCount = 0;
@@ -38,44 +66,81 @@ export function computeQuotationMetricsFromList(
   let totalQuotedCentavos = 0;
   let acceptedCentavos = 0;
 
-  const nowMs = now.getTime();
+  let quotedThisMonthCount = 0;
+  let quotedThisMonthCentavos = 0;
+
+  let acceptedThisMonthCount = 0;
+  let acceptedThisMonthCentavos = 0;
+
+  let awaitingResponseCount = 0;
+  let awaitingResponseCentavos = 0;
 
   for (const q of quotations) {
     const total = Number(q.totalCentavos ?? 0);
+    const status = q.status;
 
-    let status = q.status;
-    if ((status === 'SENT' || status === 'VIEWED') && q.validUntil) {
-      if (new Date(q.validUntil).getTime() < nowMs) {
-        status = 'EXPIRED';
+    // Drafts are excluded from every figure (§12, P4-T01)
+    if (status === 'DRAFT') {
+      draftCount++;
+      continue;
+    }
+
+    // 1. Quoted this month: quotations with sentAt in current Asia/Manila month
+    if (q.sentAt) {
+      const sentMs = new Date(q.sentAt).getTime();
+      if (sentMs >= startMs && sentMs <= endMs) {
+        quotedThisMonthCount++;
+        quotedThisMonthCentavos += total;
       }
     }
 
-    switch (status) {
-      case 'DRAFT':
-        draftCount++;
-        break;
-      case 'SENT':
-      case 'VIEWED':
-        sentCount++;
-        totalQuotedCentavos += total;
-        break;
-      case 'ACCEPTED':
-        acceptedCount++;
-        totalQuotedCentavos += total;
-        acceptedCentavos += total;
-        break;
-      case 'DECLINED':
-        declinedCount++;
-        totalQuotedCentavos += total;
-        break;
-      case 'EXPIRED':
+    // 2. Accepted this month: status ACCEPTED and respondedAt (or sentAt fallback) in current Asia/Manila month
+    if (status === 'ACCEPTED') {
+      acceptedCount++;
+      acceptedCentavos += total;
+      totalQuotedCentavos += total;
+
+      const dateToCheck = q.respondedAt
+        ? new Date(q.respondedAt).getTime()
+        : (q.sentAt ? new Date(q.sentAt).getTime() : 0);
+
+      if (dateToCheck >= startMs && dateToCheck <= endMs) {
+        acceptedThisMonthCount++;
+        acceptedThisMonthCentavos += total;
+      }
+    } else if (status === 'SENT' || status === 'VIEWED') {
+      totalQuotedCentavos += total;
+
+      // Check expired: validUntil < now
+      const isExpired = q.validUntil && new Date(q.validUntil).getTime() < nowMs;
+      if (isExpired) {
         expiredCount++;
-        totalQuotedCentavos += total;
-        break;
+      } else {
+        // 3. Awaiting response (SENT+VIEWED, not expired)
+        // 4. Potential value (peso total of awaiting set)
+        sentCount++;
+        awaitingResponseCount++;
+        awaitingResponseCentavos += total;
+      }
+    } else if (status === 'DECLINED') {
+      declinedCount++;
+      totalQuotedCentavos += total;
     }
   }
 
   return {
+    quotedThisMonth: {
+      count: quotedThisMonthCount,
+      totalCentavos: quotedThisMonthCentavos,
+    },
+    acceptedThisMonth: {
+      count: acceptedThisMonthCount,
+      totalCentavos: acceptedThisMonthCentavos,
+    },
+    awaitingResponse: {
+      count: awaitingResponseCount,
+      totalCentavos: awaitingResponseCentavos,
+    },
     totalQuotationCount: quotations.length,
     draftCount,
     sentCount,
@@ -88,7 +153,8 @@ export function computeQuotationMetricsFromList(
 }
 
 /**
- * Aggregation pipeline to compute dashboard quotation metrics for a user.
+ * Aggregation to compute the four numbers metrics for a user (§12, P4-T01).
+ * Strictly userId-scoped (§4.1).
  */
 export async function getDashboardMetrics(
   userId: string,
@@ -102,7 +168,7 @@ export async function getDashboardMetrics(
       : userId;
 
   const quotations = await Quotation.find({ userId: userObjectId })
-    .select('status totalCentavos validUntil')
+    .select('status totalCentavos validUntil sentAt respondedAt')
     .lean();
 
   return computeQuotationMetricsFromList(quotations, now);

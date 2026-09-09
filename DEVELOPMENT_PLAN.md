@@ -821,7 +821,7 @@ user would pick Bilyo over a Word template.
 
 ### P4 — Dashboard, clients, PDF, mark-paid (6–8 hrs) · *Weekend 3 · then deploy*
 
-- [ ] **P4-T01 · The four numbers** (2.5h)
+- [x] **P4-T01 · The four numbers** (2.5h)
   *Files:* `lib/metrics.ts` · `app/(dashboard)/dashboard/page.tsx` ·
   `components/dashboard/StatTiles.tsx` · `tests/metrics.test.ts`
   *Do:* **Quoted this month** (count + peso total of quotations with `sentAt` in the current

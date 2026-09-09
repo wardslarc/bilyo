@@ -2,9 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth-guards';
 import { getDashboardMetrics, getRecentQuotations, getNeedsAttentionData } from '@/lib/metrics';
-import { formatMoney } from '@/lib/money';
 import { RecentDocuments } from '@/components/dashboard/RecentDocuments';
 import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
+import { StatTiles } from '@/components/dashboard/StatTiles';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,89 +82,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       ) : (
-        /* Summary Metric Cards */
+        /* Summary Metric Cards: The Four Numbers (§1.1, §12 P4-T01) */
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Total Quoted */}
-            <div className="bg-white border border-[var(--color-line)] rounded-xl p-5 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium text-[var(--color-muted)]">
-                  <span>Total Quoted</span>
-                  <span className="p-1.5 rounded-md bg-blue-50 text-blue-600">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-[var(--color-text)]">
-                  {formatMoney(metrics.totalQuotedCentavos)}
-                </div>
-              </div>
-              <div className="mt-3 text-xs text-[var(--color-muted)]">
-                {metrics.sentCount} awaiting client response
-              </div>
-            </div>
-
-            {/* Card 2: Accepted */}
-            <div className="bg-white border border-[var(--color-line)] rounded-xl p-5 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium text-[var(--color-muted)]">
-                  <span>Accepted Value</span>
-                  <span className="p-1.5 rounded-md bg-emerald-50 text-emerald-600">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-[var(--color-text)]">
-                  {formatMoney(metrics.acceptedCentavos)}
-                </div>
-              </div>
-              <div className="mt-3 text-xs text-[var(--color-muted)]">
-                {metrics.acceptedCount} confirmed {metrics.acceptedCount === 1 ? 'sale' : 'sales'}
-              </div>
-            </div>
-
-            {/* Card 3: Drafts */}
-            <div className="bg-white border border-[var(--color-line)] rounded-xl p-5 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium text-[var(--color-muted)]">
-                  <span>Drafts</span>
-                  <span className="p-1.5 rounded-md bg-neutral-100 text-neutral-500">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-[var(--color-text)]">
-                  {metrics.draftCount}
-                </div>
-              </div>
-              <div className="mt-3 text-xs text-[var(--color-muted)]">
-                Unsent proposals
-              </div>
-            </div>
-
-            {/* Card 4: Total Quotes */}
-            <div className="bg-white border border-[var(--color-line)] rounded-xl p-5 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium text-[var(--color-muted)]">
-                  <span>Total Proposals</span>
-                  <span className="p-1.5 rounded-md bg-[var(--color-brass-wash)] text-[var(--color-brass)]">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-[var(--color-text)]">
-                  {metrics.totalQuotationCount}
-                </div>
-              </div>
-              <div className="mt-3 text-xs text-[var(--color-muted)]">
-                All-time quotations
-              </div>
-            </div>
-          </div>
+          <StatTiles metrics={metrics} />
 
           {/* Recent Quotations list */}
           <RecentDocuments quotations={recentQuotations} />
