@@ -32,7 +32,7 @@ export function AdminHeader({ adminEmail }: AdminHeaderProps) {
           <div className="flex items-center gap-2.5">
             <Link href="/admin/users" className="flex items-center gap-2">
               <span className="font-extrabold text-xl tracking-tight text-white">
-                Bilyo<span className="text-indigo-400">.ph</span>
+                Bilyo<span className="text-indigo-400">app.com</span>
               </span>
             </Link>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 tracking-wider">

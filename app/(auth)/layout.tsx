@@ -10,7 +10,7 @@ export default function AuthLayout({
       <header className="max-w-md w-full mx-auto pt-6 sm:pt-10 flex justify-center">
         <Link href="/" className="flex items-center gap-2 group">
           <span className="font-mono text-xl font-bold tracking-tight text-[var(--color-ink)] group-hover:text-[var(--color-brass)] transition-colors">
-            Bilyo<span className="text-[var(--color-brass)]">.ph</span>
+            Bilyo<span className="text-[var(--color-brass)]">app.com</span>
           </span>
         </Link>
       </header>
@@ -18,7 +18,7 @@ export default function AuthLayout({
       <main className="w-full max-w-md mx-auto my-auto py-6">{children}</main>
 
       <footer className="text-center text-xs text-[var(--color-faint)] pb-4">
-        &copy; {new Date().getFullYear()} Bilyo PH. Invoicing for Filipino freelancers & MSMEs.
+        &copy; {new Date().getFullYear()} Bilyo. Quotations for Philippine service businesses.
       </footer>
     </div>
   );

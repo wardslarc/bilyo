@@ -80,7 +80,7 @@ export default function LoginForm() {
 
       if (!res || res.error) {
         if (res?.code === 'account_suspended' || res?.error?.includes('account_suspended')) {
-          setAuthError('Your account has been suspended. Please contact support at support@bilyo.ph');
+          setAuthError('Your account has been suspended. Please contact support at support@bilyoapp.com');
         } else {
           setAuthError('Invalid email or password');
         }

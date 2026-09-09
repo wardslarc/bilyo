@@ -22,9 +22,9 @@ describe('Admin Audit Log Viewer (M7-T09)', () => {
     });
 
     test('actor string filters actorEmail case-insensitively', () => {
-      const filter = buildAuditFilter({ actor: 'admin@bilyo.ph' });
+      const filter = buildAuditFilter({ actor: 'admin@bilyoapp.com' });
       assert.deepStrictEqual(filter, {
-        actorEmail: { $regex: 'admin@bilyo.ph', $options: 'i' },
+        actorEmail: { $regex: 'admin@bilyoapp.com', $options: 'i' },
       });
     });
 
@@ -34,6 +34,19 @@ describe('Admin Audit Log Viewer (M7-T09)', () => {
       assert.ok('$or' in filter);
       const orConditions = filter.$or as Record<string, unknown>[];
       assert.strictEqual(orConditions.length, 2);
+      assert.deepStrictEqual(orConditions[0], {
+        actorEmail: { $regex: validId, $options: 'i' },
+      });
+      assert.deepStrictEqual(orConditions[1], {
+        actorUserId: new mongoose.Types.ObjectId(validId),
+      });
+    });
+
+    test('invalid actor string does not trigger ObjectId regex parse error', () => {
+      const filter = buildAuditFilter({ actor: 'not-an-id' });
+      assert.deepStrictEqual(filter, {
+        actorEmail: { $regex: 'not-an-id', $options: 'i' },
+      });
     });
 
     test('targetUser filters targetId and targetUserIds', () => {
@@ -58,7 +71,7 @@ describe('Admin Audit Log Viewer (M7-T09)', () => {
     test('multiple filters are combined with $and', () => {
       const filter = buildAuditFilter({
         action: 'MFA_RESET',
-        actor: 'security@bilyo.ph',
+        actor: 'security@bilyoapp.com',
       });
 
       assert.ok('$and' in filter);

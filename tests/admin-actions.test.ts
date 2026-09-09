@@ -134,7 +134,7 @@ describe('Admin User Moderation Actions (M7-T05)', () => {
     test('platform administrators cannot be suspended via console action', () => {
       const adminUser = {
         id: 'admin-99',
-        email: 'admin@bilyo.ph',
+        email: 'admin@bilyoapp.com',
         role: 'ADMIN' as const,
         suspendedAt: null,
       };

@@ -42,7 +42,7 @@ describe('Admin User MFA Reset (M7-T08, §5.11 rule 9)', () => {
     test('refuses MFA reset when target role is ADMIN', () => {
       const targetUser = {
         _id: 'admin-id-123',
-        email: 'security-admin@bilyo.ph',
+        email: 'security-admin@bilyoapp.com',
         role: 'ADMIN' as const,
         mfaEnabledAt: new Date(),
         mfaSecretEncrypted: 'enc_secret_blob',
