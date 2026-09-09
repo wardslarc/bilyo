@@ -89,5 +89,25 @@ describe('Shared Document Engine (M4-T01)', () => {
       assert.strictEqual(disclaimer, QUOTATION_FOOTER);
       assert.ok(disclaimer.includes('This is a quotation, not a tax document'));
     });
+
+    test('line items validation logic rejects incomplete rows for autosave (§6.4, P2-T04)', () => {
+      const isLineValid = (item: { description: string; quantity: string; unitPrice: string }) => {
+        if (!item.description.trim()) return false;
+        const q = Number(item.quantity);
+        if (!Number.isFinite(q) || q <= 0) return false;
+        if (!item.unitPrice.trim() || Number.isNaN(Number(item.unitPrice)) || Number(item.unitPrice) < 0) return false;
+        return true;
+      };
+
+      // Valid line item
+      assert.strictEqual(isLineValid({ description: 'Consulting', quantity: '1', unitPrice: '5000' }), true);
+
+      // Incomplete lines that must never trigger autosave (P2-T04 accept)
+      assert.strictEqual(isLineValid({ description: '', quantity: '1', unitPrice: '5000' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '0', unitPrice: '5000' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '-1', unitPrice: '5000' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '1', unitPrice: '' }), false);
+      assert.strictEqual(isLineValid({ description: 'Draft item', quantity: '1', unitPrice: '-10' }), false);
+    });
   });
 });

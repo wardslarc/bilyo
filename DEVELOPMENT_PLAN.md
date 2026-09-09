@@ -747,7 +747,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* creating and sending a quote produces exactly two rows in order; there is no update or
   delete path on `events`; a failed quotation write leaves no orphan event.
 
-- [ ] **P2-T04 · Editor simplification + autosave** (2h)
+- [x] **P2-T04 · Editor simplification + autosave** (2h)
   *Files:* `components/documents/quotation-form.tsx` · `components/documents/line-item-builder.tsx` ·
   `components/documents/totals-panel.tsx` · `actions/quotations.ts`
   *Do:* one page: client picker with inline create, line items with drag-free `sortOrder`, discount,

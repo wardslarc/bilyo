@@ -62,6 +62,7 @@ interface RowProps {
   onRemove: (id: string) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
+  onAddNext?: () => void;
 }
 
 function LineItemRowCard({
@@ -73,6 +74,7 @@ function LineItemRowCard({
   onRemove,
   onMoveUp,
   onMoveDown,
+  onAddNext,
 }: RowProps) {
   const qty = rowQuantity(row);
   const unitCentavos = rowUnitPriceCentavos(row);
@@ -170,6 +172,14 @@ function LineItemRowCard({
               value={row.unitPrice}
               disabled={disabled}
               onChange={(e) => onUpdate(row.id, 'unitPrice', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (onAddNext && index === total - 1) {
+                    onAddNext();
+                  }
+                }
+              }}
               placeholder="0.00"
               className="w-full pl-7 pr-3 py-2 min-h-[44px] text-sm text-right rounded-lg border border-[var(--color-line)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed"
             />
@@ -292,6 +302,7 @@ export function LineItemBuilder({ items, onChange, disabled }: LineItemBuilderPr
             onRemove={handleRemove}
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
+            onAddNext={handleAdd}
           />
         ))}
       </div>

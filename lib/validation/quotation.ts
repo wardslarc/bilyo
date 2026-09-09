@@ -43,7 +43,7 @@ export const lineItemInputSchema = z.object({
 export const quotationSchema = z.object({
   customerId: z
     .string()
-    .min(1, 'Please select a customer'),
+    .min(1, 'Please select a client'),
   items: z
     .array(lineItemInputSchema)
     .min(1, 'At least one line item is required'),
