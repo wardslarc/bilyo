@@ -33,7 +33,8 @@ export interface SerializedQuotation {
   validUntil: string;
   notes: string;
   terms: string;
-  publicToken: string | null;
+  publicCode: string | null;
+  publicToken?: string | null;
   customerSnapshot: {
     name: string;
     email?: string;
@@ -94,7 +95,8 @@ function serializeQuotation(doc: any): SerializedQuotation {
     validUntil: doc.validUntil ? new Date(doc.validUntil as string | number | Date).toISOString() : new Date().toISOString(),
     notes: String(doc.notes ?? ''),
     terms: String(doc.terms ?? ''),
-    publicToken: doc.publicToken ? String(doc.publicToken) : null,
+    publicCode: doc.publicCode ? String(doc.publicCode) : (doc.publicToken ? String(doc.publicToken) : null),
+    publicToken: doc.publicCode ? String(doc.publicCode) : (doc.publicToken ? String(doc.publicToken) : null),
     customerSnapshot: customerSnapshot
       ? {
           name: String(customerSnapshot.name ?? ''),
@@ -402,9 +404,9 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
       return { ok: false, error: `Cannot send a quotation that is ${doc.status.toLowerCase()}` };
     }
 
-    // Generate public token
+    // Generate 12-char URL-safe public code (§6.7)
     const { randomBytes } = await import('crypto');
-    const publicToken = randomBytes(9).toString('base64url').slice(0, 12);
+    const publicCode = randomBytes(9).toString('base64url').slice(0, 12);
 
     // Snapshot business + customer on first SENT (§3.9)
     const customer = await Customer.findOne({
@@ -419,7 +421,8 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
     }
 
     doc.status = 'SENT';
-    doc.publicToken = publicToken;
+    doc.publicCode = publicCode;
+    doc.publicToken = publicCode;
 
     // Only snapshot if not already set (idempotent for re-sends, though status check prevents it)
     if (!doc.customerSnapshot) {

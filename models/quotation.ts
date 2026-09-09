@@ -123,6 +123,14 @@ const QuotationSchema = new Schema<IQuotation>(
       type: String,
       default: '',
     },
+    publicCode: {
+      type: String,
+      default: null,
+    },
+    publicCodeRevokedAt: {
+      type: Date,
+      default: null,
+    },
     publicToken: {
       type: String,
       default: null,
@@ -140,6 +148,7 @@ const QuotationSchema = new Schema<IQuotation>(
 // Indexes per DEVELOPMENT_PLAN.md §6
 QuotationSchema.index({ userId: 1, createdAt: -1 });
 QuotationSchema.index({ userId: 1, number: 1 }, { unique: true });
+QuotationSchema.index({ publicCode: 1 }, { unique: true, sparse: true });
 QuotationSchema.index({ publicToken: 1 }, { unique: true, sparse: true });
 QuotationSchema.index({ number: 1 });
 

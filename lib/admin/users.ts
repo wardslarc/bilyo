@@ -319,6 +319,7 @@ export interface AdminUserQuotationListItem {
   validUntil: Date | null;
   status: string;
   totalCentavos: number;
+  publicCode?: string;
   publicToken: string;
   createdAt: Date;
 }
@@ -368,7 +369,8 @@ export async function getAdminUserQuotations(
       validUntil: quo.validUntil || null,
       status: quo.status,
       totalCentavos: quo.totalCentavos,
-      publicToken: quo.publicToken || '',
+      publicCode: quo.publicCode || quo.publicToken || '',
+      publicToken: quo.publicCode || quo.publicToken || '',
       createdAt: quo.createdAt,
     };
   });
@@ -415,6 +417,8 @@ export interface AdminQuotationDetail {
   totalCentavos: number;
   notes?: string;
   terms?: string;
+  publicCode?: string;
+  publicCodeRevokedAt?: Date | null;
   publicToken: string;
   publicTokenRevokedAt?: Date | null;
   createdAt: Date;
@@ -481,8 +485,10 @@ export async function getAdminQuotation(
     totalCentavos: quotation.totalCentavos,
     notes: quotation.notes,
     terms: quotation.terms,
-    publicToken: quotation.publicToken || '',
-    publicTokenRevokedAt: quotation.publicTokenRevokedAt || null,
+    publicCode: quotation.publicCode || quotation.publicToken || '',
+    publicCodeRevokedAt: quotation.publicCodeRevokedAt || quotation.publicTokenRevokedAt || null,
+    publicToken: quotation.publicCode || quotation.publicToken || '',
+    publicTokenRevokedAt: quotation.publicCodeRevokedAt || quotation.publicTokenRevokedAt || null,
     createdAt: quotation.createdAt,
   };
 }

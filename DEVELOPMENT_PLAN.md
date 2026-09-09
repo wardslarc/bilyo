@@ -730,7 +730,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* two concurrent creates never collide (test with `Promise.all` on 20 creates); the first
   quote of 2027 is `Q-2027-0001`; **existing `QUO-000001` documents are unchanged and still open**.
 
-- [ ] **P2-T02 · `publicToken` → `publicCode`** (1h)
+- [x] **P2-T02 · `publicToken` → `publicCode`** (1h)
   *Files:* `models/quotation.ts` · `lib/public-projection.ts` · `app/q/[token]` → `app/q/[code]` ·
   `app/api/public/q/[token]` → `[code]` · `actions/quotations.ts`
   *Do:* rename the field and the route segment; keep the 12-char generator and the unique sparse

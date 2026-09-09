@@ -106,6 +106,8 @@ export interface IQuotation {
   validUntil: Date;
   notes?: string;
   terms?: string;
+  publicCode?: string | null;
+  publicCodeRevokedAt?: Date | null;
   publicToken?: string | null;
   publicTokenRevokedAt?: Date | null;
   createdAt: Date;

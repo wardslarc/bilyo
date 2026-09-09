@@ -1,7 +1,7 @@
 import React from 'react';
 import { Readable } from 'node:stream';
 import { renderToStream, type Document } from '@react-pdf/renderer';
-import { getPublicQuotationByToken } from '@/lib/public-projection';
+import { getPublicQuotationByCode } from '@/lib/public-projection';
 import {
   QuotationDocument,
   type QuotationDocumentProps,
@@ -10,16 +10,16 @@ import {
 export const dynamic = 'force-dynamic';
 
 interface RouteContext {
-  params: Promise<{ token: string }>;
+  params: Promise<{ code: string }>;
 }
 
 export async function GET(
   _request: Request,
   { params }: RouteContext
 ): Promise<Response> {
-  const { token } = await params;
+  const { code } = await params;
 
-  const doc = await getPublicQuotationByToken(token);
+  const doc = await getPublicQuotationByCode(code);
   if (!doc) {
     return new Response('Not Found', { status: 404 });
   }

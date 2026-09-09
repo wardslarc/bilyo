@@ -18,6 +18,8 @@ export interface AdminLookupMatch {
   issueDate: Date;
   validUntil?: Date | null;
   totalCentavos: number;
+  publicCode?: string | null;
+  publicCodeRevokedAt?: Date | null;
   publicToken?: string | null;
   publicTokenRevokedAt?: Date | null;
   createdAt: Date;
@@ -179,8 +181,10 @@ export async function lookupDocumentAcrossUsers(
       issueDate: doc.issueDate,
       validUntil: doc.validUntil || null,
       totalCentavos: doc.totalCentavos,
-      publicToken: doc.publicToken || null,
-      publicTokenRevokedAt: doc.publicTokenRevokedAt || null,
+      publicCode: doc.publicCode || doc.publicToken || null,
+      publicCodeRevokedAt: doc.publicCodeRevokedAt || doc.publicTokenRevokedAt || null,
+      publicToken: doc.publicCode || doc.publicToken || null,
+      publicTokenRevokedAt: doc.publicCodeRevokedAt || doc.publicTokenRevokedAt || null,
       createdAt: doc.createdAt,
     };
   });

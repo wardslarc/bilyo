@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getPublicQuotationByToken } from '@/lib/public-projection';
+import { getPublicQuotationByCode } from '@/lib/public-projection';
 import { PublicDocumentView } from '@/components/documents/public-document-view';
 
 export const dynamic = 'force-dynamic';
@@ -14,13 +14,13 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  params: Promise<{ token: string }>;
+  params: Promise<{ code: string }>;
 }
 
 export default async function PublicQuotationPage({ params }: PageProps) {
-  const { token } = await params;
+  const { code } = await params;
 
-  const doc = await getPublicQuotationByToken(token);
+  const doc = await getPublicQuotationByCode(code);
 
   if (!doc) {
     notFound();
@@ -29,7 +29,7 @@ export default async function PublicQuotationPage({ params }: PageProps) {
   return (
     <PublicDocumentView
       document={doc}
-      pdfDownloadUrl={`/api/public/q/${token}/pdf`}
+      pdfDownloadUrl={`/api/public/q/${code}/pdf`}
     />
   );
 }

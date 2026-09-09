@@ -53,37 +53,42 @@ export interface PublicDocumentProjection {
 }
 
 /**
- * Validates a public token format (must be 12-char URL-safe base64 string).
+ * Validates a public code format (must be 12-char URL-safe base64 string, §6.7).
  */
-export function isValidPublicToken(token?: string | null): boolean {
-  if (!token || typeof token !== 'string') return false;
+export function isValidPublicCode(code?: string | null): boolean {
+  if (!code || typeof code !== 'string') return false;
   // URL-safe base64 string: 12 chars
-  return /^[A-Za-z0-9_-]{12}$/.test(token);
+  return /^[A-Za-z0-9_-]{12}$/.test(code);
 }
 
 /**
- * Fetch and project a public quotation by publicToken.
+ * Backward compatibility alias for isValidPublicCode.
  */
-export async function getPublicQuotationByToken(
-  token: string
+export const isValidPublicToken = isValidPublicCode;
+
+/**
+ * Fetch and project a public quotation by publicCode (or legacy publicToken).
+ */
+export async function getPublicQuotationByCode(
+  code: string
 ): Promise<PublicDocumentProjection | null> {
-  if (!isValidPublicToken(token)) {
+  if (!isValidPublicCode(code)) {
     return null;
   }
 
   await dbConnect();
 
-  // Find quotation by publicToken only (§5.6)
+  // Find quotation by publicCode (or fallback to legacy publicToken) (§6.7)
   const quotation = await Quotation.findOne({
-    publicToken: token,
+    $or: [{ publicCode: code }, { publicToken: code }],
   }).lean();
 
   if (!quotation) {
     return null;
   }
 
-  // 1. Check if token was revoked (§5.6)
-  if (quotation.publicTokenRevokedAt) {
+  // 1. Check if code was revoked (§6.7)
+  if (quotation.publicCodeRevokedAt || quotation.publicTokenRevokedAt) {
     return null;
   }
 
@@ -169,3 +174,8 @@ export async function getPublicQuotationByToken(
     customer: customerInfo,
   };
 }
+
+/**
+ * Backward compatibility alias for getPublicQuotationByCode.
+ */
+export const getPublicQuotationByToken = getPublicQuotationByCode;

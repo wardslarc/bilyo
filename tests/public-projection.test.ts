@@ -1,26 +1,29 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  isValidPublicCode,
   isValidPublicToken,
   type PublicDocumentProjection,
 } from '../lib/public-projection.ts';
 
-describe('Public Link Projection & Security (M4-T04)', () => {
-  describe('isValidPublicToken', () => {
-    test('accepts valid 12-char URL-safe base64 tokens', () => {
+describe('Public Link Projection & Security (P2-T02)', () => {
+  describe('isValidPublicCode / isValidPublicToken', () => {
+    test('accepts valid 12-char URL-safe base64 codes (§6.7)', () => {
+      assert.strictEqual(isValidPublicCode('aB1-_xYz9012'), true);
+      assert.strictEqual(isValidPublicCode('ABCDEFGHIJKL'), true);
+      assert.strictEqual(isValidPublicCode('123456789012'), true);
       assert.strictEqual(isValidPublicToken('aB1-_xYz9012'), true);
-      assert.strictEqual(isValidPublicToken('ABCDEFGHIJKL'), true);
-      assert.strictEqual(isValidPublicToken('123456789012'), true);
     });
 
-    test('rejects malformed or invalid tokens', () => {
-      assert.strictEqual(isValidPublicToken(null), false);
-      assert.strictEqual(isValidPublicToken(undefined), false);
-      assert.strictEqual(isValidPublicToken(''), false);
-      assert.strictEqual(isValidPublicToken('short'), false);
-      assert.strictEqual(isValidPublicToken('toolongtoken12345'), false);
-      assert.strictEqual(isValidPublicToken('invalid+char='), false); // + and = not url-safe
-      assert.strictEqual(isValidPublicToken('token with space'), false);
+    test('rejects 13-char or malformed codes (returns 404 condition)', () => {
+      assert.strictEqual(isValidPublicCode(null), false);
+      assert.strictEqual(isValidPublicCode(undefined), false);
+      assert.strictEqual(isValidPublicCode(''), false);
+      assert.strictEqual(isValidPublicCode('short'), false);
+      assert.strictEqual(isValidPublicCode('1234567890123'), false); // exactly 13 chars
+      assert.strictEqual(isValidPublicCode('toolongtoken12345'), false);
+      assert.strictEqual(isValidPublicCode('invalid+char='), false); // + and = not url-safe
+      assert.strictEqual(isValidPublicCode('code with space'), false);
     });
   });
 
@@ -95,9 +98,11 @@ describe('Public Link Projection & Security (M4-T04)', () => {
     test('revocation and publicLinksDisabledAt logic returns null (renders 404)', () => {
       // Simulating security evaluation
       const isPublicAccessible = (doc: {
+        publicCodeRevokedAt?: Date | null;
         publicTokenRevokedAt?: Date | null;
         ownerLinksDisabledAt?: Date | null;
       }) => {
+        if (doc.publicCodeRevokedAt) return false;
         if (doc.publicTokenRevokedAt) return false;
         if (doc.ownerLinksDisabledAt) return false;
         return true;
@@ -105,11 +110,20 @@ describe('Public Link Projection & Security (M4-T04)', () => {
 
       // Normal active document
       assert.strictEqual(
-        isPublicAccessible({ publicTokenRevokedAt: null, ownerLinksDisabledAt: null }),
+        isPublicAccessible({ publicCodeRevokedAt: null, ownerLinksDisabledAt: null }),
         true
       );
 
-      // Revoked token -> 404
+      // Revoked code -> 404
+      assert.strictEqual(
+        isPublicAccessible({
+          publicCodeRevokedAt: new Date(),
+          ownerLinksDisabledAt: null,
+        }),
+        false
+      );
+
+      // Legacy revoked token -> 404
       assert.strictEqual(
         isPublicAccessible({
           publicTokenRevokedAt: new Date(),
@@ -121,11 +135,25 @@ describe('Public Link Projection & Security (M4-T04)', () => {
       // Owner public links disabled for abuse -> 404
       assert.strictEqual(
         isPublicAccessible({
-          publicTokenRevokedAt: null,
+          publicCodeRevokedAt: null,
           ownerLinksDisabledAt: new Date(),
         }),
         false
       );
+    });
+
+    test('code is not sequential and not derived from ObjectId (§6.7)', async () => {
+      const { randomBytes } = await import('crypto');
+      const fakeId = '65f1a2b3c4d5e6f7a8b9c0d1';
+
+      const code1 = randomBytes(9).toString('base64url').slice(0, 12);
+      const code2 = randomBytes(9).toString('base64url').slice(0, 12);
+
+      assert.notStrictEqual(code1, code2);
+      assert.strictEqual(code1.length, 12);
+      assert.strictEqual(code2.length, 12);
+      assert.strictEqual(code1.includes(fakeId), false);
+      assert.strictEqual(code2.includes(fakeId), false);
     });
   });
 });
