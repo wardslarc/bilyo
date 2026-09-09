@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireUser, assertNotSuspended, AuthGuardError } from '@/lib/auth-guards';
+import { getUnseenAttentionCount } from '@/lib/metrics';
 import SignOutButton from '@/components/auth/SignOutButton';
 
 export default async function DashboardLayout({
@@ -23,7 +24,10 @@ export default async function DashboardLayout({
     throw error;
   }
 
+  const unseenCount = await getUnseenAttentionCount(user.id);
+
   const navItems = [
+    { label: 'Dashboard', href: '/dashboard', badge: unseenCount },
     { label: 'Quotations', href: '/dashboard/quotations' },
     { label: 'Customers', href: '/dashboard/customers' },
     { label: 'Settings', href: '/dashboard/settings' },
@@ -47,15 +51,43 @@ export default async function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="px-3 py-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors inline-flex items-center"
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {item.badge && item.badge > 0 ? (
+                    <span className="ml-1.5 px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-amber-500 text-white min-w-4 text-center leading-none">
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </Link>
               ))}
             </nav>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {unseenCount > 0 && (
+              <Link
+                href="/dashboard"
+                title={`${unseenCount} unread client update${unseenCount === 1 ? '' : 's'}`}
+                className="relative p-1.5 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
+              </Link>
+            )}
+
             <Link
               href="/dashboard/account"
               className="hidden sm:block text-right hover:opacity-80 transition-opacity"
@@ -76,9 +108,14 @@ export default async function DashboardLayout({
             <Link
               key={item.href}
               href={item.href}
-              className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md whitespace-nowrap transition-colors"
+              className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md whitespace-nowrap transition-colors inline-flex items-center"
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.badge && item.badge > 0 ? (
+                <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-500 text-white min-w-4 text-center leading-none">
+                  {item.badge}
+                </span>
+              ) : null}
             </Link>
           ))}
         </div>

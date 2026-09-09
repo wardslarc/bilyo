@@ -31,6 +31,7 @@ export interface IUser {
   // Support Signals
   lastLoginAt?: Date | null;
   lastActiveAt?: Date | null;
+  lastSeenEventsAt?: Date | null;
 
   createdAt: Date;
   updatedAt: Date;

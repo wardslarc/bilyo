@@ -1,9 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth-guards';
-import { getDashboardMetrics, getRecentQuotations } from '@/lib/metrics';
+import { getDashboardMetrics, getRecentQuotations, getNeedsAttentionData } from '@/lib/metrics';
 import { formatMoney } from '@/lib/money';
 import { RecentDocuments } from '@/components/dashboard/RecentDocuments';
+import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,13 +15,19 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const metrics = await getDashboardMetrics(user.id);
+  const [metrics, attentionData] = await Promise.all([
+    getDashboardMetrics(user.id),
+    getNeedsAttentionData(user.id),
+  ]);
 
   const hasQuotations = metrics.totalQuotationCount > 0;
   const recentQuotations = hasQuotations ? await getRecentQuotations(user.id, 5) : [];
 
   return (
-    <div className="py-6 px-4 sm:px-6 max-w-6xl mx-auto space-y-8">
+    <div className="py-6 px-4 sm:px-6 max-w-6xl mx-auto space-y-6">
+      {/* Needs your attention: client activities requiring review (§12, P3-T04) */}
+      <NeedsAttention data={attentionData} />
+
       {/* Header with quick actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

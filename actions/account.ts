@@ -572,3 +572,37 @@ export async function confirmDeviceReplacement(
   }
 }
 
+/**
+ * Marks all current attention events as seen by updating lastSeenEventsAt (§12, P3-T04).
+ * Clears the unread count badge in the nav.
+ */
+export async function markEventsSeen(): Promise<ActionResult<{ seenAt: string }>> {
+  try {
+    const sessionUser = await requireUser();
+    await assertNotSuspended(sessionUser.id);
+    await dbConnect();
+
+    const now = new Date();
+    await User.updateOne(
+      { _id: sessionUser.id },
+      { $set: { lastSeenEventsAt: now } }
+    );
+
+    return {
+      ok: true,
+      data: {
+        seenAt: now.toISOString(),
+      },
+    };
+  } catch (error) {
+    if (error instanceof AuthGuardError) {
+      return { ok: false, error: error.message };
+    }
+    console.error('markEventsSeen error:', (error as Error).message);
+    return {
+      ok: false,
+      error: 'Failed to update notification status.',
+    };
+  }
+}
+

@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import dbConnect from './mongodb.ts';
 import { Quotation } from '../models/quotation.ts';
+import { Event } from '../models/event.ts';
+import { User } from '../models/user.ts';
 import { getDerivedQuotationStatus } from './documents.ts';
 
 export interface DashboardMetrics {
@@ -157,3 +159,162 @@ export async function getRecentQuotations(
     };
   });
 }
+
+export interface NeedsAttentionItem {
+  id: string;
+  quotationId: string;
+  quotationNumber: string;
+  clientName: string;
+  type: 'ACCEPTED' | 'DECLINED' | 'VIEWED';
+  actor: 'CLIENT';
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+  isUnread: boolean;
+}
+
+export interface NeedsAttentionData {
+  items: NeedsAttentionItem[];
+  unseenCount: number;
+  lastSeenEventsAt: string | null;
+}
+
+export interface RawAttentionEvent {
+  id: string;
+  quotationId: string;
+  quotationNumber?: string;
+  clientName?: string;
+  type: 'ACCEPTED' | 'DECLINED' | 'VIEWED';
+  actor: string;
+  createdAt: Date | string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Pure helper to calculate unread status and count against lastSeenEventsAt (§12, P3-T04).
+ */
+export function filterUnseenAttentionEvents<T extends RawAttentionEvent>(
+  events: T[],
+  lastSeenEventsAt: Date | string | null | undefined
+): { unseenCount: number; items: Array<T & { isUnread: boolean }> } {
+  const lastSeenMs = lastSeenEventsAt ? new Date(lastSeenEventsAt).getTime() : 0;
+
+  let unseenCount = 0;
+  const items = events.map((event) => {
+    const eventMs = new Date(event.createdAt).getTime();
+    const isUnread = !lastSeenMs || eventMs > lastSeenMs;
+    if (isUnread) {
+      unseenCount++;
+    }
+    return {
+      ...event,
+      isUnread,
+    };
+  });
+
+  return { unseenCount, items };
+}
+
+/**
+ * Fetches recent attention events (ACCEPTED, DECLINED, VIEWED) for the owner dashboard.
+ * Strictly userId-scoped (§4.1, §12 P3-T04).
+ */
+export async function getNeedsAttentionData(userId: string): Promise<NeedsAttentionData> {
+  await dbConnect();
+
+  const userObjectId =
+    mongoose.Types.ObjectId.isValid(userId) && typeof userId === 'string'
+      ? new mongoose.Types.ObjectId(userId)
+      : userId;
+
+  const userDoc = await User.findById(userObjectId).select('lastSeenEventsAt').lean();
+  const lastSeenEventsAt = userDoc?.lastSeenEventsAt ? new Date(userDoc.lastSeenEventsAt) : null;
+
+  // Up to 10 recent client events
+  const events = await Event.find({
+    userId: userObjectId,
+    actor: 'CLIENT',
+    type: { $in: ['ACCEPTED', 'DECLINED', 'VIEWED'] },
+  })
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .lean();
+
+  if (!events || events.length === 0) {
+    return {
+      items: [],
+      unseenCount: 0,
+      lastSeenEventsAt: lastSeenEventsAt ? lastSeenEventsAt.toISOString() : null,
+    };
+  }
+
+  // Double-check userId-scoped quotation lookup
+  const quotationIds = events.map((e) => e.quotationId);
+  const quotations = await Quotation.find({
+    _id: { $in: quotationIds },
+    userId: userObjectId,
+  })
+    .select('number customerSnapshot')
+    .lean();
+
+  const quotationMap = new Map(
+    quotations.map((q) => [String(q._id), q])
+  );
+
+  const rawItems: RawAttentionEvent[] = events.map((event) => {
+    const quote = quotationMap.get(String(event.quotationId));
+    const customerSnapshot = quote?.customerSnapshot as { name?: string } | undefined;
+    const clientName =
+      (event.metadata?.respondedByName as string) ||
+      customerSnapshot?.name ||
+      'Client';
+
+    return {
+      id: String(event._id),
+      quotationId: String(event.quotationId),
+      quotationNumber: quote?.number ? String(quote.number) : 'Quotation',
+      clientName,
+      type: event.type as 'ACCEPTED' | 'DECLINED' | 'VIEWED',
+      actor: 'CLIENT',
+      createdAt: event.createdAt ? new Date(event.createdAt).toISOString() : new Date().toISOString(),
+      metadata: (event.metadata as Record<string, unknown>) || {},
+    };
+  });
+
+  const { unseenCount, items } = filterUnseenAttentionEvents(rawItems, lastSeenEventsAt);
+
+  return {
+    items: items as NeedsAttentionItem[],
+    unseenCount,
+    lastSeenEventsAt: lastSeenEventsAt ? lastSeenEventsAt.toISOString() : null,
+  };
+}
+
+/**
+ * Returns the count of unseen attention events since owner's lastSeenEventsAt.
+ * Strictly userId-scoped (§4.1, §12 P3-T04).
+ */
+export async function getUnseenAttentionCount(userId: string): Promise<number> {
+  await dbConnect();
+
+  const userObjectId =
+    mongoose.Types.ObjectId.isValid(userId) && typeof userId === 'string'
+      ? new mongoose.Types.ObjectId(userId)
+      : userId;
+
+  const userDoc = await User.findById(userObjectId).select('lastSeenEventsAt').lean();
+  const lastSeenEventsAt = userDoc?.lastSeenEventsAt ? new Date(userDoc.lastSeenEventsAt) : null;
+
+  const query: Record<string, unknown> = {
+    userId: userObjectId,
+    actor: 'CLIENT',
+    type: { $in: ['ACCEPTED', 'DECLINED', 'VIEWED'] },
+  };
+
+  if (lastSeenEventsAt) {
+    query.createdAt = { $gt: lastSeenEventsAt };
+  }
+
+  const count = await Event.countDocuments(query);
+  return count;
+}
+

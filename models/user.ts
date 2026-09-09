@@ -96,6 +96,10 @@ const UserSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
+    lastSeenEventsAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

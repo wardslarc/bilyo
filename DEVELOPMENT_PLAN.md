@@ -801,7 +801,7 @@ user would pick Bilyo over a Word template.
   *Accept:* opening the link twice yields one `VIEWED` event and one timestamp; an `ACCEPTED` quote
   opened again does not regress to `VIEWED`.
 
-- [ ] **P3-T04 · Owner notification, in-app** (2h)
+- [x] **P3-T04 · Owner notification, in-app** (2h)
   *Files:* `components/dashboard/NeedsAttention.tsx` (new) · `lib/metrics.ts` ·
   `app/(dashboard)/dashboard/page.tsx` · `app/(dashboard)/dashboard/layout.tsx`
   *Do:* a "Needs your attention" list at the top of the dashboard, plus a count badge in the nav,
