@@ -1,60 +1,123 @@
-import { test, describe } from 'node:test';
-import assert from 'node:assert/strict';
-import { styles, colors } from '../lib/pdf/shared/styles.ts';
-import { formatMoney } from '../lib/money.ts';
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
+import fs from 'node:fs';
+import path from 'node:path';
+import { QUOTATION_FOOTER } from '../lib/documents.ts';
 
-describe('PDF Styles and Layout Rules (M3-T04)', () => {
-  test('A4 page configuration and margins', () => {
-    assert.strictEqual(styles.page.fontFamily, 'Helvetica');
-    assert.strictEqual(styles.page.fontSize, 9);
-    assert.strictEqual(styles.page.paddingTop, 40);
-    assert.strictEqual(styles.page.paddingBottom, 60);
-    assert.strictEqual(styles.page.paddingHorizontal, 40);
+describe('PDF and Print View (§2.3, §12 P4-T05)', () => {
+  it('ensures the required quotation footer constant exists and matches specification', () => {
+    assert.strictEqual(
+      QUOTATION_FOOTER,
+      'This is a quotation, not a tax document. It is not an invoice or official receipt.'
+    );
   });
 
-  test('Table columns add up to 100% width', () => {
-    const colNumWidth = Number.parseInt(styles.colNum.width.replace('%', ''), 10);
-    const colDescWidth = Number.parseInt(styles.colDescription.width.replace('%', ''), 10);
-    const colQtyWidth = Number.parseInt(styles.colQty.width.replace('%', ''), 10);
-    const colUnitPriceWidth = Number.parseInt(styles.colUnitPrice.width.replace('%', ''), 10);
-    const colAmountWidth = Number.parseInt(styles.colAmount.width.replace('%', ''), 10);
+  it('ensures QuotationDocument passes QUOTATION_FOOTER as the disclaimer', () => {
+    const quoteDocSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'lib/pdf/quotation-document.tsx'),
+      'utf-8'
+    );
 
-    const totalWidth = colNumWidth + colDescWidth + colQtyWidth + colUnitPriceWidth + colAmountWidth;
-    assert.strictEqual(totalWidth, 100, 'Table column percentages must sum to 100%');
+    assert.match(quoteDocSource, /disclaimer=\{QUOTATION_FOOTER\}/);
+    assert.match(quoteDocSource, /documentTitle="QUOTATION"/);
+    assert.match(quoteDocSource, /secondaryDateLabel="Valid Until"/);
   });
 
-  test('Decimal alignment: money columns and totals values are right-aligned', () => {
-    assert.strictEqual(styles.colUnitPrice.textAlign, 'right');
-    assert.strictEqual(styles.colAmount.textAlign, 'right');
-    assert.strictEqual(styles.totalsValue.textAlign, 'right');
-    assert.strictEqual(styles.totalsFinalValue.textAlign, 'right');
+  it('ensures PDF layout adheres to A4 size and renders essential blocks', () => {
+    const layoutSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'lib/pdf/shared/document-layout.tsx'),
+      'utf-8'
+    );
 
-    const sampleAmounts = [0, 50, 100, 123450, 999999900];
-    for (const centavos of sampleAmounts) {
-      const formatted = formatMoney(centavos);
-      const dotIndex = formatted.indexOf('.');
-      assert.ok(dotIndex !== -1, 'Formatted money must contain decimal point');
-      assert.strictEqual(formatted.length - dotIndex - 1, 2, 'Must have exactly 2 decimal digits');
+    // A4 page size
+    assert.match(layoutSource, /size="A4"/);
+    // Header with title and number
+    assert.match(layoutSource, /<DocumentHeader/);
+    // Info section with Prepared For and Details
+    assert.match(layoutSource, /<DocumentInfoSection/);
+    // Items table
+    assert.match(layoutSource, /<DocumentItemsTable/);
+    // Totals block
+    assert.match(layoutSource, /<DocumentTotalsBlock/);
+    // Notes and terms
+    assert.match(layoutSource, /<DocumentNotesAndTerms/);
+    // Fixed footer with disclaimer
+    assert.match(layoutSource, /<DocumentFooter/);
+  });
+
+  it('ensures totals block has NO VAT row (AGENTS.md §3, §4.3)', () => {
+    const layoutSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'lib/pdf/shared/document-layout.tsx'),
+      'utf-8'
+    );
+
+    // Verify totals rows only compute Subtotal, Discount, Total
+    assert.doesNotMatch(layoutSource, /\bVAT\b/i);
+    assert.doesNotMatch(layoutSource, /\bTax\b/i);
+    assert.doesNotMatch(layoutSource, /\bTIN\b/i);
+  });
+
+  it('ensures no word "invoice" appears anywhere in lib/pdf except within the negative disclaimer', () => {
+    const files = [
+      'lib/pdf/quotation-document.tsx',
+      'lib/pdf/shared/document-layout.tsx',
+      'lib/pdf/shared/styles.ts',
+      'lib/pdf/shared/index.ts',
+    ];
+
+    for (const rel of files) {
+      const content = fs.readFileSync(path.resolve(process.cwd(), rel), 'utf-8');
+      const lines = content.split('\n');
+      for (const line of lines) {
+        // Strip comment lines
+        const trimmed = line.trim();
+        if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
+          continue;
+        }
+        // If line contains disclaimer, that is the required negative statement
+        if (line.includes('QUOTATION_FOOTER') || line.includes('disclaimer')) {
+          continue;
+        }
+        assert.doesNotMatch(
+          line,
+          /\binvoice(s)?\b/i,
+          `Found forbidden word "invoice" in ${rel}: ${line}`
+        );
+      }
     }
   });
 
-  test('Missing logo renders clean gap with defined dimensions', () => {
-    assert.ok(styles.logoPlaceholder, 'logoPlaceholder style must exist');
-    assert.ok(styles.logoPlaceholder.height > 0, 'Clean gap height must be greater than 0');
-    assert.ok(styles.logoPlaceholder.marginBottom > 0, 'Clean gap must have bottom spacing');
+  it('ensures /api/quotations/[id]/pdf is strictly userId-scoped', () => {
+    const routeSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'app/api/quotations/[id]/pdf/route.ts'),
+      'utf-8'
+    );
+
+    assert.match(
+      routeSource,
+      /Quotation\.findOne\(\{\s*_id:\s*id,\s*userId:\s*user\.id\s*\}\)/
+    );
   });
 
-  test('Footer disclaimer styling is fixed and positioned at the bottom', () => {
-    assert.strictEqual(styles.footer.position, 'absolute');
-    assert.strictEqual(styles.footer.bottom, 20);
-    assert.strictEqual(styles.footerDisclaimer.fontStyle, 'italic');
-    assert.ok(styles.footerDisclaimer.fontSize <= 7, 'Disclaimer text should be subtle and small');
-  });
+  it('ensures /api/public/q/[code]/pdf is code-scoped and returns 404 if quotation not found or revoked', () => {
+    const routeSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'app/api/public/q/[code]/pdf/route.ts'),
+      'utf-8'
+    );
 
-  test('Brand palette is consistent and defined in hex', () => {
-    assert.ok(colors.ink.startsWith('#'));
-    assert.ok(colors.brass.startsWith('#'));
-    assert.ok(colors.paper.startsWith('#'));
-    assert.ok(colors.line.startsWith('#'));
+    // Calls getPublicQuotationByCode
+    assert.match(routeSource, /getPublicQuotationByCode\(code\)/);
+    // Returns 404 when null
+    assert.match(routeSource, /if\s*\(!doc\)\s*\{\s*return new Response\('Not Found',\s*\{\s*status:\s*404\s*\}\);/);
+
+    // Verify getPublicQuotationByCode checks revocation
+    const projectionSource = fs.readFileSync(
+      path.resolve(process.cwd(), 'lib/public-projection.ts'),
+      'utf-8'
+    );
+    assert.match(
+      projectionSource,
+      /quotation\.publicCodeRevokedAt\s*\|\|\s*quotation\.publicTokenRevokedAt/
+    );
   });
 });

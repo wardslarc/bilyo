@@ -853,7 +853,7 @@ user would pick Bilyo over a Word template.
   centavos; **no document, number, or receipt is generated**; the public page does not show payment
   status.
 
-- [ ] **P4-T05 · PDF and print view** (1.5h)
+- [x] **P4-T05 · PDF and print view** (1.5h)
   *Files:* `lib/pdf/quotation-document.tsx` · `lib/pdf/shared/document-layout.tsx` ·
   `app/api/quotations/[id]/pdf/route.ts` · `app/api/public/q/[code]/pdf/route.ts`
   *Do:* A4, logo, business block, client block, items, subtotal/discount/total, validity, notes, and

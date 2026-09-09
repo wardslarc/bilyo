@@ -37,9 +37,8 @@ export interface BaseDocumentLayoutProps {
   discountCentavos: number;
   totalCentavos: number;
   issueDate: string | Date;
-  secondaryDateLabel: string; // e.g. 'Valid Until' or 'Due Date'
+  secondaryDateLabel: string; // e.g. 'Valid Until'
   secondaryDate: string | Date;
-  paidAt?: string | Date | null;
   notes?: string;
   terms?: string;
   disclaimer: string;
@@ -83,13 +82,11 @@ export function DocumentInfoSection({
   issueDate,
   secondaryDateLabel,
   secondaryDate,
-  paidAt,
 }: {
   customer: PdfCustomerInfo;
   issueDate: string | Date;
   secondaryDateLabel: string;
   secondaryDate: string | Date;
-  paidAt?: string | Date | null;
 }) {
   return (
     <View style={styles.infoSection}>
@@ -106,7 +103,6 @@ export function DocumentInfoSection({
         <Text style={styles.infoText}>
           {secondaryDateLabel}: {formatDate(secondaryDate)}
         </Text>
-        {paidAt && <Text style={styles.infoText}>Paid Date: {formatDate(paidAt)}</Text>}
       </View>
     </View>
   );
@@ -252,7 +248,6 @@ export function BaseDocumentLayout({
   issueDate,
   secondaryDateLabel,
   secondaryDate,
-  paidAt,
   notes,
   terms,
   disclaimer,
@@ -270,7 +265,6 @@ export function BaseDocumentLayout({
           issueDate={issueDate}
           secondaryDateLabel={secondaryDateLabel}
           secondaryDate={secondaryDate}
-          paidAt={paidAt}
         />
         <DocumentItemsTable items={items} />
         <DocumentTotalsBlock
