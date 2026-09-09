@@ -700,7 +700,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   enrols is still challenged at `/login/mfa` on the next sign-in; an already-enrolled account is not
   disabled by this change; no secret or code appears in any log or error.
 
-- [ ] **P1-T06 · De-invoice the admin console** (1h)
+- [x] **P1-T06 · De-invoice the admin console** (1h)
   *Files:* `app/(admin)/admin/documents/[kind]/[id]/page.tsx` → `app/(admin)/admin/quotations/[id]/page.tsx` ·
   `app/(admin)/admin/users/[id]/documents/page.tsx` → `.../quotations/page.tsx` · `lib/admin/lookup.ts` ·
   `lib/admin/metrics.ts` · `components/admin/PlatformMetricsTiles.tsx`

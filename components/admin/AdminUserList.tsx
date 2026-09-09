@@ -158,7 +158,7 @@ export function AdminUserList({
                   Business
                 </th>
                 <th scope="col" className="py-3.5 px-4 text-center">
-                  Docs
+                  Quotes
                 </th>
                 <th scope="col" className="py-3.5 px-4">
                   Signed Up
@@ -203,13 +203,10 @@ export function AdminUserList({
                       {user.businessName}
                     </td>
 
-                    {/* Documents Count */}
+                    {/* Quotations Count */}
                     <td className="py-3 px-4 text-center whitespace-nowrap">
-                      <span className="font-semibold text-slate-900">
-                        {user.documentsCount}
-                      </span>
-                      <span className="text-[11px] text-slate-400 ml-1">
-                        ({user.invoicesCount}i / {user.quotationsCount}q)
+                      <span className="font-semibold text-slate-900 font-mono">
+                        {user.quotationsCount}
                       </span>
                     </td>
 

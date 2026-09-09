@@ -9,8 +9,8 @@ import { formatMoney } from '@/lib/money';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Support Document Lookup · Bilyo Admin',
-  description: 'Locate any invoice or quotation across all platform accounts by document number or public token.',
+  title: 'Support Quotation Lookup · Bilyo Admin',
+  description: 'Locate any quotation across all platform accounts by quotation number or public link code.',
 };
 
 interface AdminLookupPageProps {
@@ -32,7 +32,7 @@ export default async function AdminLookupPage({
     // M7-T04: Single match immediately jumps to read-only view
     if (lookupResult.ok && lookupResult.matches.length === 1) {
       const match = lookupResult.matches[0];
-      redirect(`/admin/documents/${match.kind}/${match.id}`);
+      redirect(`/admin/quotations/${match.id}`);
     }
   }
 
@@ -46,10 +46,10 @@ export default async function AdminLookupPage({
           <span>Cross-User Search</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-          Support Document Lookup
+          Support Quotation Lookup
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Locate any invoice or quotation across all platform accounts by document number or public link token.
+          Locate any quotation across all platform accounts by quotation number or public link code.
         </p>
       </div>
 
@@ -88,7 +88,7 @@ export default async function AdminLookupPage({
             </div>
           )}
 
-          {/* Clean Not Found Result (AGENTS.md & DEVELOPMENT_PLAN.md: Clean not found, never an error) */}
+          {/* Clean Not Found Result */}
           {lookupResult.ok && lookupResult.matches.length === 0 && (
             <div className="bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm space-y-3">
               <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
@@ -107,7 +107,7 @@ export default async function AdminLookupPage({
                 </svg>
               </div>
               <h3 className="text-base font-semibold text-slate-800">
-                No document found
+                No quotation found
               </h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                 Platform search across all active and archived accounts returned no records matching{' '}
@@ -117,8 +117,8 @@ export default async function AdminLookupPage({
                 .
               </p>
               <div className="pt-2 text-xs text-slate-400">
-                Tip: Ensure you entered the full sequential number (e.g.{' '}
-                <span className="font-mono">INV-000042</span>) or unrevoked 12-char public token.
+                Tip: Ensure you entered the full quotation number (e.g.{' '}
+                <span className="font-mono">Q-2026-0001</span> or <span className="font-mono">QUO-000042</span>) or 12-char public code.
               </div>
             </div>
           )}
@@ -128,11 +128,11 @@ export default async function AdminLookupPage({
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-900 flex items-center justify-between">
                 <span>
-                  Found <strong className="font-semibold">{lookupResult.matches.length}</strong> documents matching number{' '}
+                  Found <strong className="font-semibold">{lookupResult.matches.length}</strong> quotations matching number{' '}
                   <code className="font-mono bg-blue-100 px-1 py-0.5 rounded">
                     {lookupResult.query}
                   </code>{' '}
-                  across distinct accounts. Select the document to inspect:
+                  across distinct accounts. Select the quotation to inspect:
                 </span>
               </div>
 
@@ -141,7 +141,7 @@ export default async function AdminLookupPage({
                   <table className="min-w-full divide-y divide-slate-200 text-xs">
                     <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold">
                       <tr>
-                        <th className="px-4 py-3 text-left">Kind & Number</th>
+                        <th className="px-4 py-3 text-left">Quotation Number</th>
                         <th className="px-4 py-3 text-left">Account Owner</th>
                         <th className="px-4 py-3 text-left">Customer</th>
                         <th className="px-4 py-3 text-left">Issue Date</th>
@@ -154,20 +154,9 @@ export default async function AdminLookupPage({
                       {lookupResult.matches.map((match) => (
                         <tr key={match.id} className="hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded uppercase ${
-                                  match.kind === 'invoice'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-purple-100 text-purple-700'
-                                }`}
-                              >
-                                {match.kind}
-                              </span>
-                              <span className="font-mono font-bold text-slate-900">
-                                {match.number}
-                              </span>
-                            </div>
+                            <span className="font-mono font-bold text-slate-900">
+                              {match.number}
+                            </span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="font-medium text-slate-900">
@@ -189,11 +178,11 @@ export default async function AdminLookupPage({
                           <td className="px-4 py-3 text-center whitespace-nowrap">
                             <span
                               className={`inline-flex px-2 py-0.5 rounded text-[11px] font-semibold uppercase ${
-                                match.status === 'PAID' || match.status === 'ACCEPTED'
+                                match.status === 'ACCEPTED'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : match.status === 'SENT'
                                     ? 'bg-blue-100 text-blue-800'
-                                    : match.status === 'CANCELLED' || match.status === 'DECLINED'
+                                    : match.status === 'DECLINED'
                                       ? 'bg-rose-100 text-rose-800'
                                       : 'bg-slate-100 text-slate-700'
                               }`}
@@ -203,7 +192,7 @@ export default async function AdminLookupPage({
                           </td>
                           <td className="px-4 py-3 text-right whitespace-nowrap">
                             <Link
-                              href={`/admin/documents/${match.kind}/${match.id}`}
+                              href={`/admin/quotations/${match.id}`}
                               className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-semibold"
                             >
                               <span>Inspect</span>
@@ -228,9 +217,9 @@ export default async function AdminLookupPage({
             <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
               1
             </div>
-            <h3 className="font-semibold text-sm text-slate-900">Direct Document Jump</h3>
+            <h3 className="font-semibold text-sm text-slate-900">Direct Quotation Jump</h3>
             <p className="text-slate-500 leading-relaxed">
-              Entering an exact document number or customer token resolves the target and immediately jumps to the immutable read-only view.
+              Entering an exact quotation number or public code resolves the target and immediately jumps to the immutable read-only view.
             </p>
           </div>
 
@@ -240,7 +229,7 @@ export default async function AdminLookupPage({
             </div>
             <h3 className="font-semibold text-sm text-slate-900">Guarded Cross-User Scope</h3>
             <p className="text-slate-500 leading-relaxed">
-              Lookup operates exclusively through indexed fields. Bare prefixes like &ldquo;INV-&rdquo; are explicitly barred to prevent dumping platform data.
+              Lookup operates exclusively through indexed fields. Bare prefixes like &ldquo;QUO-&rdquo; or &ldquo;Q-&rdquo; are explicitly barred to prevent dumping platform data.
             </p>
           </div>
 

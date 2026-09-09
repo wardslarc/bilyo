@@ -97,8 +97,8 @@ export default async function AdminUserDetailPage({
 
         <div className="flex items-center gap-3">
           <Link
-            href={`/admin/users/${id}/documents`}
-            className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+            href={`/admin/users/${id}/quotations`}
+            className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
           >
             <svg
               className="w-4 h-4 mr-2 text-slate-500"
@@ -113,7 +113,7 @@ export default async function AdminUserDetailPage({
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            View Documents ({counts.invoices.total + counts.quotations.total})
+            View Quotations ({counts.quotations.total})
           </Link>
         </div>
       </div>
@@ -369,121 +369,60 @@ export default async function AdminUserDetailPage({
         </div>
       </div>
 
-      {/* Document Metrics Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Invoices Breakdown */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <h2 className="font-semibold text-slate-900">Invoices</h2>
-            </div>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-              {counts.invoices.total} Total
-            </span>
+      {/* Quotations Metrics Breakdown */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-purple-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <h2 className="font-semibold text-slate-900">Quotations</h2>
           </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 text-center">
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-500 font-medium">Draft</span>
-              <p className="text-lg font-bold text-slate-700 mt-1">
-                {counts.invoices.draft}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
-              <span className="text-xs text-blue-600 font-medium">Sent</span>
-              <p className="text-lg font-bold text-blue-800 mt-1">
-                {counts.invoices.sent}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
-              <span className="text-xs text-emerald-600 font-medium">Paid</span>
-              <p className="text-lg font-bold text-emerald-800 mt-1">
-                {counts.invoices.paid}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100">
-              <span className="text-xs text-rose-600 font-medium">Overdue</span>
-              <p className="text-lg font-bold text-rose-800 mt-1">
-                {counts.invoices.overdue}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-400 font-medium">Cancelled</span>
-              <p className="text-lg font-bold text-slate-500 mt-1">
-                {counts.invoices.cancelled}
-              </p>
-            </div>
-          </div>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+            {counts.quotations.total} Total
+          </span>
         </div>
 
-        {/* Quotations Breakdown */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <h2 className="font-semibold text-slate-900">Quotations</h2>
-            </div>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              {counts.quotations.total} Total
-            </span>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-xs text-slate-500 font-medium">Draft</span>
+            <p className="text-lg font-bold text-slate-700 mt-1">
+              {counts.quotations.draft}
+            </p>
           </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 text-center">
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-500 font-medium">Draft</span>
-              <p className="text-lg font-bold text-slate-700 mt-1">
-                {counts.quotations.draft}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
-              <span className="text-xs text-blue-600 font-medium">Sent</span>
-              <p className="text-lg font-bold text-blue-800 mt-1">
-                {counts.quotations.sent}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
-              <span className="text-xs text-emerald-600 font-medium">Accepted</span>
-              <p className="text-lg font-bold text-emerald-800 mt-1">
-                {counts.quotations.accepted}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100">
-              <span className="text-xs text-rose-600 font-medium">Declined</span>
-              <p className="text-lg font-bold text-rose-800 mt-1">
-                {counts.quotations.declined}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs text-slate-400 font-medium">Expired</span>
-              <p className="text-lg font-bold text-slate-500 mt-1">
-                {counts.quotations.expired}
-              </p>
-            </div>
+          <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
+            <span className="text-xs text-blue-600 font-medium">Sent</span>
+            <p className="text-lg font-bold text-blue-800 mt-1">
+              {counts.quotations.sent}
+            </p>
+          </div>
+          <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
+            <span className="text-xs text-emerald-600 font-medium">Accepted</span>
+            <p className="text-lg font-bold text-emerald-800 mt-1">
+              {counts.quotations.accepted}
+            </p>
+          </div>
+          <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-100">
+            <span className="text-xs text-rose-600 font-medium">Declined</span>
+            <p className="text-lg font-bold text-rose-800 mt-1">
+              {counts.quotations.declined}
+            </p>
+          </div>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-xs text-slate-400 font-medium">Expired</span>
+            <p className="text-lg font-bold text-slate-500 mt-1">
+              {counts.quotations.expired}
+            </p>
           </div>
         </div>
       </div>

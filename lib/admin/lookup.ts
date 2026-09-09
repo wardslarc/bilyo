@@ -8,7 +8,7 @@ import { recordAudit } from './audit.ts';
 
 export interface AdminLookupMatch {
   id: string;
-  kind: 'invoice' | 'quotation';
+  kind: 'quotation';
   number: string;
   status: string;
   userId: string;
@@ -16,7 +16,7 @@ export interface AdminLookupMatch {
   businessName: string;
   customerName: string;
   issueDate: Date;
-  dueDateOrValidUntil?: Date | null;
+  validUntil?: Date | null;
   totalCentavos: number;
   publicToken?: string | null;
   publicTokenRevokedAt?: Date | null;
@@ -34,17 +34,25 @@ export type LookupValidationResult =
       error: string;
     };
 
-const BARE_PREFIXES = new Set(['INV', 'INV-', 'QUO', 'QUO-']);
+const BARE_PREFIXES = new Set(['QUO-', 'Q-']);
 
 /**
- * Validates and normalizes document lookup queries.
+ * Validates and normalizes quotation lookup queries.
  * Pure function suitable for unit testing without database connection.
  * - Requires query string >= 4 characters.
- * - Disallows bare prefixes like "INV-" or "QUO-" from dumping all documents.
- * - Normalizes shorthand document numbers (e.g. INV-42 -> INV-000042).
+ * - Disallows bare prefixes like "QUO-" or "Q-" from dumping all quotations.
+ * - Normalizes shorthand quotation numbers (e.g. QUO-42 -> QUO-000042, Q-2026-12 -> Q-2026-0012).
  */
 export function validateLookupQuery(query: string): LookupValidationResult {
   const trimmed = query.trim();
+  const upper = trimmed.toUpperCase();
+
+  if (BARE_PREFIXES.has(upper)) {
+    return {
+      valid: false,
+      error: 'Bare prefixes like "QUO-" or "Q-" are not allowed. Please enter a full quotation number (e.g. Q-2026-0001 or QUO-000042) or a public code.',
+    };
+  }
 
   if (trimmed.length < 4) {
     return {
@@ -53,22 +61,25 @@ export function validateLookupQuery(query: string): LookupValidationResult {
     };
   }
 
-  const upper = trimmed.toUpperCase();
-  if (BARE_PREFIXES.has(upper)) {
-    return {
-      valid: false,
-      error: 'Bare prefixes like "INV-" or "QUO-" are not allowed. Please enter a full document number (e.g. INV-000042) or a public token.',
-    };
-  }
-
   const candidateNumbers: string[] = [upper];
 
-  // If user entered e.g. "INV-42" or "QUO-7", normalize with 6-digit zero-padding per §5.3
-  const shorthandMatch = upper.match(/^(INV|QUO)-?(\d{1,6})$/);
-  if (shorthandMatch) {
-    const prefix = shorthandMatch[1] + '-';
-    const paddedSeq = shorthandMatch[2].padStart(6, '0');
-    const normalized = `${prefix}${paddedSeq}`;
+  // Shorthand formats:
+  // 1. Old format "QUO-7" or "QUO7" -> "QUO-000007"
+  const oldMatch = upper.match(/^QUO-?(\d{1,6})$/);
+  if (oldMatch) {
+    const paddedSeq = oldMatch[1].padStart(6, '0');
+    const normalized = `QUO-${paddedSeq}`;
+    if (!candidateNumbers.includes(normalized)) {
+      candidateNumbers.push(normalized);
+    }
+  }
+
+  // 2. New format "Q-2026-1" or "Q-2026-01" -> "Q-2026-0001"
+  const newMatch = upper.match(/^Q-(\d{4})-(\d{1,4})$/);
+  if (newMatch) {
+    const year = newMatch[1];
+    const paddedSeq = newMatch[2].padStart(4, '0');
+    const normalized = `Q-${year}-${paddedSeq}`;
     if (!candidateNumbers.includes(normalized)) {
       candidateNumbers.push(normalized);
     }
@@ -94,8 +105,8 @@ export type LookupResult =
     };
 
 /**
- * Searches invoices and quotations across all users by document number or public token (M7-T04).
- * Cross-user query strictly guarded by requireAdmin() (AGENTS.md §3.7).
+ * Searches quotations across all users by quotation number or public token/code (P1-T06).
+ * Cross-user query strictly guarded by requireAdmin() (AGENTS.md §4.9).
  * Audited via append-only AdminAuditLog.
  */
 export async function lookupDocumentAcrossUsers(
@@ -116,27 +127,21 @@ export async function lookupDocumentAcrossUsers(
 
   await dbConnect();
 
-  // Search indexed fields: number ($in candidates) or publicToken (exact trimmed)
+  // Search indexed fields: number ($in candidates) or publicToken / publicCode (exact trimmed)
   const filter = {
     $or: [
       { publicToken: trimmed },
+      { publicCode: trimmed },
       { number: { $in: candidateNumbers } },
     ],
   };
 
   const quotations = await Quotation.find(filter).lean();
 
-  const rawMatches: Array<{
-    doc: typeof quotations[number];
-    kind: 'quotation';
-  }> = [
-    ...quotations.map((doc) => ({ doc, kind: 'quotation' as const })),
-  ];
-
   // Collect distinct userIds and customerIds to resolve emails and names efficiently
-  const userIds = Array.from(new Set(rawMatches.map((m) => m.doc.userId.toString())));
+  const userIds = Array.from(new Set(quotations.map((q) => q.userId.toString())));
   const customerIds = Array.from(
-    new Set(rawMatches.map((m) => m.doc.customerId?.toString()).filter(Boolean))
+    new Set(quotations.map((q) => q.customerId?.toString()).filter(Boolean))
   );
 
   const [users, businesses, customers] = await Promise.all([
@@ -149,7 +154,7 @@ export async function lookupDocumentAcrossUsers(
   const businessNameMap = new Map(businesses.map((b) => [b.userId.toString(), b.businessName]));
   const customerNameMap = new Map(customers.map((c) => [c._id.toString(), c.name]));
 
-  const matches: AdminLookupMatch[] = rawMatches.map(({ doc, kind }) => {
+  const matches: AdminLookupMatch[] = quotations.map((doc) => {
     const uId = doc.userId.toString();
     const cId = doc.customerId?.toString();
 
@@ -162,11 +167,9 @@ export async function lookupDocumentAcrossUsers(
     const customerName =
       cSnap?.name || (cId ? customerNameMap.get(cId) : undefined) || '—';
 
-    const dueDateOrValidUntil = doc.validUntil;
-
     return {
       id: doc._id.toString(),
-      kind,
+      kind: 'quotation',
       number: doc.number,
       status: doc.status,
       userId: uId,
@@ -174,7 +177,7 @@ export async function lookupDocumentAcrossUsers(
       businessName,
       customerName,
       issueDate: doc.issueDate,
-      dueDateOrValidUntil: dueDateOrValidUntil || null,
+      validUntil: doc.validUntil || null,
       totalCentavos: doc.totalCentavos,
       publicToken: doc.publicToken || null,
       publicTokenRevokedAt: doc.publicTokenRevokedAt || null,
@@ -185,20 +188,20 @@ export async function lookupDocumentAcrossUsers(
   // Sort matches by newest first
   matches.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // Audited per AGENTS.md §3.7 & DEVELOPMENT_PLAN.md §5.8
+  // Audited per AGENTS.md §4.9 & DEVELOPMENT_PLAN.md §3
   if (matches.length === 1) {
     const single = matches[0];
     await recordAudit({
       action: 'SUPPORT_LOOKUP',
       targetUserId: single.userId,
-      targetType: single.kind === 'invoice' ? 'Invoice' : 'Quotation',
+      targetType: 'Quotation',
       targetId: single.id,
-      reason: `Support lookup query "${trimmed}" resolved to ${single.number} (${single.kind})`,
+      reason: `Support lookup query "${trimmed}" resolved to ${single.number} (quotation)`,
     });
   } else if (matches.length > 1) {
     await recordAudit({
       action: 'SUPPORT_LOOKUP',
-      reason: `Support lookup query "${trimmed}" returned ${matches.length} matching documents across users`,
+      reason: `Support lookup query "${trimmed}" returned ${matches.length} matching quotations across users`,
     });
   } else {
     await recordAudit({
@@ -213,3 +216,4 @@ export async function lookupDocumentAcrossUsers(
     query: trimmed,
   };
 }
+

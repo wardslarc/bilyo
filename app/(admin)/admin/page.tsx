@@ -24,10 +24,10 @@ export default async function AdminHomePage() {
       icon: '👥',
     },
     {
-      title: 'Document Lookup',
+      title: 'Quotation Lookup',
       href: '/admin/lookup',
       description:
-        'Quickly locate any invoice or quotation by document number or public token to resolve customer support tickets.',
+        'Quickly locate any quotation by quotation number or public code to resolve customer support tickets.',
       badge: 'M7-T04',
       icon: '🔍',
     },
@@ -59,7 +59,7 @@ export default async function AdminHomePage() {
           </span>
         </div>
         <p className="text-sm text-slate-500 mt-1">
-          Real-time KPIs for user acquisition, document production, revenue, and platform health.
+          Real-time KPIs for user acquisition, quotations pipeline, and platform health.
         </p>
       </div>
 

@@ -2,57 +2,52 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/guard';
 import { recordAudit } from '@/lib/admin/audit';
-import { getAdminDocument } from '@/lib/admin/users';
+import { getAdminQuotation } from '@/lib/admin/users';
 import { formatDate } from '@/lib/dates';
 import { formatMoney } from '@/lib/money';
+import { QUOTATION_FOOTER } from '@/lib/documents';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Document Inspection · Bilyo Admin',
-  description: 'Inspect invoice or quotation in read-only platform staff audit mode.',
+  title: 'Quotation Inspection · Bilyo Admin',
+  description: 'Inspect quotation in read-only platform staff audit mode.',
 };
 
-interface AdminDocumentPageProps {
+interface AdminQuotationPageProps {
   params: Promise<{
-    kind: string;
     id: string;
   }>;
 }
 
-export default async function AdminDocumentPage({
+export default async function AdminQuotationPage({
   params,
-}: AdminDocumentPageProps) {
+}: AdminQuotationPageProps) {
   await requireAdmin();
-  const { kind, id } = await params;
+  const { id } = await params;
 
-  if (kind !== 'invoice' && kind !== 'quotation') {
-    notFound();
-  }
-
-  const doc = await getAdminDocument(kind, id);
+  const doc = await getAdminQuotation(id);
   if (!doc) {
     notFound();
   }
 
-  // AGENTS.md §3.7: Every view of an identified user's data/document appends an audit log entry
+  // AGENTS.md §4.9: Every view of an identified user's data/quotation appends an audit log entry
   await recordAudit({
     action: 'DOCUMENT_VIEW',
     targetUserId: doc.userId,
-    targetType: kind === 'invoice' ? 'Invoice' : 'Quotation',
+    targetType: 'Quotation',
     targetId: id,
-    reason: `Inspected ${kind} ${doc.number}`,
+    reason: `Inspected quotation ${doc.number}`,
   });
 
-  const isInvoice = kind === 'invoice';
-  const publicPath = isInvoice ? `/i/${doc.publicToken}` : `/q/${doc.publicToken}`;
+  const publicPath = `/q/${doc.publicToken}`;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Navigation Breadcrumb */}
       <div>
         <Link
-          href={`/admin/users/${doc.userId}/documents`}
+          href={`/admin/users/${doc.userId}/quotations`}
           className="inline-flex items-center text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors mb-2"
         >
           <svg
@@ -68,11 +63,11 @@ export default async function AdminDocumentPage({
               d="M10 19l-7-7m0 0l7-7m-7 7h18"
             />
           </svg>
-          Back to User Documents
+          Back to User Quotations
         </Link>
       </div>
 
-      {/* Mandatory Top Banner — AGENTS.md §3.7, DEVELOPMENT_PLAN.md §5.8 */}
+      {/* Mandatory Top Banner — AGENTS.md §4.9, DEVELOPMENT_PLAN.md §3 */}
       <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 text-amber-900 shadow-sm flex items-start gap-3">
         <svg
           className="w-6 h-6 text-amber-700 shrink-0 mt-0.5"
@@ -92,7 +87,7 @@ export default async function AdminDocumentPage({
             READ-ONLY — ADMIN VIEW
           </p>
           <p className="mt-0.5 text-amber-800">
-            Platform staff audit mode. User records, status, and documents are immutable
+            Platform staff audit mode. User records, status, and quotations are immutable
             from the administrative console. No edits or mutations permitted.
           </p>
         </div>
@@ -134,7 +129,7 @@ export default async function AdminDocumentPage({
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              Active Public Token:{' '}
+              Active Public Code:{' '}
               <code className="font-mono text-[11px] bg-slate-200/70 px-1 py-0.5 rounded">
                 {doc.publicToken || 'None'}
               </code>
@@ -146,7 +141,7 @@ export default async function AdminDocumentPage({
             href={publicPath}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-blue-600 hover:underline font-medium"
+            className="inline-flex items-center gap-1 text-indigo-600 hover:underline font-medium"
           >
             <span>Inspect Public URL</span>
             <svg
@@ -166,28 +161,22 @@ export default async function AdminDocumentPage({
         )}
       </div>
 
-      {/* Document Sheet Layout */}
+      {/* Quotation Sheet Layout */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 sm:p-10 space-y-8">
-        {/* Document Header */}
+        {/* Quotation Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 pb-6 border-b border-slate-200">
           <div>
             <div className="flex items-center gap-3">
-              <span
-                className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${
-                  isInvoice
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-purple-100 text-purple-800'
-                }`}
-              >
-                {isInvoice ? 'INVOICE' : 'QUOTATION'}
+              <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-purple-100 text-purple-800">
+                QUOTATION
               </span>
               <span
                 className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${
-                  doc.status === 'PAID' || doc.status === 'ACCEPTED'
+                  doc.status === 'ACCEPTED'
                     ? 'bg-emerald-100 text-emerald-800'
                     : doc.status === 'SENT'
                       ? 'bg-blue-100 text-blue-800'
-                      : doc.status === 'CANCELLED' || doc.status === 'DECLINED'
+                      : doc.status === 'DECLINED'
                         ? 'bg-rose-100 text-rose-800'
                         : 'bg-slate-100 text-slate-700'
                 }`}
@@ -214,19 +203,12 @@ export default async function AdminDocumentPage({
             </div>
             <div>
               <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                {isInvoice ? 'Due Date: ' : 'Valid Until: '}
+                Valid Until:{' '}
               </span>
               <span className="font-semibold text-slate-900">
-                {doc.dueDateOrValidUntil
-                  ? formatDate(doc.dueDateOrValidUntil)
-                  : '—'}
+                {doc.validUntil ? formatDate(doc.validUntil) : '—'}
               </span>
             </div>
-            {doc.paidAt && (
-              <div className="text-emerald-700 font-semibold text-xs">
-                Paid on {formatDate(doc.paidAt)}
-              </div>
-            )}
           </div>
         </div>
 
@@ -280,7 +262,7 @@ export default async function AdminDocumentPage({
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 />
               </svg>
-              <span>Billed / Quoted To</span>
+              <span>Quoted To</span>
             </div>
             <div className="text-base font-bold text-slate-900">
               {doc.customer.name}
@@ -379,12 +361,17 @@ export default async function AdminDocumentPage({
           </div>
         </div>
 
+        {/* Required Non-tax disclaimer footer per §2.3 */}
+        <div className="pt-4 border-t border-slate-200 text-center text-xs text-slate-500 italic">
+          {QUOTATION_FOOTER}
+        </div>
+
         {/* Audit footer indicator */}
-        <div className="pt-6 border-t border-slate-100 text-center text-xs text-slate-400">
-          Bilyo Platform Staff Inspection Mode · Document Owner User ID:{' '}
+        <div className="pt-4 border-t border-slate-100 text-center text-xs text-slate-400">
+          Bilyo Platform Staff Inspection Mode · Quotation Owner User ID:{' '}
           <Link
             href={`/admin/users/${doc.userId}`}
-            className="font-mono text-blue-600 hover:underline"
+            className="font-mono text-indigo-600 hover:underline"
           >
             {doc.userId}
           </Link>
