@@ -158,7 +158,7 @@ export function QuotePreview() {
               <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
             </svg>
             <span className="text-muted font-mono text-xs lg:text-[13px]">
-              bilyo.ph/q/8fk2q1xz9v
+              bilyoapp.com/q/8fk2q1xz9v
             </span>
           </div>
           <span className="border-line font-display flex items-center gap-1.5 rounded-md border bg-white px-3 py-2 text-xs font-medium lg:text-[13px]">

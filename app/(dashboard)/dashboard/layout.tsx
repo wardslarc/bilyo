@@ -42,7 +42,7 @@ export default async function DashboardLayout({
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2">
               <span className="font-bold text-xl tracking-tight text-neutral-900">
-                Bilyo<span className="text-[var(--color-primary)]">.ph</span>
+                Bilyo<span className="text-[var(--color-primary)]">app.com</span>
               </span>
             </Link>
 

@@ -75,10 +75,10 @@ describe('Quotation Detail Timeline & Copy Link (§12, P3-T05)', () => {
   describe('formatTimelineUrl', () => {
     test('constructs complete public link URL with code', () => {
       const publicCode = 'abc123XYZ456';
-      const origin = 'https://bilyo.ph';
+      const origin = 'https://bilyoapp.com';
       const url = formatTimelineUrl(publicCode, origin);
 
-      assert.strictEqual(url, 'https://bilyo.ph/q/abc123XYZ456');
+      assert.strictEqual(url, 'https://bilyoapp.com/q/abc123XYZ456');
     });
   });
 

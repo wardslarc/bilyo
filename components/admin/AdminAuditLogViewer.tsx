@@ -182,7 +182,7 @@ export function AdminAuditLogViewer({
               type="text"
               value={actorInput}
               onChange={(e) => setActorInput(e.target.value)}
-              placeholder="e.g. admin@bilyo.ph"
+              placeholder="e.g. admin@bilyoapp.com"
               className="w-full px-3 py-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
             />
           </div>

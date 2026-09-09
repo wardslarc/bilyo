@@ -62,7 +62,7 @@ export async function verifyPasswordStep(
     if (user.suspendedAt || user.deletionRequestedAt) {
       return {
         ok: false,
-        error: 'Your account is suspended. Please contact support at support@bilyo.ph',
+        error: 'Your account is suspended. Please contact support at support@bilyoapp.com',
       };
     }
 
