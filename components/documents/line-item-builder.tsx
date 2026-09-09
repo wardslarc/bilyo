@@ -1,9 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useId } from 'react';
-import { type SerializedProduct, getProducts } from '@/actions/products';
-import { centavosToPesos, formatMoney, pesosToCentavos } from '@/lib/money';
-
+import React, { useCallback } from 'react';
+import { formatMoney, pesosToCentavos } from '@/lib/money';
 import { type LineItemRow } from '@/lib/documents';
 
 // Re-export for backward compatibility
@@ -53,122 +51,28 @@ export function rowQuantity(row: LineItemRow): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-// --- Product Picker (inline dropdown) ---
-
-function ProductPicker({
-  products,
-  onSelect,
-  disabled,
-}: {
-  products: SerializedProduct[];
-  onSelect: (product: SerializedProduct) => void;
-  disabled?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const pickerId = useId();
-
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.description && p.description.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  if (products.length === 0) return null;
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen(!open)}
-        className="min-h-[44px] inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[var(--color-brass)] hover:text-[var(--color-brass-ink)] transition-colors disabled:opacity-40 rounded-md"
-        aria-expanded={open}
-        aria-controls={pickerId}
-      >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-        Pick item
-      </button>
-
-      {open && (
-        <>
-          {/* Backdrop */}
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div
-            id={pickerId}
-            className="absolute left-0 top-full mt-1 z-40 w-72 max-h-64 bg-white border border-[var(--color-line)] rounded-lg shadow-lg overflow-hidden"
-          >
-            <div className="p-2 border-b border-[var(--color-line)]">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search items…"
-                className="w-full px-2.5 py-1.5 text-xs rounded-md border border-[var(--color-line)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brass)]"
-                autoFocus
-              />
-            </div>
-            <ul className="overflow-y-auto max-h-48">
-              {filtered.length === 0 && (
-                <li className="px-3 py-4 text-xs text-[var(--color-muted)] text-center">
-                  No items found
-                </li>
-              )}
-              {filtered.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-paper-sunk)] transition-colors flex items-center justify-between gap-2"
-                    onClick={() => {
-                      onSelect(p);
-                      setOpen(false);
-                      setSearch('');
-                    }}
-                  >
-                    <span className="truncate font-medium text-[var(--color-text)]">{p.name}</span>
-                    <span className="text-xs text-[var(--color-muted)] whitespace-nowrap">
-                      {formatMoney(p.unitPriceCentavos)}
-                      {p.unit ? `/${p.unit}` : ''}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 // --- Single Line Item Row ---
 
 interface RowProps {
   row: LineItemRow;
   index: number;
   total: number;
-  products: SerializedProduct[];
   disabled?: boolean;
   onUpdate: (id: string, field: keyof LineItemRow, value: string) => void;
   onRemove: (id: string) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
-  onProductSelect: (id: string, product: SerializedProduct) => void;
 }
 
 function LineItemRowCard({
   row,
   index,
   total,
-  products,
   disabled,
   onUpdate,
   onRemove,
   onMoveUp,
   onMoveDown,
-  onProductSelect,
 }: RowProps) {
   const qty = rowQuantity(row);
   const unitCentavos = rowUnitPriceCentavos(row);
@@ -178,16 +82,9 @@ function LineItemRowCard({
     <div className="group bg-white border border-[var(--color-line)] rounded-lg p-3 sm:p-4 transition-shadow hover:shadow-sm">
       {/* Row header: index + actions */}
       <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[var(--color-paper-sunk)] text-[var(--color-muted)] text-xs font-semibold flex items-center justify-center">
-            {index + 1}
-          </span>
-          <ProductPicker
-            products={products}
-            onSelect={(p) => onProductSelect(row.id, p)}
-            disabled={disabled}
-          />
-        </div>
+        <span className="w-6 h-6 rounded-full bg-[var(--color-paper-sunk)] text-[var(--color-muted)] text-xs font-semibold flex items-center justify-center">
+          {index + 1}
+        </span>
 
         <div className="flex items-center gap-1">
           {/* Reorder buttons */}
@@ -305,7 +202,7 @@ function EmptyState({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean
         No line items yet
       </p>
       <p className="text-xs text-[var(--color-muted)] mb-4">
-        Add your first line item to start building this document.
+        Add your first line item to start building this quotation.
       </p>
       <button
         type="button"
@@ -325,21 +222,6 @@ function EmptyState({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean
 // --- Main Component ---
 
 export function LineItemBuilder({ items, onChange, disabled }: LineItemBuilderProps) {
-  const [products, setProducts] = useState<SerializedProduct[]>([]);
-
-  // Fetch active products on mount for the picker
-  useEffect(() => {
-    let cancelled = false;
-    getProducts({ includeArchived: false }).then((res) => {
-      if (!cancelled && res.ok) {
-        setProducts(res.data);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const handleUpdate = useCallback(
     (id: string, field: keyof LineItemRow, value: string) => {
       const next = items.map((item) =>
@@ -381,24 +263,6 @@ export function LineItemBuilder({ items, onChange, disabled }: LineItemBuilderPr
     [items, onChange]
   );
 
-  const handleProductSelect = useCallback(
-    (rowId: string, product: SerializedProduct) => {
-      const next = items.map((item) =>
-        item.id === rowId
-          ? {
-              ...item,
-              description: product.name + (product.description ? ` — ${product.description}` : ''),
-              unitPrice: centavosToPesos(product.unitPriceCentavos).toFixed(2),
-              quantity: item.quantity || '1',
-              productId: product.id,
-            }
-          : item
-      );
-      onChange(next);
-    },
-    [items, onChange]
-  );
-
   if (items.length === 0) {
     return <EmptyState onAdd={handleAdd} disabled={disabled} />;
   }
@@ -423,13 +287,11 @@ export function LineItemBuilder({ items, onChange, disabled }: LineItemBuilderPr
             row={row}
             index={index}
             total={items.length}
-            products={products}
             disabled={disabled}
             onUpdate={handleUpdate}
             onRemove={handleRemove}
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
-            onProductSelect={handleProductSelect}
           />
         ))}
       </div>

@@ -260,7 +260,7 @@ export default function LandingPage() {
 
       {/* ---------- What Bilyo is not ----------
           Required honesty, not decoration: AGENTS.md §4 forbids fabricated BIR
-          compliance claims anywhere in the product, marketing copy included. */}
+          compliance claims anywhere in the application, marketing copy included. */}
       <div className="mx-auto w-full max-w-360 px-5 pb-13 lg:px-30 lg:pb-24">
         <div className="border-line bg-paper-sunk flex flex-col gap-2 rounded-xl border p-5.5 lg:flex-row lg:items-start lg:gap-4.5 lg:p-8">
           <svg

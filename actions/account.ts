@@ -6,7 +6,6 @@ import dbConnect from '../lib/mongodb.ts';
 import { User } from '../models/user.ts';
 import { Business } from '../models/business.ts';
 import { Customer } from '../models/customer.ts';
-import { Product } from '../models/product.ts';
 import { Quotation } from '../models/quotation.ts';
 import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
 import {
@@ -206,12 +205,11 @@ export async function exportUserData(): Promise<ActionResult<ExportDataResult>> 
     await dbConnect();
 
     // Query exclusively scoped to sessionUser.id
-    const [dbUser, business, customers, products, quotations] =
+    const [dbUser, business, customers, quotations] =
       await Promise.all([
         User.findById(sessionUser.id).lean(),
         Business.findOne({ userId: sessionUser.id }).lean(),
         Customer.find({ userId: sessionUser.id }).sort({ createdAt: -1 }).lean(),
-        Product.find({ userId: sessionUser.id }).sort({ createdAt: -1 }).lean(),
         Quotation.find({ userId: sessionUser.id }).sort({ createdAt: -1 }).lean(),
       ]);
 
@@ -229,7 +227,6 @@ export async function exportUserData(): Promise<ActionResult<ExportDataResult>> 
       user: sanitizedUser,
       business: business || null,
       customers,
-      products,
       quotations,
     };
 

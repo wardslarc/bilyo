@@ -49,7 +49,6 @@ export default async function DashboardLayout({
   const navItems = [
     { label: 'Quotations', href: '/dashboard/quotations' },
     { label: 'Customers', href: '/dashboard/customers' },
-    { label: 'Products', href: '/dashboard/products' },
     { label: 'Settings', href: '/dashboard/settings' },
     { label: 'Account', href: '/dashboard/account' },
   ];

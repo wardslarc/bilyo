@@ -642,7 +642,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   and `npm run test` pass; the dashboard nav has no invoice entry; `/dashboard/invoices` and
   `/i/anything` 404.
 
-- [ ] **P1-T02 · Delete the products catalogue** (1h)
+- [x] **P1-T02 · Delete the products catalogue** (1h)
   *Files (delete):* `app/(dashboard)/dashboard/products/**` · `actions/products.ts` ·
   `models/product.ts` · `lib/validation/product.ts` · `components/dashboard/ProductForm.tsx` ·
   `components/dashboard/ProductList.tsx` · `tests/products.test.ts`

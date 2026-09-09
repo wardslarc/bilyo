@@ -437,7 +437,7 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
             </span>
           </div>
           <p className="text-xs text-neutral-500 mt-1">
-            Export a full copy of your account data, business profile, customers, products,
+            Export a full copy of your account data, business profile, clients,
             and quotations in portable formats (JSON and CSV).
           </p>
         </div>

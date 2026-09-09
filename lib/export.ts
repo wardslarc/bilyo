@@ -79,7 +79,6 @@ export interface ExportDataPayload {
   user: SanitizedUserData;
   business: Record<string, unknown> | null;
   customers: Record<string, unknown>[];
-  products: Record<string, unknown>[];
   quotations: Record<string, unknown>[];
 }
 

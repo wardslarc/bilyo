@@ -76,19 +76,6 @@ export interface ICustomer {
   updatedAt: Date;
 }
 
-// Product
-export interface IProduct {
-  _id: Types.ObjectId;
-  userId: Types.ObjectId;
-  name: string;
-  description?: string;
-  unitPriceCentavos: number;
-  unit?: string;
-  archived: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // Snapshots & Document Line Items
 export interface ICustomerSnapshot {
   name: string;

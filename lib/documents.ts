@@ -18,8 +18,6 @@ export interface LineItemRow {
   quantity: string;
   /** Raw peso string from the input — converted to centavos only at compute time */
   unitPrice: string;
-  /** If prefilled from a product, track it for UX but not for storage */
-  productId?: string;
 }
 
 export type DocumentStatus = QuotationStatus;
