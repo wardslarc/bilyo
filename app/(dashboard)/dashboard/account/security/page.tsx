@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Account Security & Two-Factor Authentication · Bilyo',
-  description: 'Manage your mandatory authenticator app, recovery codes, and device replacement.',
+  description: 'Manage your optional authenticator app, recovery codes, and device replacement.',
 };
 
 export default async function AccountSecurityPage() {

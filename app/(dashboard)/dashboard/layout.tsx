@@ -1,9 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { requireUser, assertNotSuspended, AuthGuardError } from '@/lib/auth-guards';
-import { checkOnboardingGate } from '@/lib/onboarding-gate';
 import SignOutButton from '@/components/auth/SignOutButton';
 
 export default async function DashboardLayout({
@@ -23,27 +21,6 @@ export default async function DashboardLayout({
       redirect('/login');
     }
     throw error;
-  }
-
-  // Mandatory MFA gate (§5.11, M6-T06)
-  if (!user.mfaEnabled) {
-    redirect('/onboarding/mfa');
-  }
-
-  // Onboarding gate (DEVELOPMENT_PLAN.md M2-T02):
-  // Signed-in user with no Business is redirected to /dashboard/settings?onboarding=1
-  // If already on /dashboard/settings, do not redirect to prevent infinite loop.
-  const headerList = await headers();
-  const currentPath =
-    headerList.get('x-pathname') ||
-    headerList.get('next-url') ||
-    headerList.get('x-invoke-path') ||
-    headerList.get('x-matched-path') ||
-    '';
-
-  const gate = await checkOnboardingGate(user.id, currentPath);
-  if (gate.shouldRedirect && gate.targetUrl) {
-    redirect(gate.targetUrl);
   }
 
   const navItems = [

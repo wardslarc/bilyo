@@ -15,17 +15,6 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth?.user;
   const userRole = req.auth?.user?.role;
 
-  // Guard /onboarding/*
-  if (pathname.startsWith('/onboarding')) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL('/login', req.nextUrl.origin));
-    }
-    // If already enrolled in MFA, redirect away from /onboarding/mfa to /dashboard
-    if (pathname === '/onboarding/mfa' && req.auth?.user?.mfaEnabled) {
-      return NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin));
-    }
-  }
-
   // Guard /dashboard/*
   if (pathname.startsWith('/dashboard')) {
     if (!isLoggedIn) {
@@ -36,25 +25,11 @@ export default auth((req) => {
       );
       return NextResponse.redirect(loginUrl);
     }
-
-    // Mandatory MFA for all users (§5.11, M6-T06)
-    if (!req.auth?.user?.mfaEnabled) {
-      return NextResponse.redirect(new URL('/onboarding/mfa', req.nextUrl.origin));
-    }
   }
 
-  // Guard /admin/* (§5.8 rule 7: 404, not 403)
+  // Guard /admin/* (AGENTS.md §4.9: 404, not 403)
   if (pathname.startsWith('/admin')) {
-    if (!isLoggedIn || userRole !== 'ADMIN') {
-      return new NextResponse(null, { status: 404 });
-    }
-
-    // Require MFA enrolment and active MFA verification (§5.8 rule 2)
-    if (!req.auth?.user?.mfaEnabled) {
-      return NextResponse.redirect(new URL('/onboarding/mfa', req.nextUrl.origin));
-    }
-
-    if (!req.auth?.user?.mfaVerifiedAt) {
+    if (!isLoggedIn || userRole !== 'ADMIN' || !req.auth?.user?.mfaVerifiedAt) {
       return new NextResponse(null, { status: 404 });
     }
   }
@@ -75,7 +50,5 @@ export const config = {
     '/dashboard/:path*',
     '/admin',
     '/admin/:path*',
-    '/onboarding',
-    '/onboarding/:path*',
   ],
 };

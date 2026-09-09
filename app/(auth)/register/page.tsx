@@ -66,7 +66,7 @@ export default function RegisterPage() {
         await signIn('credentials', {
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
-          callbackUrl: '/onboarding/mfa',
+          callbackUrl: '/dashboard',
         });
       } catch {
         router.push('/login?registered=1');

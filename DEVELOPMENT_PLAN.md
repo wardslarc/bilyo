@@ -686,7 +686,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   page renders a VAT row or a TIN; `grep -rlniE "\bvat\b|\btin\b" app components lib models types`
   returns nothing.
 
-- [ ] **P1-T05 · Make MFA optional** (1.5h)
+- [x] **P1-T05 · Make MFA optional** (1.5h)
   *Files (delete):* `app/(onboarding)/**` · `lib/onboarding-gate.ts` ·
   `tests/onboarding-gate.test.ts` · `components/onboarding/MfaEnrolmentFlow.tsx` (move its
   enrolment UI into the security page first)
