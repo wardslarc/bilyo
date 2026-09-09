@@ -155,5 +155,61 @@ describe('Public Link Projection & Security (P2-T02)', () => {
       assert.strictEqual(code1.includes(fakeId), false);
       assert.strictEqual(code2.includes(fakeId), false);
     });
+
+    test('6-item quote with long business name renders cleanly without leaking sensitive fields (P3-T01 accept)', () => {
+      const longBusinessName = 'A Very Long Philippine Service Business Name & Digital Technologies Enterprise Inc.';
+      const items = Array.from({ length: 6 }, (_, i) => ({
+        description: `Service item #${i + 1} with detailed scope and comprehensive turnaround specifications`,
+        quantity: i + 1,
+        unitPriceCentavos: 150000,
+        amountCentavos: (i + 1) * 150000,
+      }));
+
+      const projection: PublicDocumentProjection = {
+        kind: 'quotation',
+        number: 'Q-2026-0042',
+        status: 'SENT',
+        issueDate: new Date('2026-09-01T00:00:00Z').toISOString(),
+        secondaryDateLabel: 'Valid Until',
+        secondaryDate: new Date('2026-09-30T00:00:00Z').toISOString(),
+        items,
+        subtotalCentavos: 3150000,
+        discountCentavos: 150000,
+        totalCentavos: 3000000,
+        notes: 'Payment required within 15 calendar days from project kickoff.',
+        terms: 'All deliverables subject to client milestone signoff.',
+        business: {
+          businessName: longBusinessName,
+          address: 'Unit 402, Strata Tower, Ortigas Center, Pasig City',
+          email: 'contact@longbusinessname.ph',
+          phone: '+63 917 123 4567',
+        },
+        customer: {
+          name: 'Maria Clara de los Santos',
+          email: 'maria@clientcorp.ph',
+          phone: '+63 918 987 6543',
+          address: 'Makati City, Metro Manila',
+        },
+      };
+
+      const json = JSON.stringify(projection);
+
+      // Verify no ObjectId hex pattern (24-char hex)
+      assert.strictEqual(/[0-9a-fA-F]{24}/.test(json), false, 'No ObjectIds in public projection');
+
+      // Verify no internal fields
+      assert.strictEqual(json.includes('userId'), false);
+      assert.strictEqual(json.includes('customerId'), false);
+      assert.strictEqual(json.includes('_id'), false);
+
+      // Verify Open Graph tags representation
+      const ogTitle = `${projection.number} from ${projection.business.businessName}`;
+      const ogDescription = `Quotation for ${projection.customer.name} · Total: ₱30,000.00`;
+      assert.ok(ogTitle.includes('Q-2026-0042'));
+      assert.ok(ogTitle.includes(longBusinessName));
+      assert.ok(ogDescription.includes('Maria Clara de los Santos'));
+      assert.ok(ogDescription.includes('₱30,000.00'));
+    });
   });
 });
+

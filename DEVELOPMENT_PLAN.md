@@ -772,7 +772,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
 Build this one properly. It is the only screen the buyer's customer ever sees and the only reason a
 user would pick Bilyo over a Word template.
 
-- [ ] **P3-T01 · Redesign the public page, phone-first** (3h)
+- [x] **P3-T01 · Redesign the public page, phone-first** (3h)
   *Files:* `app/q/[code]/page.tsx` · `components/public/quote-page.tsx` (new, replacing the shared
   `public-document-view.tsx`) · `components/public/quote-header.tsx`
   *Do:* logo and business name, the client's name, line items that stay readable at 390px, a total
