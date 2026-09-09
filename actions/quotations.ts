@@ -289,7 +289,7 @@ export async function updateQuotation(
     });
 
     const doc = await Quotation.findOneAndUpdate(
-      { _id: id, userId: user.id },
+      { _id: id, userId: user.id, status: 'DRAFT' },
       {
         $set: {
           customerId: data.customerId,

@@ -139,15 +139,50 @@ const QuotationSchema = new Schema<IQuotation>(
       type: Date,
       default: null,
     },
+    sentAt: {
+      type: Date,
+      default: null,
+    },
+    viewedAt: {
+      type: Date,
+      default: null,
+    },
+    respondedAt: {
+      type: Date,
+      default: null,
+    },
+    respondedByName: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    responseIp: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+    paidAmountCentavos: {
+      type: Number,
+      default: null,
+      validate: {
+        validator: (v: number | null) => v === null || Number.isInteger(v),
+        message: 'paidAmountCentavos must be an integer or null',
+      },
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Indexes per DEVELOPMENT_PLAN.md §6
+// Indexes per DEVELOPMENT_PLAN.md §6 & §7
 QuotationSchema.index({ userId: 1, createdAt: -1 });
 QuotationSchema.index({ userId: 1, number: 1 }, { unique: true });
+QuotationSchema.index({ userId: 1, status: 1, validUntil: 1 });
 QuotationSchema.index({ publicCode: 1 }, { unique: true, sparse: true });
 QuotationSchema.index({ publicToken: 1 }, { unique: true, sparse: true });
 QuotationSchema.index({ number: 1 });

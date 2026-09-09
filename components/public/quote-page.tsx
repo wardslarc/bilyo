@@ -3,6 +3,7 @@ import type { PublicDocumentProjection } from '@/lib/public-projection';
 import { formatMoney } from '@/lib/money';
 import { QUOTATION_FOOTER } from '@/lib/documents';
 import { QuoteHeader } from './quote-header';
+import { ResponseForm } from './response-form';
 
 interface QuotePageProps {
   document: PublicDocumentProjection;
@@ -170,6 +171,19 @@ export function QuotePage({ document: doc, code }: QuotePageProps) {
               )}
             </section>
           )}
+
+          {/* Client Response Form: Accept / Decline (§6.7, P3-T02) */}
+          <section aria-label="Respond to Quotation" className="border-t border-neutral-200/80 pt-6">
+            <ResponseForm
+              code={code}
+              quotationNumber={doc.number}
+              businessName={doc.business.businessName}
+              status={doc.status}
+              validUntil={doc.secondaryDate}
+              respondedAt={doc.respondedAt}
+              respondedByName={doc.respondedByName}
+            />
+          </section>
 
           {/* Secondary PDF Download & Action Footer */}
           <div className="border-t border-neutral-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">

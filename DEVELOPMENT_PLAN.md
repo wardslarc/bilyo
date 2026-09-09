@@ -782,7 +782,7 @@ user would pick Bilyo over a Word template.
   *Accept:* renders correctly at 390px with a 6-item quote and a long business name; Lighthouse
   mobile performance ≥ 90; nothing in the payload contains the owner's account email or any ObjectId.
 
-- [ ] **P3-T02 · Accept / Decline** (3h)
+- [x] **P3-T02 · Accept / Decline** (3h)
   *Files:* `components/public/response-form.tsx` · `actions/public-response.ts` (new) ·
   `lib/validation/response.ts` · `models/quotation.ts`
   *Do:* two large buttons. Either opens a small dialog asking for the responder's name, then

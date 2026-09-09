@@ -42,6 +42,8 @@ export interface PublicDocumentProjection {
   secondaryDateLabel: string;
   secondaryDate: string;
   paidAt?: string | null;
+  respondedAt?: string | null;
+  respondedByName?: string | null;
   items: PublicLineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
@@ -163,6 +165,8 @@ export async function getPublicQuotationByCode(
     subtotalCentavos: quotation.subtotalCentavos,
     discountCentavos: quotation.discountCentavos,
     totalCentavos: quotation.totalCentavos,
+    respondedAt: quotation.respondedAt ? new Date(quotation.respondedAt).toISOString() : null,
+    respondedByName: quotation.respondedByName || null,
     notes: quotation.notes,
     terms: quotation.terms,
     business: businessInfo,

@@ -113,6 +113,13 @@ export interface IQuotation {
   publicCodeRevokedAt?: Date | null;
   publicToken?: string | null;
   publicTokenRevokedAt?: Date | null;
+  sentAt?: Date | null;
+  viewedAt?: Date | null;
+  respondedAt?: Date | null;
+  respondedByName?: string | null;
+  responseIp?: string | null;
+  paidAt?: Date | null;
+  paidAmountCentavos?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
