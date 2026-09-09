@@ -56,6 +56,11 @@ export interface SerializedQuotation {
   } | null;
   paidAt?: string | null;
   paidAmountCentavos?: number | null;
+  emailState?: {
+    attempted: boolean;
+    ok: boolean;
+    reason?: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -409,7 +414,7 @@ export async function getQuotations(options?: {
 export async function sendQuotation(id: string): Promise<ActionResult<SerializedQuotation>> {
   try {
     const user = await requireUser();
-    await assertNotSuspended(user.id);
+    const userDoc = await assertNotSuspended(user.id);
 
     await dbConnect();
 
@@ -475,7 +480,23 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
     await safeRevalidate('/dashboard/quotations');
     await safeRevalidate(`/dashboard/quotations/${id}`);
 
-    return { ok: true, data: serializeQuotation(doc.toObject()) };
+    // Step 7: Attempt email delivery to client if snapshot email exists (EMAIL_DELIVERY_PLAN.md §4)
+    let emailState: { attempted: boolean; ok: boolean; reason?: string } | null = null;
+    try {
+      const { deliverQuotationEmail } = await import('@/lib/email/delivery');
+      emailState = await deliverQuotationEmail(doc, {
+        suspendedAt: userDoc?.suspendedAt,
+        publicLinksDisabledAt: userDoc?.publicLinksDisabledAt,
+      });
+    } catch (deliveryErr) {
+      console.error('[actions/quotations] sendQuotation email error:', deliveryErr);
+      emailState = { attempted: true, ok: false, reason: 'MAILER_ERROR' };
+    }
+
+    const serialized = serializeQuotation(doc.toObject());
+    serialized.emailState = emailState;
+
+    return { ok: true, data: serialized };
   } catch (error) {
     if (error instanceof AuthGuardError) {
       return { ok: false, error: error.message };
