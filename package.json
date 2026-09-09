@@ -12,7 +12,8 @@
     "grant-admin": "node --env-file=.env.local scripts/grant-admin.ts",
     "reset-mfa": "node --env-file=.env.local scripts/reset-mfa.ts",
     "migrate-counter-index": "node --env-file=.env.local scripts/migrate-counter-index.ts",
-    "rename-public-token": "node --env-file=.env.local scripts/rename-public-token.ts"
+    "rename-public-token": "node --env-file=.env.local scripts/rename-public-token.ts",
+    "migrate-email-index": "node --env-file=.env.local scripts/migrate-email-provider-id-index.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",
