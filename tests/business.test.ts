@@ -27,8 +27,6 @@ describe('Business Profile (M2-T01)', () => {
       passwordHash: hash,
       name: 'User A',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     userAId = userA._id.toString();
 
@@ -37,8 +35,6 @@ describe('Business Profile (M2-T01)', () => {
       passwordHash: hash,
       name: 'User B',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     userBId = userB._id.toString();
 
@@ -47,8 +43,6 @@ describe('Business Profile (M2-T01)', () => {
       passwordHash: hash,
       name: 'Suspended User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
       suspendedAt: new Date(),
       suspendedReason: 'Terms violation',
     });

@@ -16,7 +16,6 @@ import {
   type LineItemRow,
 } from '@/components/documents/line-item-builder';
 import { TotalsPanel } from '@/components/documents/totals-panel';
-import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 import { centavosToPesos } from '@/lib/money';
 import type { ComputedTotals } from '@/lib/totals';
 import {
@@ -230,12 +229,11 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
         </div>
       )}
 
-      {/* General error / Plan limit upgrade prompt */}
       {generalError && (
-        <PlanLimitAlert
-          error={generalError}
-          onDismiss={() => setGeneralError(null)}
-        />
+        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <span>{generalError}</span>
+          <button type="button" onClick={() => setGeneralError(null)} className="text-red-500 hover:text-red-700 text-xs font-medium">Dismiss</button>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">

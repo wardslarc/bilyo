@@ -8,7 +8,6 @@ import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-gua
 import { quotationSchema, type QuotationInput } from '../lib/validation/quotation.ts';
 import { computeTotals, type ComputedTotals } from '../lib/totals.ts';
 import { nextNumber } from '../lib/numbering.ts';
-import { checkCanCreateQuotation } from '../lib/plan.ts';
 import type { ActionResult } from '../types/index.ts';
 
 // --- Serialized types for client transport ---
@@ -162,15 +161,6 @@ export async function createQuotation(
         ok: false,
         error: 'Validation failed',
         fieldErrors: extractFieldErrors(parseResult.error.issues),
-      };
-    }
-
-    // Server-side plan limit check (§5.10, M8-T01)
-    const limitCheck = await checkCanCreateQuotation(user.id);
-    if (!limitCheck.allowed) {
-      return {
-        ok: false,
-        error: limitCheck.error || 'Quotation creation limit reached for your plan',
       };
     }
 

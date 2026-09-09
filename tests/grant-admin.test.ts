@@ -21,8 +21,6 @@ describe('Admin Bootstrap Script (M1-T07)', () => {
       passwordHash: 'dummy_hash',
       name: 'Admin Test Target',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     userId = user._id.toString();
   });

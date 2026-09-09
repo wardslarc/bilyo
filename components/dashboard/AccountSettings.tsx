@@ -185,16 +185,13 @@ export function AccountSettings({ user: initialUser }: AccountSettingsProps) {
               Manage your credentials, data portability, and account security.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              {currentUser.plan} Plan
-            </span>
-            {currentUser.role === 'ADMIN' && (
+          {currentUser.role === 'ADMIN' && (
+            <div className="flex items-center gap-2">
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                 ADMIN
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 text-sm">

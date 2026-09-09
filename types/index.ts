@@ -2,8 +2,6 @@ import type { Types } from 'mongoose';
 
 // User & Auth Types
 export type UserRole = 'USER' | 'ADMIN';
-export type Plan = 'FREE' | 'FREELANCER' | 'BUSINESS';
-export type PlanSource = 'DEFAULT' | 'BILLING' | 'ADMIN';
 
 export interface IUser {
   _id: Types.ObjectId;
@@ -11,14 +9,6 @@ export interface IUser {
   passwordHash: string;
   name: string;
   emailVerifiedAt?: Date | null;
-
-  // Plan (§5.10)
-  plan: Plan;
-  planSource: PlanSource;
-  planOverrideExpiresAt?: Date | null;
-  planOverrideReason?: string | null;
-  billingCustomerId?: string | null;
-  billingPlan?: Plan | null;
 
   // MFA (§5.11)
   mfaEnabledAt?: Date | null;

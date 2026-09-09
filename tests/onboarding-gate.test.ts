@@ -23,8 +23,6 @@ describe('Onboarding Gate (M2-T02)', () => {
       passwordHash: hash,
       name: 'No Biz User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     userNoBizId = userNoBiz._id.toString();
 
@@ -33,8 +31,6 @@ describe('Onboarding Gate (M2-T02)', () => {
       passwordHash: hash,
       name: 'With Biz User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     userWithBizId = userWithBiz._id.toString();
 

@@ -83,16 +83,12 @@ async function fetchPlatformMetricsInternal(): Promise<PlatformMetrics> {
     Promise.resolve([]),
     Quotation.distinct('userId', { createdAt: { $gte: thirtyDaysAgo } }),
 
-    // 5. Paid subscriptions (PayMongo billing)
-    User.countDocuments({ plan: 'FREELANCER', planSource: 'BILLING' }),
-    User.countDocuments({ plan: 'BUSINESS', planSource: 'BILLING' }),
+    // 5. Paid subscriptions (deprecated in v3.0, replaced by accessUntil in P5)
+    Promise.resolve(0),
+    Promise.resolve(0),
 
     // 6. Active unexpired admin comps
-    User.countDocuments({
-      planSource: 'ADMIN',
-      planOverrideExpiresAt: { $gt: now },
-      plan: { $in: ['FREELANCER', 'BUSINESS'] },
-    }),
+    Promise.resolve(0),
 
     // 7. Security & moderation counts
     User.countDocuments({ suspendedAt: { $ne: null } }),

@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'User Detail · Bilyo Admin',
-  description: 'Inspect user profile, business setup, plan configuration, and document breakdown.',
+  description: 'Inspect user profile, business setup, and document breakdown.',
 };
 
 interface AdminUserDetailPageProps {
@@ -387,82 +387,6 @@ export default async function AdminUserDetailPage({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Plan & Subscription Configuration */}
-      <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-          <svg
-            className="w-5 h-5 text-slate-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-          </svg>
-          <h2 className="font-semibold text-slate-900">Subscription & Plan Status</h2>
-        </div>
-
-        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div>
-            <dt className="text-xs font-medium text-slate-500">Assigned Plan</dt>
-            <dd className="mt-1">
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${
-                  user.plan === 'BUSINESS'
-                    ? 'bg-indigo-100 text-indigo-800'
-                    : user.plan === 'FREELANCER'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-800'
-                }`}
-              >
-                {user.plan}
-              </span>
-            </dd>
-          </div>
-
-          <div>
-            <dt className="text-xs font-medium text-slate-500">Plan Origin / Source</dt>
-            <dd className="mt-1 text-slate-800 font-medium flex items-center gap-1.5">
-              <span>{user.planSource}</span>
-              {user.isPlanOverridden && (
-                <span className="text-[10px] font-semibold tracking-wide bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
-                  ADMIN OVERRIDE
-                </span>
-              )}
-            </dd>
-          </div>
-
-          <div>
-            <dt className="text-xs font-medium text-slate-500">Override Expiration</dt>
-            <dd className="mt-1 text-slate-700">
-              {user.planOverrideExpiresAt
-                ? formatDate(user.planOverrideExpiresAt)
-                : 'Permanent / None'}
-            </dd>
-          </div>
-
-          {user.planOverrideReason && (
-            <div className="sm:col-span-3 bg-purple-50 p-3 rounded border border-purple-200 text-xs text-purple-900">
-              <span className="font-semibold">Override Reason:</span>{' '}
-              {user.planOverrideReason}
-            </div>
-          )}
-
-          {user.billingCustomerId && (
-            <div className="sm:col-span-3 text-xs text-slate-500">
-              Billing Customer Reference:{' '}
-              <span className="font-mono text-slate-700">
-                {user.billingCustomerId}
-              </span>
-            </div>
-          )}
-        </dl>
       </div>
 
       {/* Document Metrics Breakdown */}

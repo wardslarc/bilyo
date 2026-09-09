@@ -10,7 +10,6 @@ import {
   type SerializedCustomer,
 } from '@/actions/customers';
 import type { CustomerInput } from '@/lib/validation/customer';
-import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 
 interface CustomerFormProps {
   initialCustomer?: SerializedCustomer | null;
@@ -99,10 +98,10 @@ export function CustomerForm({ initialCustomer }: CustomerFormProps) {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {generalError && (
-        <PlanLimitAlert
-          error={generalError}
-          onDismiss={() => setGeneralError(null)}
-        />
+        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <span>{generalError}</span>
+          <button type="button" onClick={() => setGeneralError(null)} className="text-red-500 hover:text-red-700 text-xs font-medium">Dismiss</button>
+        </div>
       )}
 
       <form

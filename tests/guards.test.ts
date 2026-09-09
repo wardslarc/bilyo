@@ -24,8 +24,6 @@ describe('Suspension & Admin Guards (M1-T05)', () => {
       passwordHash: 'dummy_hash',
       name: 'Active User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     activeUserId = active._id.toString();
 
@@ -35,8 +33,6 @@ describe('Suspension & Admin Guards (M1-T05)', () => {
       passwordHash: 'dummy_hash',
       name: 'Suspended User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
       suspendedAt: new Date(),
     });
     suspendedUserId = suspended._id.toString();
@@ -47,8 +43,6 @@ describe('Suspension & Admin Guards (M1-T05)', () => {
       passwordHash: 'dummy_hash',
       name: 'Deletion User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
       deletionRequestedAt: new Date(),
     });
     deletionUserId = deletion._id.toString();
@@ -59,8 +53,6 @@ describe('Suspension & Admin Guards (M1-T05)', () => {
       passwordHash: 'dummy_hash',
       name: 'Admin User',
       role: 'ADMIN',
-      plan: 'BUSINESS',
-      planSource: 'ADMIN',
     });
     adminUserId = admin._id.toString();
 
@@ -70,8 +62,6 @@ describe('Suspension & Admin Guards (M1-T05)', () => {
       passwordHash: 'dummy_hash',
       name: 'Suspended Admin User',
       role: 'ADMIN',
-      plan: 'BUSINESS',
-      planSource: 'ADMIN',
       suspendedAt: new Date(),
     });
     suspendedAdminUserId = suspendedAdmin._id.toString();

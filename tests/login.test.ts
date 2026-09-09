@@ -20,8 +20,6 @@ describe('Login & Timing Anti-Enumeration (M1-T03)', () => {
       passwordHash,
       name: 'Login Test User',
       role: 'USER',
-      plan: 'FREE',
-      planSource: 'DEFAULT',
     });
     userId = user._id.toString();
   });

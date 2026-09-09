@@ -11,7 +11,6 @@ import {
 } from '@/actions/quotations';
 import { formatMoney } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
-import { PlanLimitAlert } from '@/components/dashboard/PlanLimitAlert';
 
 // --- Status helpers ---
 
@@ -141,12 +140,11 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
 
   return (
     <div className="space-y-5">
-      {/* Action error / Plan limit upgrade prompt */}
       {actionError && (
-        <PlanLimitAlert
-          error={actionError}
-          onDismiss={() => setActionError(null)}
-        />
+        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} className="text-red-500 hover:text-red-700 text-xs font-medium">Dismiss</button>
+        </div>
       )}
 
       {/* Toolbar */}

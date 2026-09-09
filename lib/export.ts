@@ -30,8 +30,6 @@ export interface SanitizedUserData {
   name: string;
   email: string;
   role: string;
-  plan: string;
-  planSource: string;
   createdAt?: string | Date;
   updatedAt?: string | Date;
   emailVerifiedAt?: string | Date | null;
@@ -50,8 +48,6 @@ export function sanitizeUserExport(user: {
   name?: string;
   email?: string;
   role?: string;
-  plan?: string;
-  planSource?: string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   emailVerifiedAt?: Date | string | null;
@@ -63,8 +59,6 @@ export function sanitizeUserExport(user: {
     name: user.name || '',
     email: user.email || '',
     role: user.role || 'USER',
-    plan: user.plan || 'FREE',
-    planSource: user.planSource || 'DEFAULT',
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     emailVerifiedAt: user.emailVerifiedAt || null,

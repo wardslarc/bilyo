@@ -5,14 +5,11 @@ import { Customer } from '../../models/customer.ts';
 import { Quotation } from '../../models/quotation.ts';
 import { AdminAuditLog } from '../../models/admin-audit-log.ts';
 import { requireAdmin } from './guard.ts';
-import { effectivePlan, isPlanOverrideActive } from '../plan.ts';
-
 
 export interface GetAdminUsersParams {
   page?: number;
   limit?: number;
   search?: string;
-  plan?: 'FREE' | 'FREELANCER' | 'BUSINESS' | 'ALL';
   status?: 'ACTIVE' | 'SUSPENDED' | 'DELETION' | 'ALL';
   activeIn30Days?: boolean;
 }
@@ -22,9 +19,6 @@ export interface AdminUserListItem {
   name: string;
   email: string;
   businessName: string;
-  plan: 'FREE' | 'FREELANCER' | 'BUSINESS';
-  planSource: 'DEFAULT' | 'BILLING' | 'ADMIN';
-  isPlanOverridden: boolean;
   documentsCount: number;
   invoicesCount: number;
   quotationsCount: number;
@@ -47,17 +41,11 @@ export interface AdminUsersListResult {
  */
 export function buildUsersFilter(params: {
   search?: string;
-  plan?: string;
   status?: string;
   activeIn30Days?: boolean;
   matchingBusinessUserIds?: unknown[];
 }): Record<string, unknown> {
   const conditions: Record<string, unknown>[] = [];
-
-  // Plan filter
-  if (params.plan && params.plan !== 'ALL') {
-    conditions.push({ plan: params.plan });
-  }
 
   // Status filter
   if (params.status === 'SUSPENDED') {
@@ -131,7 +119,6 @@ export async function getAdminUsersList(
 
   const query = buildUsersFilter({
     search,
-    plan: params.plan,
     status: params.status,
     activeIn30Days: params.activeIn30Days,
     matchingBusinessUserIds,
@@ -144,7 +131,7 @@ export async function getAdminUsersList(
       .skip(skip)
       .limit(limit)
       .select(
-        '_id name email role plan planSource planOverrideExpiresAt suspendedAt deletionRequestedAt createdAt lastLoginAt lastActiveAt'
+        '_id name email role suspendedAt deletionRequestedAt createdAt lastLoginAt lastActiveAt'
       )
       .lean(),
   ]);
@@ -189,9 +176,6 @@ export async function getAdminUsersList(
       name: u.name,
       email: u.email,
       businessName: businessMap.get(uid) || '—',
-      plan: effectivePlan(u),
-      planSource: u.planSource || 'DEFAULT',
-      isPlanOverridden: isPlanOverrideActive(u),
       documentsCount: invCount + quoCount,
       invoicesCount: invCount,
       quotationsCount: quoCount,
@@ -216,13 +200,6 @@ export interface AdminUserDetail {
     name: string;
     email: string;
     role: 'USER' | 'ADMIN';
-    plan: 'FREE' | 'FREELANCER' | 'BUSINESS';
-    planSource: 'DEFAULT' | 'BILLING' | 'ADMIN';
-    isPlanOverridden: boolean;
-    planOverrideExpiresAt: Date | null;
-    planOverrideReason: string | null;
-    billingCustomerId: string | null;
-    billingPlan: 'FREE' | 'FREELANCER' | 'BUSINESS' | null;
     suspendedAt: Date | null;
     suspendedReason: string | null;
     suspendedByUserId: string | null;
@@ -327,13 +304,6 @@ export async function getAdminUserDetail(
       name: dbUser.name,
       email: dbUser.email,
       role: dbUser.role || 'USER',
-      plan: effectivePlan(dbUser),
-      planSource: dbUser.planSource || 'DEFAULT',
-      isPlanOverridden: isPlanOverrideActive(dbUser),
-      planOverrideExpiresAt: dbUser.planOverrideExpiresAt || null,
-      planOverrideReason: dbUser.planOverrideReason || null,
-      billingCustomerId: dbUser.billingCustomerId || null,
-      billingPlan: dbUser.billingPlan || null,
       suspendedAt: dbUser.suspendedAt || null,
       suspendedReason: dbUser.suspendedReason || null,
       suspendedByUserId: dbUser.suspendedByUserId || null,

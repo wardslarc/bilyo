@@ -110,8 +110,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
         name: 'Maria Santos',
         email: 'maria@example.ph',
         role: 'USER',
-        plan: 'FREE',
-        planSource: 'DEFAULT',
         passwordHash: '$2a$10$e8K7...SECRET_PASSWORD_HASH',
         mfaSecretEncrypted: 'aes:gcm:RADIOACTIVE_MFA_SECRET',
         mfaPendingSecretEncrypted: 'aes:gcm:RADIOACTIVE_PENDING',
@@ -129,7 +127,6 @@ describe('Account Settings & Data Portability (M6-T05)', () => {
       assert.strictEqual(sanitized.id, '507f1f77bcf86cd799439011');
       assert.strictEqual(sanitized.name, 'Maria Santos');
       assert.strictEqual(sanitized.email, 'maria@example.ph');
-      assert.strictEqual(sanitized.plan, 'FREE');
 
       // CRITICAL: Must NEVER leak password hashes or MFA secrets
       const exportedKeys = Object.keys(sanitized);

@@ -654,7 +654,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* line items are typed free-hand; `grep -rlniE "\bproducts?\b" app actions components lib models types tests`
   returns nothing; build and tests pass.
 
-- [ ] **P1-T03 · Delete plan limits** (1.5h)
+- [x] **P1-T03 · Delete plan limits** (1.5h)
   *Files (delete):* `lib/plan.ts` · `components/dashboard/PlanLimitAlert.tsx` · `tests/plan.test.ts` ·
   `tests/plan-limits.test.ts`
   *Files (edit):* every create action that called a limit check (`actions/quotations.ts`,
