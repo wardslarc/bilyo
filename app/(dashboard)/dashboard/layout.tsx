@@ -24,7 +24,13 @@ export default async function DashboardLayout({
     throw error;
   }
 
-  const unseenCount = await getUnseenAttentionCount(user.id);
+  // Decorative badge only: never let it take the whole dashboard shell down.
+  let unseenCount = 0;
+  try {
+    unseenCount = await getUnseenAttentionCount(user.id);
+  } catch (error) {
+    console.error('Dashboard nav: unseen event count failed:', (error as Error).message);
+  }
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', badge: unseenCount },
