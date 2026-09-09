@@ -5,3 +5,4 @@ export { Quotation } from './quotation';
 export { Counter } from './counter';
 export { PasswordResetToken } from './password-reset-token';
 export { AdminAuditLog } from './admin-audit-log';
+export { Event } from './event';

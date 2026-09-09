@@ -8,6 +8,7 @@ import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-gua
 import { quotationSchema, type QuotationInput } from '../lib/validation/quotation.ts';
 import { computeTotals, type ComputedTotals } from '../lib/totals.ts';
 import { nextNumber } from '../lib/numbering.ts';
+import { recordEvent } from '../lib/events.ts';
 import type { ActionResult } from '../types/index.ts';
 
 // --- Serialized types for client transport ---
@@ -200,6 +201,14 @@ export async function createQuotation(
       validUntil: data.validUntil,
       notes: data.notes,
       terms: data.terms,
+    });
+
+    // Append CREATED event (§6.6, P2-T03)
+    await recordEvent({
+      quotationId: doc._id,
+      userId: user.id,
+      type: 'CREATED',
+      actor: 'OWNER',
     });
 
     await safeRevalidate('/dashboard/quotations');
@@ -444,6 +453,14 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
     }
 
     await doc.save();
+
+    // Append SENT event (§6.6, P2-T03)
+    await recordEvent({
+      quotationId: doc._id,
+      userId: user.id,
+      type: 'SENT',
+      actor: 'OWNER',
+    });
 
     await safeRevalidate('/dashboard/quotations');
     await safeRevalidate(`/dashboard/quotations/${id}`);

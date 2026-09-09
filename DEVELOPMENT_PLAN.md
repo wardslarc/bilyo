@@ -739,7 +739,7 @@ Order matters: leaves first (routes and components), then the shared libs, then 
   *Accept:* links already sent to clients still resolve after the script runs; a 13-char or malformed
   code 404s; the code is not sequential and not derived from the id.
 
-- [ ] **P2-T03 · The `Event` collection** (2h)
+- [x] **P2-T03 · The `Event` collection** (2h)
   *Files:* `models/event.ts` · `lib/events.ts` · `types/index.ts` · `models/index.ts`
   *Do:* the §7 schema and `recordEvent({ quotationId, userId, type, actor, metadata })`. Wire
   `CREATED` and `SENT` into `actions/quotations.ts` now; the rest land with their features. Append

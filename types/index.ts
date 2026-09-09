@@ -170,3 +170,27 @@ export interface IAdminAuditLog {
 export type ActionResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
+
+// Quotation Event Types (§6.6)
+export type EventType =
+  | 'CREATED'
+  | 'SENT'
+  | 'VIEWED'
+  | 'ACCEPTED'
+  | 'DECLINED'
+  | 'MARKED_PAID'
+  | 'UNMARKED_PAID'
+  | 'LINK_REVOKED';
+
+export type EventActor = 'OWNER' | 'CLIENT' | 'ADMIN' | 'SYSTEM';
+
+// Quotation Event (Append-only, §6.6, §7)
+export interface IEvent {
+  _id: Types.ObjectId;
+  quotationId: Types.ObjectId;
+  userId: Types.ObjectId;
+  type: EventType;
+  actor: EventActor;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
