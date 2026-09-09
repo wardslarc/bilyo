@@ -205,3 +205,51 @@ export interface IEvent {
   metadata?: Record<string, unknown>;
   createdAt: Date;
 }
+
+// Email Message Outbox Ledger (EMAIL_DELIVERY_PLAN.md §3.1)
+export type EmailMessageKind =
+  | 'QUOTATION_SENT'
+  | 'QUOTATION_RESPONDED'
+  | 'PASSWORD_RESET'
+  | 'ACCESS_EXPIRING';
+
+export type EmailMessageStatus =
+  | 'SKIPPED'
+  | 'QUEUED'
+  | 'SENT'
+  | 'DELIVERED'
+  | 'DELAYED'
+  | 'BOUNCED'
+  | 'COMPLAINED'
+  | 'FAILED'
+  | 'SUPPRESSED';
+
+export interface IEmailMessage {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  quotationId?: Types.ObjectId | null;
+  kind: EmailMessageKind;
+  toEmail: string;
+  subject: string;
+  providerId?: string | null;
+  idempotencyKey: string;
+  status: EmailMessageStatus;
+  attempts: number;
+  lastError?: string | null;
+  queuedAt?: Date | null;
+  sentAt?: Date | null;
+  deliveredAt?: Date | null;
+  bouncedAt?: Date | null;
+  complainedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Webhook Receipt Deduplication (EMAIL_DELIVERY_PLAN.md §3, §5.4)
+export interface IWebhookReceipt {
+  _id: Types.ObjectId;
+  svixId: string;
+  receivedAt: Date;
+  createdAt: Date;
+}
+

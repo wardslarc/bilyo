@@ -199,6 +199,44 @@ export async function respondToQuotation(
       // Non-Next context
     }
 
+    // 13. Send E2 notification to owner (EMAIL_DELIVERY_PLAN.md §2, P6-T07)
+    // Non-blocking: a dead mailer must never roll back an acceptance
+    try {
+      const ownerUser = await User.findById(updated.userId).select('email').lean();
+      if (ownerUser?.email) {
+        const { sendEmail } = await import('@/lib/email/send');
+        const { renderQuotationRespondedEmail } = await import('@/lib/email/templates/quotation-responded');
+        const { formatMoney } = await import('@/lib/money');
+
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const detailUrl = `${appUrl}/dashboard/quotations/${updated._id}`;
+        const totalFormatted = formatMoney(updated.totalCentavos || 0);
+        const clientName = updated.customerSnapshot?.name || 'Client';
+
+        const { subject, html, text } = renderQuotationRespondedEmail({
+          quotationNumber: updated.number,
+          clientName,
+          respondedByName: data.name,
+          decision: targetStatus,
+          totalFormatted,
+          detailUrl,
+        });
+
+        await sendEmail({
+          userId: updated.userId,
+          quotationId: updated._id,
+          kind: 'QUOTATION_RESPONDED',
+          toEmail: ownerUser.email,
+          subject,
+          html,
+          text,
+          idempotencyKey: `quotation-responded:${String(updated._id)}:${targetStatus.toLowerCase()}`,
+        });
+      }
+    } catch (notifyErr) {
+      console.error('[respondToQuotation] Failed to notify owner by email:', notifyErr);
+    }
+
     return {
       ok: true,
       data: {

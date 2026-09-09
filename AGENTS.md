@@ -131,9 +131,9 @@ The client may show live totals for feedback. The server **recomputes them from 
 every save and stores its own result. A mismatch is never resolved in the client's favour. Totals
 are `subtotal → discount → total`. **There is no VAT step.**
 
-### 4.4 Server Actions for mutations, Route Handlers for the three exceptions
-Route Handlers exist only for: Auth.js, PDF streams, and public code reads. Do not add
-`app/api/quotations/route.ts` to serve your own forms.
+### 4.4 Server Actions for mutations, Route Handlers for the four exceptions
+Route Handlers exist only for: Auth.js, PDF streams, public code reads, and the Resend webhook
+receiver (`app/api/webhooks/resend`). Do not add `app/api/quotations/route.ts` to serve your own forms.
 
 ### 4.5 Validate at the boundary
 Every Server Action begins with `schema.parse(input)` using the zod schema from `lib/validation/`.

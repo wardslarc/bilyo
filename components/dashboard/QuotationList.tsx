@@ -84,21 +84,44 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
     refreshList(statusFilter, val);
   };
 
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
   const handleSend = (id: string) => {
-    if (!confirm('Send this quotation? The client and business details will be locked in.')) return;
+    if (!confirm('Send this quotation? A public link will be created and client & business details will be locked in.')) return;
     startTransition(async () => {
       const res = await sendQuotation(id);
       if (!res.ok) {
         setActionError(res.error);
+        setActionSuccess(null);
         return;
       }
       setActionError(null);
+      if (res.data?.emailState) {
+        const es = res.data.emailState;
+        if (es.attempted && es.ok) {
+          const toEmail = res.data.customerSnapshot?.email;
+          setActionSuccess(`Quotation sent. We emailed ${toEmail || 'your client'} — you can also copy the link.`);
+        } else if (es.attempted && !es.ok) {
+          setActionSuccess("Quotation sent. We couldn't deliver the email — copy the link and send it another way.");
+        } else {
+          setActionSuccess("Quotation sent. Copy the link and send it to your client.");
+        }
+      } else {
+        setActionSuccess("Quotation sent. Copy the link and send it to your client.");
+      }
       refreshList();
     });
   };
 
   return (
     <div className="space-y-5">
+      {actionSuccess && (
+        <div className="p-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
+          <span>{actionSuccess}</span>
+          <button type="button" onClick={() => setActionSuccess(null)} className="text-emerald-600 hover:text-emerald-800 text-xs font-medium">Dismiss</button>
+        </div>
+      )}
+
       {actionError && (
         <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
           <span>{actionError}</span>

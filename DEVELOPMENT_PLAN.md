@@ -1031,6 +1031,9 @@ MFA_ENCRYPTION_KEY=            # 32-byte hex, AES-256-GCM
 BLOB_READ_WRITE_TOKEN=         # Vercel Blob, logos
 BETA_ENDS_AT=                  # ISO date shown in the beta banner        (P5)
 RESEND_API_KEY=                # optional; absent = no-op mailer          (P6)
+RESEND_WEBHOOK_SECRET=         # Svix webhook signing secret              (P6)
+EMAIL_FROM=                    # sender on verified domain                (P6)
+MAIL_DRY_RUN=true              # dry-run transport (true except prod)     (P6)
 GCASH_ACCOUNT_NAME=            #                                          (P7)
 GCASH_ACCOUNT_NUMBER=          #                                          (P7)
 ACCESS_ENFORCED=false          # gate create/send on accessUntil          (P7)

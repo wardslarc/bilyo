@@ -140,13 +140,30 @@ export async function requestPasswordReset(
       expiresAt,
     });
 
-    // Until M9 (Resend integration), print link to server log
-    const appUrl =
-      process.env.APP_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      'http://localhost:3000';
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const resetUrl = `${appUrl}/reset-password?token=${token}`;
-    console.log(`[PASSWORD_RESET] Link for ${email}: ${resetUrl}`);
+
+    try {
+      const { sendEmail } = await import('@/lib/email/send');
+      const { renderPasswordResetEmail } = await import('@/lib/email/templates/password-reset');
+
+      const { subject, html, text } = renderPasswordResetEmail({
+        userName: user.name,
+        resetUrl,
+      });
+
+      await sendEmail({
+        userId: user._id,
+        kind: 'PASSWORD_RESET',
+        toEmail: email,
+        subject,
+        html,
+        text,
+        idempotencyKey: `password-reset:${tokenHash}`,
+      });
+    } catch (mailErr) {
+      console.error('[actions/auth] Password reset email error:', mailErr);
+    }
 
     return {
       ok: true,
