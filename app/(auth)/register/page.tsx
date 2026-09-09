@@ -61,13 +61,29 @@ export default function RegisterPage() {
         return;
       }
 
-      // Auto sign-in on registration success (§8.1)
+      // Auto sign-in on registration success (§8.1).
+      // redirect:false on purpose: with redirect:true the browser is sent to the
+      // absolute URL Auth.js builds from AUTH_URL/host. When that origin is not the
+      // one the user is on (preview deploys, a stale AUTH_URL such as the old
+      // *.vercel.app domain) the freshly set session cookie does not exist there and
+      // the new account lands on a blank, signed-out page.
       try {
-        await signIn('credentials', {
+        const res = await signIn('credentials', {
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
-          callbackUrl: '/dashboard',
+          redirect: false,
         });
+
+        if (!res || res.error) {
+          router.push('/login?registered=1');
+          return;
+        }
+
+        // A brand-new account has no business profile yet, so send it straight to
+        // the onboarding screen instead of letting /dashboard/quotations/new bounce
+        // it there with a server redirect.
+        router.replace('/dashboard/settings?onboarding=1');
+        router.refresh();
       } catch {
         router.push('/login?registered=1');
       }

@@ -1,7 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth-guards';
-import { getDashboardMetrics, getRecentQuotations, getNeedsAttentionData } from '@/lib/metrics';
+import {
+  getDashboardMetrics,
+  getRecentQuotations,
+  getNeedsAttentionData,
+  type DashboardMetrics,
+  type NeedsAttentionData,
+} from '@/lib/metrics';
+import { getBusinessProfile } from '@/actions/business';
 import { RecentQuotations } from '@/components/dashboard/RecentQuotations';
 import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 import { StatTiles } from '@/components/dashboard/StatTiles';
@@ -13,15 +20,65 @@ export const metadata = {
   description: 'Track quotations, acceptances, and recent client activity.',
 };
 
+const EMPTY_METRICS: DashboardMetrics = {
+  quotedThisMonth: { count: 0, totalCentavos: 0 },
+  acceptedThisMonth: { count: 0, totalCentavos: 0 },
+  awaitingResponse: { count: 0, totalCentavos: 0 },
+  totalQuotationCount: 0,
+  draftCount: 0,
+  sentCount: 0,
+  acceptedCount: 0,
+  declinedCount: 0,
+  expiredCount: 0,
+  totalQuotedCentavos: 0,
+  acceptedCentavos: 0,
+};
+
+const EMPTY_ATTENTION: NeedsAttentionData = {
+  items: [],
+  unseenCount: 0,
+  lastSeenEventsAt: null,
+};
+
+function logSectionFailure(section: string, error: unknown) {
+  console.error(`Dashboard: ${section} failed to load:`, (error as Error).message);
+}
+
 export default async function DashboardPage() {
   const user = await requireUser();
-  const [metrics, attentionData] = await Promise.all([
-    getDashboardMetrics(user.id),
-    getNeedsAttentionData(user.id),
+
+  // First run: no quotations, no client events, no business profile. Every read
+  // below degrades to an empty section on failure so the page always renders.
+  const [metrics, attentionData, businessResult] = await Promise.all([
+    getDashboardMetrics(user.id).catch((error) => {
+      logSectionFailure('metrics', error);
+      return EMPTY_METRICS;
+    }),
+    getNeedsAttentionData(user.id).catch((error) => {
+      logSectionFailure('client activity', error);
+      return EMPTY_ATTENTION;
+    }),
+    getBusinessProfile().catch((error) => {
+      logSectionFailure('business profile', error);
+      return { ok: false as const, error: 'Failed to load business profile' };
+    }),
   ]);
 
   const hasQuotations = metrics.totalQuotationCount > 0;
-  const recentQuotations = hasQuotations ? await getRecentQuotations(user.id, 15) : [];
+  const recentQuotations = hasQuotations
+    ? await getRecentQuotations(user.id, 15).catch((error) => {
+        logSectionFailure('recent quotations', error);
+        return [];
+      })
+    : [];
+
+  // Onboarding gate (§ quotations/new): without a business profile that route only
+  // redirects back to Settings. Point new accounts straight at the onboarding
+  // screen instead of sending them through a server-side bounce.
+  const hasBusinessProfile = businessResult.ok && Boolean(businessResult.data);
+  const primaryHref = hasBusinessProfile
+    ? '/dashboard/quotations/new'
+    : '/dashboard/settings?onboarding=1';
 
   return (
     <div className="py-6 px-4 sm:px-6 max-w-6xl mx-auto space-y-6">
@@ -41,13 +98,13 @@ export default async function DashboardPage() {
 
         <div className="flex items-center gap-2.5">
           <Link
-            href="/dashboard/quotations/new"
+            href={primaryHref}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg text-white bg-[var(--color-brass)] hover:opacity-90 transition-opacity shadow-xs"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            New Quotation
+            {hasBusinessProfile ? 'New Quotation' : 'Set up business profile'}
           </Link>
         </div>
       </div>
@@ -66,18 +123,26 @@ export default async function DashboardPage() {
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">No quotations created yet</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-text)]">
+              {hasBusinessProfile
+                ? 'No quotations created yet'
+                : 'Set up your business profile first'}
+            </h2>
             <p className="text-xs text-[var(--color-muted)] max-w-sm mx-auto">
-              Ready to send a quote? Create your first quotation to get started.
+              {hasBusinessProfile
+                ? 'Ready to send a quote? Create your first quotation to get started.'
+                : 'Your business name and contact details appear on every quotation you send. It takes a minute.'}
             </p>
           </div>
 
           <div className="pt-2 flex items-center justify-center">
             <Link
-              href="/dashboard/quotations/new"
+              href={primaryHref}
               className="px-5 py-2.5 bg-[var(--color-brass)] hover:opacity-90 text-white font-medium text-sm rounded-lg transition-opacity"
             >
-              Create your first quotation
+              {hasBusinessProfile
+                ? 'Create your first quotation'
+                : 'Set up business profile'}
             </Link>
           </div>
         </div>

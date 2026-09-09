@@ -6,6 +6,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { verifyMfaChallenge } from '@/actions/mfa';
 
+/** Reduces any destination to a same-origin relative path, or null (see LoginForm). */
+function toSafePath(value?: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function MfaChallengeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,9 +73,7 @@ export default function MfaChallengeForm() {
       }
 
       const destUrl =
-        signInRes?.url && !signInRes.url.startsWith('http://localhost')
-          ? signInRes.url
-          : callbackUrl;
+        toSafePath(signInRes?.url) ?? toSafePath(callbackUrl) ?? '/dashboard';
       router.push(destUrl);
       router.refresh();
     });

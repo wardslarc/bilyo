@@ -7,6 +7,24 @@ import { signIn } from 'next-auth/react';
 import { loginSchema } from '@/lib/validation/auth';
 import { verifyPasswordStep } from '@/actions/mfa';
 
+/**
+ * Reduces any destination to a same-origin relative path, or null.
+ * Auth.js returns an absolute URL built from AUTH_URL/host and `callbackUrl`
+ * arrives from the query string: following either blindly can send the user to
+ * another origin (where the session cookie does not exist, so the app renders a
+ * blank signed-out page) or off-site entirely.
+ */
+function toSafePath(value?: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,7 +84,8 @@ export default function LoginForm() {
 
       // If user has MFA enabled, challenge cookie was set -> redirect to code challenge step (§8.10)
       if (stepRes.data.requiresMfa) {
-        router.push(`/login/mfa?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        const mfaDest = toSafePath(callbackUrl) ?? '/dashboard';
+        router.push(`/login/mfa?callbackUrl=${encodeURIComponent(mfaDest)}`);
         return;
       }
 
@@ -87,9 +106,11 @@ export default function LoginForm() {
         return;
       }
 
-      // Successful login -> navigate to callbackUrl (guard against localhost URL on remote deployments)
-      const destUrl =
-        res?.url && !res.url.startsWith('http://localhost') ? res.url : callbackUrl;
+      // Successful login -> stay on this origin. res.url is built from AUTH_URL and
+      // may point at a different deployment; the callbackUrl query param is
+      // user-controlled. Both are reduced to a local path, with /dashboard as the
+      // final fallback.
+      const destUrl = toSafePath(res?.url) ?? toSafePath(callbackUrl) ?? '/dashboard';
       router.push(destUrl);
       router.refresh();
     });
