@@ -258,25 +258,16 @@ export default function LoginForm() {
         </button>
       </form>
 
-      <div className="mt-6 text-center text-xs text-[var(--color-muted)] space-y-3">
-        <div>
-          Don&apos;t have an account yet?{' '}
-          <Link
-            href="/register"
-            className="font-medium text-[var(--color-ink)] hover:text-[var(--color-brass)] underline transition-colors"
-          >
-            Create one now
-          </Link>
-        </div>
-
-        <div className="pt-3 border-t border-[var(--color-line)]">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-ink)] transition-colors"
-          >
-            &larr; Back to landing page
-          </Link>
-        </div>
+      {/* The only way back to the marketing site is <BackToBilyo /> above the
+          card — see components/auth/BackToBilyo.tsx. Don't add a second one here. */}
+      <div className="mt-6 text-center text-xs text-[var(--color-muted)]">
+        Don&apos;t have an account yet?{' '}
+        <Link
+          href="/register"
+          className="font-medium text-[var(--color-ink)] hover:text-[var(--color-brass)] underline transition-colors"
+        >
+          Create one now
+        </Link>
       </div>
     </div>
   );

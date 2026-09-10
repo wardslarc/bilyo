@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { registerUser } from '@/actions/auth';
+import BackToBilyo from '@/components/auth/BackToBilyo';
 import { registerSchema } from '@/lib/validation/auth';
 
 export default function RegisterPage() {
@@ -66,6 +67,11 @@ export default function RegisterPage() {
   };
 
   return (
+    <>
+    <div className="mb-3">
+      <BackToBilyo />
+    </div>
+
     <div className="bg-white border border-[var(--color-line)] rounded-xl shadow-sm p-6 sm:p-8">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-[var(--color-ink)]">
@@ -238,5 +244,6 @@ export default function RegisterPage() {
         </Link>
       </div>
     </div>
+    </>
   );
 }
