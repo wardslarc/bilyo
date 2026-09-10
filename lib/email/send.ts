@@ -4,6 +4,16 @@ import { EmailMessage } from '@/models/email-message';
 import type { EmailMessageKind, EmailMessageStatus } from '@/types';
 import { getResendClient, isDryRun, getEmailFrom } from './client.ts';
 import { canSendTo, type CanSendContext, type SuppressionReason } from './suppression.ts';
+import { EMAIL_RECORD_RETENTION_DAYS } from '../site.ts';
+
+/**
+ * Retention marker for a new outbox row (Privacy Policy §9: 12 months).
+ * The Resend webhook clears this on a bounce or complaint so the suppression
+ * record outlives the window — see models/email-message.ts.
+ */
+function emailPurgeAt(): Date {
+  return new Date(Date.now() + EMAIL_RECORD_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+}
 
 export interface SendEmailOptions {
   userId: string | Types.ObjectId;
@@ -82,6 +92,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
             subject: options.subject,
             idempotencyKey: options.idempotencyKey,
             queuedAt: new Date(),
+            purgeAt: emailPurgeAt(),
           },
           $set: {
             status,
@@ -122,6 +133,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
           status: 'QUEUED',
           attempts: 0,
           queuedAt: new Date(),
+          purgeAt: emailPurgeAt(),
         },
       },
       { upsert: true, returnDocument: 'after' }
