@@ -28,6 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
         mfaSessionToken: { label: 'MFA Token', type: 'text' },
+        signupSessionToken: { label: 'Signup Token', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials) {
@@ -58,6 +59,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             role: user.role,
             mfaVerifiedAt: verified.mfaVerifiedAt,
             mfaEnabled: true,
+          };
+        }
+
+        // Path C: Authenticating after successful signup code verification (SIGNUP_VERIFICATION_PLAN.md §4.5)
+        if (credentials.signupSessionToken) {
+          const { verifySignupSessionToken } = await import('./signup-challenge');
+          const verified = verifySignupSessionToken(String(credentials.signupSessionToken));
+          if (!verified) {
+            return null;
+          }
+
+          await dbConnect();
+          const { VerificationToken } = await import('../models/verification-token');
+
+          // Atomically require and consume grantedAt on the token doc (single-use constraint §4.5)
+          const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+          const tokenDoc = await VerificationToken.findOneAndUpdate(
+            {
+              _id: verified.tokenId,
+              userId: verified.userId,
+              purpose: 'EMAIL_VERIFY',
+              usedAt: { $gte: fiveMinutesAgo },
+              grantedAt: null,
+            },
+            { $set: { grantedAt: new Date() } },
+            { returnDocument: 'after' }
+          );
+
+          if (!tokenDoc) {
+            return null;
+          }
+
+          const user = await User.findById(verified.userId);
+          if (!user || user.suspendedAt || user.deletionRequestedAt) {
+            return null;
+          }
+
+          await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
+
+          // Note: issued with mfaVerifiedAt: null, mfaEnabled: false (§4.5)
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            mfaVerifiedAt: null,
+            mfaEnabled: false,
           };
         }
 
