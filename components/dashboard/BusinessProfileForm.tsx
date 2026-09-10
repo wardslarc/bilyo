@@ -28,6 +28,7 @@ export function BusinessProfileForm({
     email: initialBusiness?.email || '',
     phone: initialBusiness?.phone || '',
     logoUrl: initialBusiness?.logoUrl || '',
+    currency: (initialBusiness?.currency as 'PHP' | 'USD' | 'EUR' | 'GBP' | 'AUD' | 'SGD' | 'CAD') || 'PHP',
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -124,7 +125,7 @@ export function BusinessProfileForm({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -314,6 +315,31 @@ export function BusinessProfileForm({
               <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p>
             )}
           </div>
+        </div>
+
+        {/* Default Quotation Currency */}
+        <div className="pt-2 border-t border-[var(--color-line)]">
+          <label htmlFor="currency" className="block text-xs font-medium text-neutral-700 mb-1">
+            Default Quotation Currency
+          </label>
+          <select
+            id="currency"
+            name="currency"
+            value={formData.currency || 'PHP'}
+            onChange={handleChange}
+            className="w-full sm:w-80 px-3.5 py-2.5 text-sm rounded-lg border border-[var(--color-line)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 focus:border-[var(--color-brass)] text-neutral-900"
+          >
+            <option value="PHP">₱ PHP — Philippine Peso (Default)</option>
+            <option value="USD">$ USD — US Dollar</option>
+            <option value="EUR">€ EUR — Euro</option>
+            <option value="GBP">£ GBP — British Pound</option>
+            <option value="AUD">A$ AUD — Australian Dollar</option>
+            <option value="SGD">S$ SGD — Singapore Dollar</option>
+            <option value="CAD">C$ CAD — Canadian Dollar</option>
+          </select>
+          <p className="mt-1 text-xs text-neutral-500">
+            Default currency applied to new quotations. You can also override the currency per quote.
+          </p>
         </div>
 
         {/* Business Logo Upload */}

@@ -26,6 +26,7 @@ export async function GET(
 
   const pdfProps: QuotationDocumentProps = {
     number: doc.number,
+    currency: doc.currency || 'PHP',
     items: doc.items,
     subtotalCentavos: doc.subtotalCentavos,
     discountCentavos: doc.discountCentavos,

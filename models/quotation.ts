@@ -43,6 +43,7 @@ const BusinessSnapshotSchema = new Schema<IBusinessSnapshot>(
     email: { type: String, default: '', trim: true },
     phone: { type: String, default: '', trim: true },
     logoUrl: { type: String, default: null },
+    currency: { type: String, default: 'PHP', uppercase: true, trim: true },
   },
   { _id: false }
 );
@@ -62,6 +63,12 @@ const QuotationSchema = new Schema<IQuotation>(
     number: {
       type: String,
       required: true,
+      trim: true,
+    },
+    currency: {
+      type: String,
+      default: 'PHP',
+      uppercase: true,
       trim: true,
     },
     customerSnapshot: {

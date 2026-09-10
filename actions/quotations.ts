@@ -30,6 +30,7 @@ export interface SerializedQuotation {
   userId: string;
   customerId: string;
   number: string;
+  currency: string;
   items: SerializedLineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
@@ -53,6 +54,7 @@ export interface SerializedQuotation {
     email?: string;
     phone?: string;
     logoUrl?: string | null;
+    currency?: string;
   } | null;
   paidAt?: string | null;
   paidAmountCentavos?: number | null;
@@ -94,6 +96,7 @@ function serializeQuotation(doc: any): SerializedQuotation {
     userId: String(doc.userId),
     customerId: String(doc.customerId),
     number: String(doc.number ?? ''),
+    currency: String(doc.currency || 'PHP'),
     items: items.map((item) => ({
       description: String(item.description ?? ''),
       quantity: Number(item.quantity ?? 0),
@@ -125,6 +128,7 @@ function serializeQuotation(doc: any): SerializedQuotation {
           email: String(businessSnapshot.email ?? ''),
           phone: String(businessSnapshot.phone ?? ''),
           logoUrl: businessSnapshot.logoUrl ? String(businessSnapshot.logoUrl) : null,
+          currency: businessSnapshot.currency ? String(businessSnapshot.currency) : String(doc.currency || 'PHP'),
         }
       : null,
     paidAt: doc.paidAt ? new Date(doc.paidAt as string | number | Date).toISOString() : null,
@@ -202,10 +206,13 @@ export async function createQuotation(
     // Atomic sequential number assignment (§5.3)
     const number = await nextNumber(user.id, 'QUOTATION');
 
+    const selectedCurrency = data.currency || business.currency || 'PHP';
+
     const doc = await Quotation.create({
       userId: user.id,
       customerId: data.customerId,
       number,
+      currency: selectedCurrency,
       items: totals.items,
       subtotalCentavos: totals.subtotalCentavos,
       discountCentavos: totals.discountCentavos,
@@ -307,6 +314,7 @@ export async function updateQuotation(
       {
         $set: {
           customerId: data.customerId,
+          currency: data.currency || existing.currency || 'PHP',
           items: totals.items,
           subtotalCentavos: totals.subtotalCentavos,
           discountCentavos: totals.discountCentavos,
@@ -464,6 +472,7 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
         email: business.email || '',
         phone: business.phone || '',
         logoUrl: business.logoUrl || null,
+        currency: doc.currency || business.currency || 'PHP',
       };
     }
 

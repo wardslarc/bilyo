@@ -37,6 +37,7 @@ export interface PublicCustomer {
 export interface PublicDocumentProjection {
   kind: 'quotation';
   number: string;
+  currency?: string;
   status: DocumentStatus;
   issueDate: string;
   secondaryDateLabel: string;
@@ -151,6 +152,7 @@ export async function getPublicQuotationByCode(
   return {
     kind: 'quotation',
     number: quotation.number,
+    currency: quotation.currency || quotation.businessSnapshot?.currency || 'PHP',
     status: displayStatus,
     issueDate: new Date(quotation.issueDate).toISOString(),
     secondaryDateLabel: 'Valid Until',

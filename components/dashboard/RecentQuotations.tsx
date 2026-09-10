@@ -160,7 +160,7 @@ export function RecentQuotations({ quotations }: RecentQuotationsProps) {
                         </span>
                       </td>
                       <td className="py-3.5 px-5 text-right font-mono font-bold text-[var(--color-text)] whitespace-nowrap">
-                        {formatMoney(q.totalCentavos)}
+                        {formatMoney(q.totalCentavos, q.currency)}
                       </td>
                       <td className="py-3.5 px-5 text-right whitespace-nowrap">
                         <Link
@@ -202,7 +202,7 @@ export function RecentQuotations({ quotations }: RecentQuotationsProps) {
                       {q.customerName}
                     </span>
                     <span className="font-mono font-bold text-sm text-[var(--color-text)]">
-                      {formatMoney(q.totalCentavos)}
+                      {formatMoney(q.totalCentavos, q.currency)}
                     </span>
                   </div>
 

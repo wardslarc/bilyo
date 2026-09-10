@@ -4,9 +4,10 @@ import type { DashboardMetrics } from '@/lib/metrics';
 
 interface StatTilesProps {
   metrics: DashboardMetrics;
+  currency?: string;
 }
 
-export function StatTiles({ metrics }: StatTilesProps) {
+export function StatTiles({ metrics, currency = 'PHP' }: StatTilesProps) {
   const { quotedThisMonth, acceptedThisMonth, awaitingResponse } = metrics;
 
   return (
@@ -33,7 +34,7 @@ export function StatTiles({ metrics }: StatTilesProps) {
             </span>
           </div>
           <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-[var(--color-text)]">
-            {formatMoney(quotedThisMonth.totalCentavos)}
+            {formatMoney(quotedThisMonth.totalCentavos, currency)}
           </div>
         </div>
         <div className="mt-3 text-xs text-[var(--color-muted)]">
@@ -63,7 +64,7 @@ export function StatTiles({ metrics }: StatTilesProps) {
             </span>
           </div>
           <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-emerald-950">
-            {formatMoney(acceptedThisMonth.totalCentavos)}
+            {formatMoney(acceptedThisMonth.totalCentavos, currency)}
           </div>
         </div>
         <div className="mt-3 text-xs text-[var(--color-muted)]">
@@ -123,7 +124,7 @@ export function StatTiles({ metrics }: StatTilesProps) {
             </span>
           </div>
           <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-[var(--color-text)]">
-            {formatMoney(awaitingResponse.totalCentavos)}
+            {formatMoney(awaitingResponse.totalCentavos, currency)}
           </div>
         </div>
         <div className="mt-3 text-xs text-[var(--color-muted)]">

@@ -75,5 +75,27 @@ describe('lib/money.ts', () => {
       assert.strictEqual(formatMoney(0), '₱0.00');
       assert.strictEqual(formatMoney(-50000), '-₱500.00');
     });
+
+    test('formats amounts in supported international currencies', () => {
+      assert.strictEqual(formatMoney(2500000, 'USD'), '$25,000.00');
+      assert.strictEqual(formatMoney(123456, 'EUR'), '€1,234.56');
+      assert.strictEqual(formatMoney(75000, 'GBP'), '£750.00');
+      assert.strictEqual(formatMoney(89000, 'AUD'), 'A$890.00');
+      assert.strictEqual(formatMoney(15000, 'SGD'), 'S$150.00');
+      assert.strictEqual(formatMoney(32000, 'CAD'), 'C$320.00');
+      assert.strictEqual(formatMoney(-150000, 'USD'), '-$1,500.00');
+    });
+  });
+
+  describe('multi-currency parsing', () => {
+    test('parses amounts with dollar, euro, pound, and international symbols', () => {
+      assert.strictEqual(pesosToCentavos('$1,500.00'), 150000);
+      assert.strictEqual(pesosToCentavos('USD 2,500.00'), 250000);
+      assert.strictEqual(pesosToCentavos('€49.99'), 4999);
+      assert.strictEqual(pesosToCentavos('£120.50'), 12050);
+      assert.strictEqual(pesosToCentavos('A$ 350.00'), 35000);
+      assert.strictEqual(pesosToCentavos('S$ 800.00'), 80000);
+      assert.strictEqual(pesosToCentavos('C$ 950.00'), 95000);
+    });
   });
 });

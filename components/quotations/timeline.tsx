@@ -16,9 +16,10 @@ export type { TimelineEvent };
 export interface QuotationTimelineProps {
   events: TimelineEvent[];
   publicCode?: string | null;
+  currency?: string;
 }
 
-export function QuotationTimeline({ events, publicCode }: QuotationTimelineProps) {
+export function QuotationTimeline({ events, publicCode, currency = 'PHP' }: QuotationTimelineProps) {
   const [copied, setCopied] = useState(false);
   const sortedEvents = sortEventsChronological(events);
 
@@ -183,7 +184,7 @@ export function QuotationTimeline({ events, publicCode }: QuotationTimelineProps
 
                 {Boolean(isPaid && event.metadata?.amountCentavos) && (
                   <div className="mt-1 text-neutral-700 text-[11px]">
-                    Recorded payment: <span className="font-mono font-medium">{formatMoney(Number(event.metadata?.amountCentavos))}</span>
+                    Recorded payment: <span className="font-mono font-medium">{formatMoney(Number(event.metadata?.amountCentavos), currency)}</span>
                   </div>
                 )}
               </div>

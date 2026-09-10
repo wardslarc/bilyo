@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { computeTotals, type ComputedTotals } from '@/lib/totals';
-import { formatMoney, pesosToCentavos } from '@/lib/money';
+import { formatMoney, pesosToCentavos, getCurrencySymbol } from '@/lib/money';
 import type { LineItemRow } from './line-item-builder';
 
 // --- Types ---
@@ -21,6 +21,8 @@ export interface TotalsPanelProps {
   serverTotals?: ComputedTotals | null;
   /** Read-only mode */
   disabled?: boolean;
+  /** Currency code for display */
+  currency?: string;
 }
 
 /**
@@ -65,6 +67,7 @@ export function TotalsPanel({
   onDiscountChange,
   serverTotals,
   disabled,
+  currency = 'PHP',
 }: TotalsPanelProps) {
   // Compute client-side totals for live feedback
   const clientTotals = useMemo<ComputedTotals>(() => {
@@ -80,12 +83,13 @@ export function TotalsPanel({
   // Use server totals when available, otherwise client preview
   const totals = serverTotals ?? clientTotals;
   const isServerOverride = serverTotals != null;
+  const currencySymbol = getCurrencySymbol(currency);
 
   // Format the discount for preview feedback
   let discountPreview = '';
   try {
     if (discountInput.trim()) {
-      discountPreview = formatMoney(pesosToCentavos(discountInput));
+      discountPreview = formatMoney(pesosToCentavos(discountInput), currency);
     }
   } catch {
     // leave blank
@@ -123,7 +127,7 @@ export function TotalsPanel({
         <div className="flex items-center justify-between text-sm gap-2">
           <span className="text-[var(--color-muted)] shrink-0">Subtotal</span>
           <span className="font-medium font-mono text-[var(--color-text)] text-right truncate">
-            {formatMoney(totals.subtotalCentavos)}
+            {formatMoney(totals.subtotalCentavos, currency)}
           </span>
         </div>
 
@@ -135,11 +139,11 @@ export function TotalsPanel({
           <div className="flex items-center gap-2">
             {isServerOverride ? (
               <span className="font-medium font-mono text-[var(--color-text)] text-right truncate">
-                {totals.discountCentavos > 0 ? `−${formatMoney(totals.discountCentavos)}` : formatMoney(0)}
+                {totals.discountCentavos > 0 ? `−${formatMoney(totals.discountCentavos, currency)}` : formatMoney(0, currency)}
               </span>
             ) : (
               <div className="relative w-36 sm:w-40">
-                <span className="absolute left-2.5 top-2.5 text-[var(--color-faint)] text-sm">₱</span>
+                <span className="absolute left-2.5 top-2.5 text-[var(--color-faint)] text-sm">{currencySymbol}</span>
                 <input
                   id="totals-discount"
                   type="text"
@@ -162,7 +166,7 @@ export function TotalsPanel({
               Applied{discountPreview ? ` (${discountPreview})` : ''}
             </span>
             <span className="text-red-600 font-medium font-mono text-right shrink-0">
-              −{formatMoney(totals.discountCentavos)}
+              −{formatMoney(totals.discountCentavos, currency)}
             </span>
           </div>
         )}
@@ -174,7 +178,7 @@ export function TotalsPanel({
         <div className="flex items-center justify-between gap-3 pt-0.5">
           <span className="text-sm sm:text-base font-semibold text-[var(--color-text)] shrink-0">Total</span>
           <span className="text-lg sm:text-xl font-bold font-mono text-[var(--color-text)] text-right truncate">
-            {formatMoney(totals.totalCentavos)}
+            {formatMoney(totals.totalCentavos, currency)}
           </span>
         </div>
       </div>
