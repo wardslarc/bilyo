@@ -13,7 +13,8 @@
     "reset-mfa": "node --env-file=.env.local scripts/reset-mfa.ts",
     "migrate-counter-index": "node --env-file=.env.local scripts/migrate-counter-index.ts",
     "rename-public-token": "node --env-file=.env.local scripts/rename-public-token.ts",
-    "migrate-email-index": "node --env-file=.env.local scripts/migrate-email-provider-id-index.ts"
+    "migrate-email-index": "node --env-file=.env.local scripts/migrate-email-provider-id-index.ts",
+    "backfill-email-verified": "node --env-file=.env.local scripts/backfill-email-verified.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",
