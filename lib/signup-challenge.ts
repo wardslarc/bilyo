@@ -87,3 +87,44 @@ export async function clearSignupChallengeCookie(): Promise<void> {
     cookieStore.delete(SIGNUP_CHALLENGE_COOKIE_NAME);
   }
 }
+
+export interface SignupSessionTokenPayload {
+  userId: string;
+  tokenId: string;
+  expiresAt: number;
+}
+
+/**
+ * Signs a short-lived (5-minute) signupSessionToken used to mint an authenticated session
+ * upon correct code verification without requiring password re-entry (SIGNUP_VERIFICATION_PLAN.md §4.5).
+ */
+export function signSignupSessionToken(userId: string, tokenId: string): string {
+  const payload: SignupSessionTokenPayload = {
+    userId,
+    tokenId,
+    expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+  };
+
+  return signSignedPayload(payload as unknown as Record<string, unknown>);
+}
+
+/**
+ * Verifies a short-lived signupSessionToken.
+ */
+export function verifySignupSessionToken(token: string): SignupSessionTokenPayload | null {
+  const payload = verifySignedToken<SignupSessionTokenPayload>(token);
+  if (!payload) {
+    return null;
+  }
+
+  if (!payload.userId || !payload.tokenId || !payload.expiresAt) {
+    return null;
+  }
+
+  if (Date.now() > payload.expiresAt) {
+    return null;
+  }
+
+  return payload;
+}
+

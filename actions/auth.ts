@@ -11,6 +11,8 @@ import { domainAcceptsMail } from '../lib/email/dns-check.ts';
 import {
   setSignupChallengeCookie,
   getSignupChallengeFromCookies,
+  clearSignupChallengeCookie,
+  signSignupSessionToken,
 } from '../lib/signup-challenge.ts';
 import { renderEmailVerificationEmail } from '../lib/email/templates/email-verification.ts';
 import { sendEmail } from '../lib/email/send.ts';
@@ -277,6 +279,165 @@ export async function resendVerification(): Promise<
     return {
       ok: false,
       error: 'An unexpected error occurred while resending the verification code.',
+    };
+  }
+}
+
+/**
+ * Server Action to verify a 6-digit signup code (§4.4, §4.6).
+ * Enforces server-side attempt budget (max 5 attempts per code).
+ * Atomically increments attempts before comparison.
+ * On match: marks user emailVerifiedAt, consumes token usedAt, clears challenge cookie,
+ * and returns signupSessionToken for instant session minting (Path C).
+ */
+export async function verifySignupCode(
+  inputCode: unknown
+): Promise<
+  ActionResult<{
+    success: boolean;
+    alreadyVerified?: boolean;
+    signupSessionToken?: string;
+  }>
+> {
+  const code = typeof inputCode === 'string' ? inputCode.trim() : '';
+  if (!code || !/^\d{6}$/.test(code)) {
+    return {
+      ok: false,
+      error: 'Please enter a valid 6-digit verification code',
+    };
+  }
+
+  try {
+    await dbConnect();
+    const challenge = await getSignupChallengeFromCookies();
+    if (!challenge?.userId) {
+      return {
+        ok: false,
+        error: 'Your verification session has expired. Please sign in or register again.',
+      };
+    }
+
+    const user = await User.findById(challenge.userId);
+    if (!user) {
+      return {
+        ok: false,
+        error: 'Account not found. Please register again.',
+      };
+    }
+
+    // Special case (§6): if user was already verified (e.g. magic link clicked in email)
+    if (user.emailVerifiedAt) {
+      await clearSignupChallengeCookie();
+      return {
+        ok: true,
+        data: { success: true, alreadyVerified: true },
+      };
+    }
+
+    // Find the latest active verification token for this account
+    const token = await VerificationToken.findOne({
+      userId: user._id,
+      purpose: 'EMAIL_VERIFY',
+      usedAt: null,
+    }).sort({ createdAt: -1 });
+
+    if (!token) {
+      return {
+        ok: false,
+        error: 'No active verification code found. Please request a new one.',
+      };
+    }
+
+    if (token.codeInvalidAt) {
+      return {
+        ok: false,
+        error: 'This verification code is no longer valid. Please request a new one.',
+      };
+    }
+
+    if (token.codeExpiresAt < new Date()) {
+      return {
+        ok: false,
+        error: 'This verification code has expired. Please request a new one.',
+      };
+    }
+
+    // Atomically increment attempts BEFORE bcrypt compare (§4.4, §4.6)
+    const updatedToken = await VerificationToken.findOneAndUpdate(
+      { _id: token._id, usedAt: null, codeInvalidAt: null },
+      { $inc: { attempts: 1 } },
+      { returnDocument: 'after' }
+    );
+
+    if (!updatedToken) {
+      return {
+        ok: false,
+        error: 'This code was already consumed or superseded. Please request a new one.',
+      };
+    }
+
+    // If attempts exceed 5, burn code
+    if (updatedToken.attempts > 5) {
+      await VerificationToken.updateOne(
+        { _id: updatedToken._id },
+        { $set: { codeInvalidAt: new Date() } }
+      );
+      return {
+        ok: false,
+        error: 'Too many incorrect attempts. This code has been invalidated. Please request a new code.',
+      };
+    }
+
+    const isMatch = await bcrypt.compare(code, updatedToken.codeHash);
+    if (!isMatch) {
+      const remaining = Math.max(0, 5 - updatedToken.attempts);
+      if (remaining === 0) {
+        await VerificationToken.updateOne(
+          { _id: updatedToken._id },
+          { $set: { codeInvalidAt: new Date() } }
+        );
+        return {
+          ok: false,
+          error: 'Too many incorrect attempts. This code has been invalidated. Please request a new code.',
+        };
+      }
+      return {
+        ok: false,
+        error: `Incorrect verification code. ${remaining} attempt(s) remaining.`,
+      };
+    }
+
+    // Code matched! Mark emailVerifiedAt on user and usedAt on token
+    const verifiedAt = new Date();
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { emailVerifiedAt: verifiedAt } }
+    );
+
+    await VerificationToken.updateOne(
+      { _id: updatedToken._id },
+      { $set: { usedAt: verifiedAt } }
+    );
+
+    await clearSignupChallengeCookie();
+
+    const signupSessionToken = signSignupSessionToken(
+      user._id.toString(),
+      updatedToken._id.toString()
+    );
+
+    return {
+      ok: true,
+      data: {
+        success: true,
+        signupSessionToken,
+      },
+    };
+  } catch (error) {
+    console.error('[actions/auth] verifySignupCode error:', error);
+    return {
+      ok: false,
+      error: 'An unexpected error occurred while verifying your code. Please try again.',
     };
   }
 }
