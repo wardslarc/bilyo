@@ -85,7 +85,7 @@ export async function changePassword(
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     await User.updateOne(
       { _id: user._id },
-      { $set: { passwordHash: newPasswordHash } }
+      { $set: { passwordHash: newPasswordHash, sessionsValidFrom: new Date() } }
     );
 
     return {

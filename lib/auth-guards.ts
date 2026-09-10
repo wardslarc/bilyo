@@ -18,6 +18,7 @@ export interface AuthenticatedUser {
   role: 'USER' | 'ADMIN';
   mfaVerifiedAt?: string | null;
   mfaEnabled?: boolean;
+  authTime?: number | null;
 }
 
 export type AuthSession = {
@@ -28,6 +29,7 @@ export type AuthSession = {
     role?: string;
     mfaVerifiedAt?: string | null;
     mfaEnabled?: boolean;
+    authTime?: number | null;
   } | null;
   expires?: string;
 } | null;
@@ -59,17 +61,19 @@ export async function requireUser(): Promise<AuthenticatedUser> {
     role: (session.user.role as 'USER' | 'ADMIN') || 'USER',
     mfaVerifiedAt: session.user.mfaVerifiedAt || null,
     mfaEnabled: Boolean(session.user.mfaEnabled),
+    authTime: session.user.authTime ?? null,
   };
 }
 
 /**
  * Asserts that the specified user is not suspended or pending deletion.
+ * Also verifies that the session was issued after sessionsValidFrom (password/MFA change revocation).
  * Always re-reads the database to catch suspensions mid-session.
  * Throws typed error 'ACCOUNT_SUSPENDED' if suspendedAt or deletionRequestedAt is set.
  */
-export async function assertNotSuspended(userId: string) {
+export async function assertNotSuspended(userId: string, authTime?: number | null) {
   await dbConnect();
-  const user = await User.findById(userId).select('suspendedAt deletionRequestedAt');
+  const user = await User.findById(userId).select('suspendedAt deletionRequestedAt sessionsValidFrom');
   if (!user) {
     throw new AuthGuardError('User not found', 'UNAUTHORIZED');
   }
@@ -79,6 +83,13 @@ export async function assertNotSuspended(userId: string) {
       'Your account has been suspended or scheduled for deletion. Please contact support.',
       'ACCOUNT_SUSPENDED'
     );
+  }
+
+  if (user.sessionsValidFrom && authTime != null) {
+    const validFromSec = Math.floor(user.sessionsValidFrom.getTime() / 1000);
+    if (authTime < validFromSec) {
+      throw new AuthGuardError('Session has been revoked. Please sign in again.', 'UNAUTHORIZED');
+    }
   }
 
   return user;

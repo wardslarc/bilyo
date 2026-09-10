@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { strongPasswordSchema } from './password.ts';
 
 export const registerSchema = z.object({
   name: z
@@ -10,9 +11,7 @@ export const registerSchema = z.object({
     .trim()
     .toLowerCase()
     .email({ message: 'Please enter a valid email address' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters' }),
+  password: strongPasswordSchema,
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -42,9 +41,7 @@ export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, { message: 'Reset token is required' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters' }),
+  password: strongPasswordSchema,
 });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

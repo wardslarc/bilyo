@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
 
 export function getSigningSecret(): string {
-  return (
-    process.env.AUTH_SECRET ||
-    process.env.MFA_ENCRYPTION_KEY ||
-    'bilyo-default-challenge-signing-secret-32-chars'
-  );
+  const secret = process.env.AUTH_SECRET || process.env.MFA_ENCRYPTION_KEY;
+  if (!secret) {
+    throw new Error('AUTH_SECRET or MFA_ENCRYPTION_KEY environment variable is missing.');
+  }
+  return secret;
 }
 
 /**

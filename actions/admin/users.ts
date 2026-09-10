@@ -325,6 +325,7 @@ export async function resetUserMfa(
     targetUser.mfaLastUsedStep = null;
     targetUser.mfaFailedAttempts = 0;
     targetUser.mfaLockedUntil = null;
+    targetUser.sessionsValidFrom = new Date();
     await targetUser.save();
 
     await recordAudit({

@@ -12,7 +12,7 @@ const { auth } = NextAuth(authConfig);
  */
 export default auth((req) => {
   const { pathname } = req.nextUrl;
-  const isLoggedIn = !!req.auth?.user;
+  const isLoggedIn = Boolean(req.auth?.user?.id);
   const userRole = req.auth?.user?.role;
 
   // Guard /dashboard/*

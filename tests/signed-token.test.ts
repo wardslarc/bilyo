@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { signSignedPayload, verifySignedToken } from '../lib/signed-token.ts';
+import { signSignedPayload, verifySignedToken, getSigningSecret } from '../lib/signed-token.ts';
 
 describe('lib/signed-token.ts', () => {
   const secretA = 'secret-key-alpha-32-characters-long!';
@@ -62,5 +62,18 @@ describe('lib/signed-token.ts', () => {
     assert.equal(verifySignedToken(null, secretA), null);
     // @ts-expect-error test non-string input
     assert.equal(verifySignedToken(undefined, secretA), null);
+  });
+
+  test('getSigningSecret throws when secrets are missing', () => {
+    const origAuth = process.env.AUTH_SECRET;
+    const origMfa = process.env.MFA_ENCRYPTION_KEY;
+    try {
+      delete process.env.AUTH_SECRET;
+      delete process.env.MFA_ENCRYPTION_KEY;
+      assert.throws(() => getSigningSecret(), /missing/);
+    } finally {
+      if (origAuth) process.env.AUTH_SECRET = origAuth;
+      if (origMfa) process.env.MFA_ENCRYPTION_KEY = origMfa;
+    }
   });
 });

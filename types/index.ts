@@ -36,6 +36,9 @@ export interface IUser {
   lastActiveAt?: Date | null;
   lastSeenEventsAt?: Date | null;
 
+  // Session Invalidation
+  sessionsValidFrom?: Date | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -280,5 +283,14 @@ export interface IVerificationToken {
   grantedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Rate Limiting
+export interface IRateLimit {
+  _id: Types.ObjectId;
+  key: string;
+  count: number;
+  expiresAt: Date;
+  createdAt: Date;
 }
 

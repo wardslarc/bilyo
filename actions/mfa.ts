@@ -21,6 +21,7 @@ import {
   signMfaSessionToken,
 } from '../lib/mfa-challenge.ts';
 import { loginSchema } from '../lib/validation/auth.ts';
+import { getClientIp, enforceRateLimits } from '../lib/rate-limit.ts';
 import type { ActionResult } from '@/types';
 
 // Cost-10 dummy hash for timing protection on unknown email
@@ -45,6 +46,29 @@ export async function verifyPasswordStep(
   const { email, password } = parseResult.data;
 
   try {
+    const ip = await getClientIp();
+    const rateCheck = await enforceRateLimits([
+      {
+        key: `rate:login:ip:${ip}`,
+        limit: 10,
+        windowSeconds: 60,
+        errorMessage: 'Too many sign-in attempts from this network. Please try again in a minute.',
+      },
+      {
+        key: `rate:login:email:${email}`,
+        limit: 5,
+        windowSeconds: 900,
+        errorMessage: 'Too many sign-in attempts for this account. Please try again in 15 minutes.',
+      },
+    ]);
+
+    if (!rateCheck.allowed) {
+      return {
+        ok: false,
+        error: rateCheck.error || 'Too many sign-in attempts. Please try again later.',
+      };
+    }
+
     await dbConnect();
     const user = await User.findOne({ email });
 

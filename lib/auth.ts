@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import dbConnect from './mongodb';
 import { User } from '../models/user';
 import { authConfig } from '@/auth.config';
+import type { UserRole } from '@/types';
 
 export class AccountSuspendedError extends CredentialsSignin {
   code = 'account_suspended';
@@ -22,6 +23,60 @@ const DUMMY_HASH = '$2a$10$6iTTYhZTDeaLrFMbocue6.gz2JAFZ6MDEmHW6mdSWBrO5tKKowGoS
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role as UserRole;
+        token.mfaVerifiedAt = user.mfaVerifiedAt || null;
+        token.mfaEnabled = Boolean(user.mfaEnabled);
+        token.authTime = Math.floor(Date.now() / 1000);
+      }
+
+      if (token?.id) {
+        await dbConnect();
+        const dbUser = await User.findById(token.id).select('sessionsValidFrom suspendedAt deletionRequestedAt');
+        if (!dbUser || dbUser.suspendedAt || dbUser.deletionRequestedAt) {
+          delete token.id;
+          delete token.role;
+          delete token.email;
+          delete token.name;
+          return token;
+        }
+        if (dbUser.sessionsValidFrom) {
+          const authSec = (token.authTime as number) || (token.iat as number) || 0;
+          const validFromSec = Math.floor(dbUser.sessionsValidFrom.getTime() / 1000);
+          if (authSec < validFromSec) {
+            delete token.id;
+            delete token.role;
+            delete token.email;
+            delete token.name;
+            return token;
+          }
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (!token?.id) {
+        return {
+          ...session,
+          user: {
+            id: '',
+            role: 'USER' as UserRole,
+            email: '',
+          },
+        };
+      }
+      session.user.id = token.id as string;
+      session.user.role = (token.role as UserRole) || 'USER';
+      session.user.mfaVerifiedAt = (token.mfaVerifiedAt as string) || null;
+      session.user.mfaEnabled = Boolean(token.mfaEnabled);
+      session.user.authTime = (token.authTime as number) || (token.iat as number) || null;
+      return session;
+    },
+  },
   providers: [
     Credentials({
       credentials: {
@@ -116,6 +171,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = String(credentials.email).toLowerCase().trim();
         const password = String(credentials.password);
+
+        const { getClientIp, enforceRateLimits } = await import('./rate-limit.ts');
+        const ip = await getClientIp();
+        const rateCheck = await enforceRateLimits([
+          {
+            key: `rate:login:ip:${ip}`,
+            limit: 10,
+            windowSeconds: 60,
+          },
+          {
+            key: `rate:login:email:${email}`,
+            limit: 5,
+            windowSeconds: 900,
+          },
+        ]);
+
+        if (!rateCheck.allowed) {
+          return null;
+        }
 
         await dbConnect();
         const user = await User.findOne({ email });
