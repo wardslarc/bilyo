@@ -9,29 +9,8 @@ import {
   publicResponseSchema,
   type PublicResponseInput,
 } from '@/lib/validation/response';
+import { getClientIp, enforceRateLimits } from '@/lib/rate-limit';
 import type { ActionResult } from '@/types';
-
-// Rate limiting in-memory per public code (§6.7, P3-T02)
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_ATTEMPTS_PER_WINDOW = 5;
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(code: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(code);
-
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(code, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-
-  if (record.count >= MAX_ATTEMPTS_PER_WINDOW) {
-    return false;
-  }
-
-  record.count += 1;
-  return true;
-}
 
 export interface PublicResponseResult {
   status: 'ACCEPTED' | 'DECLINED';
@@ -68,11 +47,27 @@ export async function respondToQuotation(
 
     const data = parsed.data;
 
-    // 2. Rate limiting by code
-    if (!checkRateLimit(data.code)) {
+    // 2. Distributed rate limiting by IP and by public code
+    const ip = await getClientIp();
+    const rateCheck = await enforceRateLimits([
+      {
+        key: `rate:respond:ip:${ip}`,
+        limit: 5,
+        windowSeconds: 60,
+        errorMessage: 'Too many response attempts from this network. Please wait a minute and try again.',
+      },
+      {
+        key: `rate:respond:code:${data.code}`,
+        limit: 5,
+        windowSeconds: 60,
+        errorMessage: 'Too many response attempts for this quotation. Please wait a minute and try again.',
+      },
+    ]);
+
+    if (!rateCheck.allowed) {
       return {
         ok: false,
-        error: 'Too many attempts. Please wait a minute and try again.',
+        error: rateCheck.error || 'Too many attempts. Please wait a minute and try again.',
       };
     }
 

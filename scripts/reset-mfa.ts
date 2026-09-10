@@ -30,6 +30,7 @@ async function main() {
     user.mfaLastUsedStep = null;
     user.mfaFailedAttempts = 0;
     user.mfaLockedUntil = null;
+    user.sessionsValidFrom = new Date();
 
     await user.save();
 

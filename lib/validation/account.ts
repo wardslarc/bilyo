@@ -1,11 +1,10 @@
 import { z } from 'zod';
+import { strongPasswordSchema } from './password.ts';
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, { message: 'Current password is required' }),
-    newPassword: z
-      .string()
-      .min(8, { message: 'New password must be at least 8 characters' }),
+    newPassword: strongPasswordSchema,
     confirmNewPassword: z
       .string()
       .min(1, { message: 'Please confirm your new password' }),

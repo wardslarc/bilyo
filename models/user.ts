@@ -112,6 +112,12 @@ const UserSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
+
+    // Session Invalidation
+    sessionsValidFrom: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

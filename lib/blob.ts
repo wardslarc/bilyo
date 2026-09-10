@@ -1,4 +1,5 @@
 import { put, del } from '@vercel/blob';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
@@ -138,7 +139,7 @@ export async function uploadBusinessLogo(
   extension: AllowedExtension
 ): Promise<string> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  const fileName = `${userId}-${Date.now()}.${extension}`;
+  const fileName = `${crypto.randomUUID()}.${extension}`;
 
   if (token && token.trim().length > 0) {
     // Vercel Blob store in production / preview with token configured

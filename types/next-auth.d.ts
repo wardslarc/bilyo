@@ -7,6 +7,7 @@ declare module 'next-auth' {
     role?: UserRole;
     mfaVerifiedAt?: string | null;
     mfaEnabled?: boolean;
+    authTime?: number | null;
   }
 
   interface Session {
@@ -15,6 +16,7 @@ declare module 'next-auth' {
       role: UserRole;
       mfaVerifiedAt?: string | null;
       mfaEnabled?: boolean;
+      authTime?: number | null;
     } & DefaultSession['user'];
   }
 }
@@ -25,5 +27,6 @@ declare module 'next-auth/jwt' {
     role?: UserRole;
     mfaVerifiedAt?: string | null;
     mfaEnabled?: boolean;
+    authTime?: number | null;
   }
 }

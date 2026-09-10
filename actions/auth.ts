@@ -21,6 +21,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '../lib/validation/auth.ts';
+import { getClientIp, enforceRateLimits } from '../lib/rate-limit.ts';
 import type { ActionResult } from '@/types';
 
 /**
@@ -138,6 +139,29 @@ export async function registerUser(
   }
 
   try {
+    const ip = await getClientIp();
+    const rateCheck = await enforceRateLimits([
+      {
+        key: `rate:register:ip:${ip}`,
+        limit: 5,
+        windowSeconds: 3600,
+        errorMessage: 'Too many registration attempts from this network. Please try again later.',
+      },
+      {
+        key: `rate:register:email:${email}`,
+        limit: 3,
+        windowSeconds: 3600,
+        errorMessage: 'Too many registration attempts for this email address. Please try again later.',
+      },
+    ]);
+
+    if (!rateCheck.allowed) {
+      return {
+        ok: false,
+        error: rateCheck.error || 'Too many registration attempts. Please try again later.',
+      };
+    }
+
     await dbConnect();
 
     // Check email uniqueness (lowercased)
@@ -473,6 +497,29 @@ export async function requestPasswordReset(
     'If an account exists with this email, a reset link has been sent.';
 
   try {
+    const ip = await getClientIp();
+    const rateCheck = await enforceRateLimits([
+      {
+        key: `rate:forgot-password:ip:${ip}`,
+        limit: 5,
+        windowSeconds: 900,
+        errorMessage: 'Too many password reset requests from this network. Please try again later.',
+      },
+      {
+        key: `rate:forgot-password:email:${email}`,
+        limit: 3,
+        windowSeconds: 900,
+        errorMessage: 'Too many password reset requests for this email address. Please try again later.',
+      },
+    ]);
+
+    if (!rateCheck.allowed) {
+      return {
+        ok: false,
+        error: rateCheck.error || 'Too many password reset requests. Please try again later.',
+      };
+    }
+
     await dbConnect();
     const user = await User.findOne({ email });
 
@@ -595,10 +642,10 @@ export async function resetPassword(
     // Hash new password with bcrypt cost 10
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Update user password
+    // Update user password and invalidate previous sessions
     await User.updateOne(
       { _id: resetTokenDoc.userId },
-      { $set: { passwordHash } }
+      { $set: { passwordHash, sessionsValidFrom: new Date() } }
     );
 
     // Mark token as used

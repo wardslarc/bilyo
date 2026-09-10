@@ -9,3 +9,4 @@ export { Event } from './event';
 export { EmailMessage } from './email-message';
 export { WebhookReceipt } from './webhook-receipt';
 export { VerificationToken } from './verification-token';
+export { RateLimit } from './rate-limit';

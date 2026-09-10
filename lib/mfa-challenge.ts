@@ -17,7 +17,7 @@ export interface MfaChallengePayload {
   attempts: number;
 }
 
-import { signSignedPayload, verifySignedToken } from './signed-token';
+import { signSignedPayload, verifySignedToken } from './signed-token.ts';
 
 /**
  * Creates a signed token for the MFA challenge.

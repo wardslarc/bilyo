@@ -22,7 +22,8 @@ async function handleReap(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // 404, not 401 — do not confirm the endpoint exists to an unauthenticated caller.
+    return new NextResponse(null, { status: 404 });
   }
 
   try {
