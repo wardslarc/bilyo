@@ -40,6 +40,9 @@ export interface IUser {
   updatedAt: Date;
 }
 
+// Supported Currencies
+export type CurrencyCode = 'PHP' | 'USD' | 'EUR' | 'GBP' | 'AUD' | 'SGD' | 'CAD';
+
 // Business Profile
 export interface IBusiness {
   _id: Types.ObjectId;
@@ -49,6 +52,7 @@ export interface IBusiness {
   email?: string;
   phone?: string;
   logoUrl?: string | null;
+  currency?: CurrencyCode;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +85,7 @@ export interface IBusinessSnapshot {
   email?: string;
   phone?: string;
   logoUrl?: string | null;
+  currency?: CurrencyCode;
 }
 
 export interface ILineItem {
@@ -102,6 +107,7 @@ export interface IQuotation {
   userId: Types.ObjectId;
   customerId: Types.ObjectId;
   number: string;
+  currency?: CurrencyCode;
   customerSnapshot?: ICustomerSnapshot;
   businessSnapshot?: IBusinessSnapshot;
   items: ILineItem[];

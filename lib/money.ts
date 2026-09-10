@@ -5,6 +5,27 @@
  * Never parseFloat a peso string into storage.
  */
 
+export const SUPPORTED_CURRENCIES = {
+  PHP: { code: 'PHP', symbol: '₱', label: 'PHP (₱)', name: 'Philippine Peso' },
+  USD: { code: 'USD', symbol: '$', label: 'USD ($)', name: 'US Dollar' },
+  EUR: { code: 'EUR', symbol: '€', label: 'EUR (€)', name: 'Euro' },
+  GBP: { code: 'GBP', symbol: '£', label: 'GBP (£)', name: 'British Pound' },
+  AUD: { code: 'AUD', symbol: 'A$', label: 'AUD (A$)', name: 'Australian Dollar' },
+  SGD: { code: 'SGD', symbol: 'S$', label: 'SGD (S$)', name: 'Singapore Dollar' },
+  CAD: { code: 'CAD', symbol: 'C$', label: 'CAD (C$)', name: 'Canadian Dollar' },
+} as const;
+
+export type SupportedCurrency = keyof typeof SUPPORTED_CURRENCIES;
+
+/**
+ * Returns the display symbol for a currency code (e.g. 'PHP' -> '₱', 'USD' -> '$').
+ */
+export function getCurrencySymbol(currency?: string): string {
+  if (!currency) return '₱';
+  const upper = currency.toUpperCase() as SupportedCurrency;
+  return SUPPORTED_CURRENCIES[upper]?.symbol || currency;
+}
+
 /**
  * Rounds a number half-up to the nearest integer.
  * e.g., 0.5 -> 1, 0.49 -> 0, -0.5 -> -1
@@ -17,8 +38,8 @@ export function roundHalfUp(value: number): number {
 }
 
 /**
- * Parses a peso string or number into integer centavos WITHOUT using parseFloat.
- * Handles commas, currency symbols (₱, PHP), whitespace, and fractional centavos
+ * Parses a currency string or number into integer centavos/cents WITHOUT using parseFloat.
+ * Handles commas, currency symbols (₱, $, €, £, etc.), whitespace, and fractional centavos
  * by rounding half-up at the 3rd decimal place (e.g., .005 -> 1 centavo).
  */
 export function pesosToCentavos(input: string | number): number {
@@ -30,8 +51,8 @@ export function pesosToCentavos(input: string | number): number {
     input = input.toFixed(4);
   }
 
-  // Sanitize input: remove currency symbols, commas, spaces
-  let cleaned = input.replace(/[₱,\s]|PHP/gi, '').trim();
+  // Sanitize input: remove currency symbols, commas, spaces, currency codes
+  let cleaned = input.replace(/[₱$€£,\s]|(PHP|USD|EUR|GBP|AUD|SGD|CAD|A\$|S\$|C\$)/gi, '').trim();
 
   if (!cleaned) {
     return 0;
@@ -67,25 +88,30 @@ export function pesosToCentavos(input: string | number): number {
   return isNegative ? -totalCentavos : totalCentavos;
 }
 
+export const moneyToCentavos = pesosToCentavos;
+
 /**
- * Converts integer centavos to float pesos for input fields / calculations.
+ * Converts integer centavos to float units for input fields / calculations.
  */
 export function centavosToPesos(centavos: number): number {
   return centavos / 100;
 }
 
+export const centavosToUnits = centavosToPesos;
+
 /**
- * Formats integer centavos into a display string: ₱1,234.56
+ * Formats integer centavos into a display string: ₱1,234.56 or $1,234.56
  */
-export function formatMoney(centavos: number): string {
+export function formatMoney(centavos: number, currency: string = 'PHP'): string {
   const isNegative = centavos < 0;
   const absCentavos = Math.abs(centavos);
-  const pesos = Math.floor(absCentavos / 100);
+  const major = Math.floor(absCentavos / 100);
   const remainingCentavos = absCentavos % 100;
 
-  const formattedPesos = pesos.toLocaleString('en-US');
+  const formattedMajor = major.toLocaleString('en-US');
   const formattedCentavos = remainingCentavos.toString().padStart(2, '0');
 
+  const symbol = getCurrencySymbol(currency);
   const sign = isNegative ? '-' : '';
-  return `${sign}₱${formattedPesos}.${formattedCentavos}`;
+  return `${sign}${symbol}${formattedMajor}.${formattedCentavos}`;
 }

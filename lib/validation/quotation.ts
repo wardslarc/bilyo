@@ -81,6 +81,9 @@ export const quotationSchema = z.object({
     .max(2000, 'Terms must be 2000 characters or fewer')
     .optional()
     .default(''),
+  currency: z
+    .enum(['PHP', 'USD', 'EUR', 'GBP', 'AUD', 'SGD', 'CAD'])
+    .optional(),
 });
 
 export type QuotationInput = z.input<typeof quotationSchema>;

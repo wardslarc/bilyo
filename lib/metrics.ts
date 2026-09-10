@@ -179,6 +179,7 @@ export interface RecentQuotationItem {
   number: string;
   customerName: string;
   totalCentavos: number;
+  currency?: string;
   status: string;
   issueDate: string;
   validUntil: string;
@@ -205,7 +206,7 @@ export async function getRecentQuotations(
   })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .select('number status customerSnapshot totalCentavos issueDate validUntil createdAt')
+    .select('number currency status customerSnapshot totalCentavos issueDate validUntil createdAt')
     .lean();
 
   return docs.map((doc) => {
@@ -218,6 +219,7 @@ export async function getRecentQuotations(
       number: String(doc.number ?? ''),
       customerName: customerSnapshot?.name ? String(customerSnapshot.name) : 'Unnamed Client',
       totalCentavos: Number(doc.totalCentavos ?? 0),
+      currency: doc.currency ? String(doc.currency) : 'PHP',
       status: displayStatus,
       issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : new Date().toISOString(),
       validUntil: doc.validUntil ? new Date(doc.validUntil).toISOString() : new Date().toISOString(),

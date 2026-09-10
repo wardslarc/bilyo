@@ -39,6 +39,10 @@ export const businessProfileSchema = z.object({
     .optional()
     .nullable()
     .transform((val) => (val === '' ? null : val ?? null)),
+  currency: z
+    .enum(['PHP', 'USD', 'EUR', 'GBP', 'AUD', 'SGD', 'CAD'])
+    .optional()
+    .default('PHP'),
 });
 
 export type BusinessProfileInput = z.input<typeof businessProfileSchema>;

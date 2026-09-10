@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { formatMoney, pesosToCentavos } from '@/lib/money';
+import { formatMoney, pesosToCentavos, getCurrencySymbol } from '@/lib/money';
 import { type LineItemRow } from '@/lib/documents';
 
 // Re-export for backward compatibility
@@ -14,6 +14,8 @@ export interface LineItemBuilderProps {
   onChange: (items: LineItemRow[]) => void;
   /** Whether the form is in a read-only / disabled state */
   disabled?: boolean;
+  /** Currency code for display */
+  currency?: string;
 }
 
 // --- Helpers ---
@@ -58,6 +60,7 @@ interface RowProps {
   index: number;
   total: number;
   disabled?: boolean;
+  currency?: string;
   onUpdate: (id: string, field: keyof LineItemRow, value: string) => void;
   onRemove: (id: string) => void;
   onMoveUp: (index: number) => void;
@@ -70,6 +73,7 @@ function LineItemRowCard({
   index,
   total,
   disabled,
+  currency = 'PHP',
   onUpdate,
   onRemove,
   onMoveUp,
@@ -78,7 +82,8 @@ function LineItemRowCard({
 }: RowProps) {
   const qty = rowQuantity(row);
   const unitCentavos = rowUnitPriceCentavos(row);
-  const lineAmount = formatMoney(Math.round(qty * unitCentavos));
+  const symbol = getCurrencySymbol(currency);
+  const lineAmount = formatMoney(Math.round(qty * unitCentavos), currency);
 
   return (
     <div className="group bg-white border border-[var(--color-line)] rounded-lg p-3 sm:p-4 transition-shadow hover:shadow-sm">
@@ -165,7 +170,7 @@ function LineItemRowCard({
             Unit Price
           </label>
           <div className="relative">
-            <span className="absolute left-2.5 top-2.5 text-[var(--color-faint)] text-sm">₱</span>
+            <span className="absolute left-2.5 top-2.5 text-[var(--color-faint)] text-sm">{symbol}</span>
             <input
               type="text"
               inputMode="decimal"
@@ -231,7 +236,7 @@ function EmptyState({ onAdd, disabled }: { onAdd: () => void; disabled?: boolean
 
 // --- Main Component ---
 
-export function LineItemBuilder({ items, onChange, disabled }: LineItemBuilderProps) {
+export function LineItemBuilder({ items, onChange, disabled, currency = 'PHP' }: LineItemBuilderProps) {
   const handleUpdate = useCallback(
     (id: string, field: keyof LineItemRow, value: string) => {
       const next = items.map((item) =>
@@ -298,6 +303,7 @@ export function LineItemBuilder({ items, onChange, disabled }: LineItemBuilderPr
             index={index}
             total={items.length}
             disabled={disabled}
+            currency={currency}
             onUpdate={handleUpdate}
             onRemove={handleRemove}
             onMoveUp={handleMoveUp}

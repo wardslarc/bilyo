@@ -219,7 +219,7 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
                     </span>
                   </div>
                   <span className="text-sm font-bold text-[var(--color-text)]">
-                    {formatMoney(q.totalCentavos)}
+                    {formatMoney(q.totalCentavos, q.currency)}
                   </span>
                 </div>
 

@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { markQuotationPaid, type SerializedQuotation } from '@/actions/quotations';
-import { formatMoney, centavosToPesos } from '@/lib/money';
+import { formatMoney, centavosToPesos, getCurrencySymbol } from '@/lib/money';
 import { formatDate } from '@/lib/dates';
 
 interface MarkPaidToggleProps {
@@ -16,6 +16,8 @@ export function MarkPaidToggle({ quotation }: MarkPaidToggleProps) {
 
   const isPaid = Boolean(quotation.paidAt);
   const isAccepted = quotation.status === 'ACCEPTED';
+  const currency = quotation.currency || 'PHP';
+  const currencySymbol = getCurrencySymbol(currency);
 
   const defaultPesos = (
     centavosToPesos(quotation.paidAmountCentavos ?? quotation.totalCentavos)
@@ -103,11 +105,11 @@ export function MarkPaidToggle({ quotation }: MarkPaidToggleProps) {
                   Marked as Paid
                 </span>
                 <span className="text-sm font-bold text-neutral-900">
-                  {formatMoney(paidAmountCentavos)}
+                  {formatMoney(paidAmountCentavos, currency)}
                 </span>
                 {isPartial && (
                   <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    Partial ({formatMoney(paidAmountCentavos)} of {formatMoney(quotation.totalCentavos)})
+                    Partial ({formatMoney(paidAmountCentavos, currency)} of {formatMoney(quotation.totalCentavos, currency)})
                   </span>
                 )}
               </div>
@@ -169,11 +171,11 @@ export function MarkPaidToggle({ quotation }: MarkPaidToggleProps) {
               <form onSubmit={handleMarkPaid} className="pt-2 border-t border-neutral-100 space-y-3">
                 <div className="max-w-xs space-y-1">
                   <label htmlFor="paidAmount" className="block text-xs font-medium text-neutral-700">
-                    Payment Amount (₱)
+                    Payment Amount ({currencySymbol})
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-xs font-semibold text-neutral-400">
-                      ₱
+                      {currencySymbol}
                     </span>
                     <input
                       id="paidAmount"
@@ -185,7 +187,7 @@ export function MarkPaidToggle({ quotation }: MarkPaidToggleProps) {
                     />
                   </div>
                   <p className="text-[11px] text-neutral-400">
-                    Defaults to quote total ({formatMoney(quotation.totalCentavos)}). Enter a lower amount for partial payments.
+                    Defaults to quote total ({formatMoney(quotation.totalCentavos, currency)}). Enter a lower amount for partial payments.
                   </p>
                 </div>
 

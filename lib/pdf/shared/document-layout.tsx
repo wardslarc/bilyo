@@ -30,6 +30,7 @@ export interface BaseDocumentLayoutProps {
   kind?: 'quotation';
   documentTitle: string; // e.g. 'QUOTATION'
   number: string;
+  currency?: string;
   business: PdfBusinessInfo;
   customer: PdfCustomerInfo;
   items: PdfLineItem[];
@@ -108,7 +109,13 @@ export function DocumentInfoSection({
   );
 }
 
-export function DocumentItemsTable({ items }: { items: PdfLineItem[] }) {
+export function DocumentItemsTable({
+  items,
+  currency = 'PHP',
+}: {
+  items: PdfLineItem[];
+  currency?: string;
+}) {
   return (
     <View>
       {/* Table header — fixed on each page for pagination */}
@@ -143,10 +150,10 @@ export function DocumentItemsTable({ items }: { items: PdfLineItem[] }) {
             <Text style={styles.tableCellMoney}>{item.quantity}</Text>
           </View>
           <View style={styles.colUnitPrice}>
-            <Text style={styles.tableCellMoney}>{formatMoney(item.unitPriceCentavos)}</Text>
+            <Text style={styles.tableCellMoney}>{formatMoney(item.unitPriceCentavos, currency)}</Text>
           </View>
           <View style={styles.colAmount}>
-            <Text style={styles.tableCellMoney}>{formatMoney(item.amountCentavos)}</Text>
+            <Text style={styles.tableCellMoney}>{formatMoney(item.amountCentavos, currency)}</Text>
           </View>
         </View>
       ))}
@@ -158,10 +165,12 @@ export function DocumentTotalsBlock({
   subtotalCentavos,
   discountCentavos,
   totalCentavos,
+  currency = 'PHP',
 }: {
   subtotalCentavos: number;
   discountCentavos: number;
   totalCentavos: number;
+  currency?: string;
 }) {
   return (
     <View style={styles.totalsSection}>
@@ -169,7 +178,7 @@ export function DocumentTotalsBlock({
         {/* Subtotal */}
         <View style={styles.totalsRow}>
           <Text style={styles.totalsLabel}>Subtotal</Text>
-          <Text style={styles.totalsValue}>{formatMoney(subtotalCentavos)}</Text>
+          <Text style={styles.totalsValue}>{formatMoney(subtotalCentavos, currency)}</Text>
         </View>
 
         {/* Discount */}
@@ -177,7 +186,7 @@ export function DocumentTotalsBlock({
           <View style={styles.totalsRow}>
             <Text style={styles.totalsLabel}>Discount</Text>
             <Text style={{ ...styles.totalsValue, color: '#dc2626' }}>
-              -{formatMoney(discountCentavos)}
+              -{formatMoney(discountCentavos, currency)}
             </Text>
           </View>
         )}
@@ -187,7 +196,7 @@ export function DocumentTotalsBlock({
         {/* Grand total */}
         <View style={styles.totalsRow}>
           <Text style={styles.totalsFinalLabel}>Total</Text>
-          <Text style={styles.totalsFinalValue}>{formatMoney(totalCentavos)}</Text>
+          <Text style={styles.totalsFinalValue}>{formatMoney(totalCentavos, currency)}</Text>
         </View>
       </View>
     </View>
@@ -239,6 +248,7 @@ export function DocumentFooter({
 export function BaseDocumentLayout({
   documentTitle,
   number,
+  currency = 'PHP',
   business,
   customer,
   items,
@@ -266,11 +276,12 @@ export function BaseDocumentLayout({
           secondaryDateLabel={secondaryDateLabel}
           secondaryDate={secondaryDate}
         />
-        <DocumentItemsTable items={items} />
+        <DocumentItemsTable items={items} currency={currency} />
         <DocumentTotalsBlock
           subtotalCentavos={subtotalCentavos}
           discountCentavos={discountCentavos}
           totalCentavos={totalCentavos}
+          currency={currency}
         />
         <DocumentNotesAndTerms notes={notes} terms={terms} />
         <DocumentFooter number={number} disclaimer={disclaimer} />

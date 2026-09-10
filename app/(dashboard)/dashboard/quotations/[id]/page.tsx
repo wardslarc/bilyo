@@ -46,6 +46,7 @@ export default async function EditQuotationPage({ params }: PageProps) {
       <QuotationTimeline
         events={events}
         publicCode={quotationResult.data.publicCode}
+        currency={quotationResult.data.currency}
       />
 
       {/* Email Delivery Warning Banner (EMAIL_DELIVERY_PLAN.md §5.5) */}

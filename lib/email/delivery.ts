@@ -28,7 +28,8 @@ export async function deliverQuotationEmail(
     const publicUrl = `${appUrl}/q/${quotation.publicCode}`;
     const businessName = quotation.businessSnapshot?.businessName || 'Business';
     const clientName = quotation.customerSnapshot?.name || 'Client';
-    const totalFormatted = formatMoney(quotation.totalCentavos || 0);
+    const quoteCurrency = (quotation as { currency?: string }).currency || (quotation.businessSnapshot as { currency?: string })?.currency || 'PHP';
+    const totalFormatted = formatMoney(quotation.totalCentavos || 0, quoteCurrency);
     const validUntilFormatted = quotation.validUntil ? formatDate(quotation.validUntil) : undefined;
 
     const { subject, html, text } = renderQuotationSentEmail({

@@ -12,6 +12,7 @@ interface QuotePageProps {
 
 export function QuotePage({ document: doc, code }: QuotePageProps) {
   const pdfDownloadUrl = `/api/public/q/${code}/pdf`;
+  const currency = doc.currency || 'PHP';
 
   return (
     <div className="min-h-screen bg-neutral-100/70 py-6 sm:py-12 px-3 sm:px-6 lg:px-8 font-sans antialiased text-neutral-800">
@@ -73,10 +74,10 @@ export function QuotePage({ document: doc, code }: QuotePageProps) {
                         {item.quantity}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono text-neutral-600">
-                        {formatMoney(item.unitPriceCentavos)}
+                        {formatMoney(item.unitPriceCentavos, currency)}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-semibold text-neutral-900">
-                        {formatMoney(item.amountCentavos)}
+                        {formatMoney(item.amountCentavos, currency)}
                       </td>
                     </tr>
                   ))}
@@ -96,12 +97,12 @@ export function QuotePage({ document: doc, code }: QuotePageProps) {
                       {item.description}
                     </span>
                     <span className="font-mono font-bold text-sm text-neutral-900 shrink-0">
-                      {formatMoney(item.amountCentavos)}
+                      {formatMoney(item.amountCentavos, currency)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-neutral-500 pt-1 border-t border-neutral-200/40 font-mono">
                     <span>
-                      {item.quantity} × {formatMoney(item.unitPriceCentavos)}
+                      {item.quantity} × {formatMoney(item.unitPriceCentavos, currency)}
                     </span>
                     <span className="text-[11px] text-neutral-400">
                       #{index + 1}
@@ -121,7 +122,7 @@ export function QuotePage({ document: doc, code }: QuotePageProps) {
               <div className="flex justify-between text-sm text-neutral-600">
                 <span>Subtotal</span>
                 <span className="font-mono font-medium text-neutral-900">
-                  {formatMoney(doc.subtotalCentavos)}
+                  {formatMoney(doc.subtotalCentavos, currency)}
                 </span>
               </div>
 
@@ -129,7 +130,7 @@ export function QuotePage({ document: doc, code }: QuotePageProps) {
                 <div className="flex justify-between text-sm text-rose-600">
                   <span>Discount</span>
                   <span className="font-mono font-medium">
-                    -{formatMoney(doc.discountCentavos)}
+                    -{formatMoney(doc.discountCentavos, currency)}
                   </span>
                 </div>
               )}
@@ -140,7 +141,7 @@ export function QuotePage({ document: doc, code }: QuotePageProps) {
                   Total
                 </span>
                 <span className="font-mono text-2xl sm:text-3xl font-extrabold text-[var(--color-brass)] tracking-tight">
-                  {formatMoney(doc.totalCentavos)}
+                  {formatMoney(doc.totalCentavos, currency)}
                 </span>
               </div>
             </div>

@@ -76,6 +76,9 @@ export default async function DashboardPage() {
   // redirects back to Settings. Point new accounts straight at the onboarding
   // screen instead of sending them through a server-side bounce.
   const hasBusinessProfile = businessResult.ok && Boolean(businessResult.data);
+  const userCurrency = businessResult.ok && businessResult.data?.currency
+    ? businessResult.data.currency
+    : 'PHP';
   const primaryHref = hasBusinessProfile
     ? '/dashboard/quotations/new'
     : '/dashboard/settings?onboarding=1';
@@ -149,7 +152,7 @@ export default async function DashboardPage() {
       ) : (
         /* Summary Metric Cards: The Four Numbers (§1.1, §12 P4-T01) */
         <div className="space-y-6">
-          <StatTiles metrics={metrics} />
+          <StatTiles metrics={metrics} currency={userCurrency} />
 
           {/* Recent Quotations list */}
           <RecentQuotations quotations={recentQuotations} />

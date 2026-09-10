@@ -18,6 +18,7 @@ import {
 import { TotalsPanel } from '@/components/documents/totals-panel';
 import { centavosToPesos, pesosToCentavos } from '@/lib/money';
 import type { ComputedTotals } from '@/lib/totals';
+import type { CurrencyCode } from '@/types';
 import {
   type DocumentStatus,
   toDateInputValue,
@@ -88,6 +89,11 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
   const [notes, setNotes] = useState(initialQuotation?.notes || '');
   const [terms, setTerms] = useState(initialQuotation?.terms || '');
   const [detailsOpen, setDetailsOpen] = useState(Boolean(initialQuotation?.notes || initialQuotation?.terms));
+
+  // Quotation Currency (§5.1 multi-currency)
+  const [currency, setCurrency] = useState<CurrencyCode>(() => {
+    return (initialQuotation?.currency as CurrencyCode) || (business?.currency as CurrencyCode) || 'PHP';
+  });
 
   // Server totals after save (§3.3)
   const [serverTotals, setServerTotals] = useState<ComputedTotals | null>(null);
@@ -179,6 +185,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
 
     const payload = {
       customerId,
+      currency,
       items: items.map((row) => ({
         description: row.description.trim(),
         quantity: row.quantity.trim(),
@@ -231,6 +238,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
   }, [
     isPayloadValidForAutosave,
     customerId,
+    currency,
     items,
     discountInput,
     issueDate,
@@ -250,6 +258,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
 
     const currentJson = JSON.stringify({
       customerId,
+      currency,
       items: items.map((row) => ({
         description: row.description.trim(),
         quantity: row.quantity.trim(),
@@ -283,6 +292,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
     };
   }, [
     customerId,
+    currency,
     items,
     discountInput,
     issueDate,
@@ -342,6 +352,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
     startTransition(async () => {
       const payload = {
         customerId,
+        currency,
         items: items.map((row) => ({
           description: row.description,
           quantity: row.quantity,
@@ -637,8 +648,8 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
             )}
           </div>
 
-          {/* Date Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Date & Currency Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label
                 htmlFor="issueDate"
@@ -687,6 +698,29 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
                 </p>
               )}
             </div>
+            <div>
+              <label
+                htmlFor="currency"
+                className="block text-xs font-medium text-neutral-700 mb-1"
+              >
+                Currency
+              </label>
+              <select
+                id="currency"
+                value={currency}
+                disabled={isLocked || isPending}
+                onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-[var(--color-line)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-brass)]/40 disabled:bg-[var(--color-paper-sunk)] disabled:cursor-not-allowed text-neutral-900"
+              >
+                <option value="PHP">₱ PHP (Philippine Peso)</option>
+                <option value="USD">$ USD (US Dollar)</option>
+                <option value="EUR">€ EUR (Euro)</option>
+                <option value="GBP">£ GBP (British Pound)</option>
+                <option value="AUD">A$ AUD (Australian Dollar)</option>
+                <option value="SGD">S$ SGD (Singapore Dollar)</option>
+                <option value="CAD">C$ CAD (Canadian Dollar)</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -702,6 +736,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
             items={items}
             onChange={handleItemsChange}
             disabled={isLocked || isPending}
+            currency={currency}
           />
         </div>
 
@@ -712,6 +747,7 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
           onDiscountChange={handleDiscountChange}
           serverTotals={serverTotals}
           disabled={isLocked || isPending}
+          currency={currency}
         />
 
         {/* Collapsed Notes & Terms Disclosure (§10, P2-T04) */}

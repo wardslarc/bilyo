@@ -55,6 +55,7 @@ export async function GET(_request: Request, { params }: RouteContext): Promise<
 
   const pdfProps: QuotationDocumentProps = {
     number: quotation.number,
+    currency: quotation.currency || quotation.businessSnapshot?.currency || (business as { currency?: string }).currency || 'PHP',
     items: (quotation.items || []).map((item) => ({
       description: item.description,
       quantity: item.quantity,

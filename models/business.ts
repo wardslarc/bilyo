@@ -34,6 +34,12 @@ const BusinessSchema = new Schema<IBusiness>(
       type: String,
       default: null,
     },
+    currency: {
+      type: String,
+      default: 'PHP',
+      uppercase: true,
+      trim: true,
+    },
   },
   {
     timestamps: true,

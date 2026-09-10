@@ -14,6 +14,7 @@ export type CustomerInfo = PdfCustomerInfo;
 
 export interface QuotationDocumentProps {
   number: string;
+  currency?: string;
   items: LineItem[];
   subtotalCentavos: number;
   discountCentavos: number;
@@ -28,6 +29,7 @@ export interface QuotationDocumentProps {
 
 export function QuotationDocument({
   number,
+  currency = 'PHP',
   items,
   subtotalCentavos,
   discountCentavos,
@@ -44,6 +46,7 @@ export function QuotationDocument({
       kind="quotation"
       documentTitle="QUOTATION"
       number={number}
+      currency={currency}
       business={business}
       customer={customer}
       items={items}

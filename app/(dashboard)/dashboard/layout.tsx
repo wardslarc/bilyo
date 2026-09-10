@@ -5,6 +5,8 @@ import { requireUser, assertNotSuspended, AuthGuardError } from '@/lib/auth-guar
 import { getUnseenAttentionCount } from '@/lib/metrics';
 import SignOutButton from '@/components/auth/SignOutButton';
 
+import { DashboardNav } from '@/components/dashboard/DashboardNav';
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -32,13 +34,7 @@ export default async function DashboardLayout({
     console.error('Dashboard nav: unseen event count failed:', (error as Error).message);
   }
 
-  const navItems = [
-    { label: 'Dashboard', href: '/dashboard', badge: unseenCount },
-    { label: 'Quotations', href: '/dashboard/quotations' },
-    { label: 'Clients', href: '/dashboard/clients' },
-    { label: 'Settings', href: '/dashboard/settings' },
-    { label: 'Account', href: '/dashboard/account' },
-  ];
+  const isAdmin = user.role === 'ADMIN';
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
@@ -46,28 +42,13 @@ export default async function DashboardLayout({
       <header className="sticky top-0 z-40 bg-white border-b border-[var(--color-line)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2" title="Bilyo Home">
               <span className="font-bold text-xl tracking-tight text-neutral-900">
                 Bilyo<span className="text-[var(--color-primary)]">app.com</span>
               </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="px-3 py-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors inline-flex items-center"
-                >
-                  <span>{item.label}</span>
-                  {item.badge && item.badge > 0 ? (
-                    <span className="ml-1.5 px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-amber-500 text-white min-w-4 text-center leading-none">
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </Link>
-              ))}
-            </nav>
+            <DashboardNav unseenCount={unseenCount} isAdmin={isAdmin} />
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
@@ -106,24 +87,6 @@ export default async function DashboardLayout({
             <div className="h-6 w-px bg-neutral-200 hidden sm:block" />
             <SignOutButton className="text-xs font-medium text-neutral-500 hover:text-neutral-900 px-2.5 py-1.5 rounded-md hover:bg-neutral-100 transition-colors" />
           </div>
-        </div>
-
-        {/* Mobile secondary navigation */}
-        <div className="md:hidden border-t border-[var(--color-line)] px-4 py-2 flex items-center gap-1 overflow-x-auto">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md whitespace-nowrap transition-colors inline-flex items-center"
-            >
-              <span>{item.label}</span>
-              {item.badge && item.badge > 0 ? (
-                <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-500 text-white min-w-4 text-center leading-none">
-                  {item.badge}
-                </span>
-              ) : null}
-            </Link>
-          ))}
         </div>
       </header>
 
