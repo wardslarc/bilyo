@@ -30,6 +30,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const isRegistered = searchParams.get('registered') === '1';
+  const isVerified = searchParams.get('verified') === '1';
 
   const [formData, setFormData] = useState({
     email: '',
@@ -98,7 +99,9 @@ export default function LoginForm() {
       });
 
       if (!res || res.error) {
-        if (res?.code === 'account_suspended' || res?.error?.includes('account_suspended')) {
+        if (res?.code === 'email_not_verified' || res?.error?.includes('email_not_verified')) {
+          setAuthError('Please verify your email before signing in.');
+        } else if (res?.code === 'account_suspended' || res?.error?.includes('account_suspended')) {
           setAuthError('Your account has been suspended. Please contact support at support@bilyoapp.com');
         } else {
           setAuthError('Invalid email or password');
@@ -127,6 +130,12 @@ export default function LoginForm() {
         </p>
       </div>
 
+      {isVerified && (
+        <div className="mb-5 p-3.5 text-sm rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+          Email verified successfully! Please sign in with your credentials.
+        </div>
+      )}
+
       {isRegistered && (
         <div className="mb-5 p-3.5 text-sm rounded-lg bg-[var(--color-brass-wash)] border border-[var(--color-brass)]/30 text-[var(--color-brass-ink)]">
           Account created successfully. Please sign in with your credentials.
@@ -134,8 +143,16 @@ export default function LoginForm() {
       )}
 
       {authError && (
-        <div className="mb-5 p-3.5 text-sm rounded-lg bg-red-50 border border-red-200 text-red-700">
-          {authError}
+        <div className="mb-5 p-3.5 text-sm rounded-lg bg-red-50 border border-red-200 text-red-700 flex flex-col gap-1">
+          <span>{authError}</span>
+          {authError.toLowerCase().includes('verify your email') && (
+            <Link
+              href="/verify-email"
+              className="text-xs font-semibold underline text-red-800 hover:text-red-950 mt-1"
+            >
+              Enter verification code &rarr;
+            </Link>
+          )}
         </div>
       )}
 

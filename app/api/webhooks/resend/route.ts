@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { EmailMessage, WebhookReceipt } from '@/models';
+import { EmailMessage, WebhookReceipt, User } from '@/models';
 import type { EmailMessageStatus } from '@/types';
 import { verifySvixSignature } from '@/lib/email/signature';
 import { canAdvanceStatus } from '@/lib/email/status';
@@ -102,6 +102,26 @@ export async function POST(req: NextRequest) {
         updateSet.deliveredAt = eventDate;
       } else if (incomingStatus === 'BOUNCED') {
         updateSet.bouncedAt = eventDate;
+
+        // Hard-bounce feedback loop on email verification (SIGNUP_VERIFICATION_PLAN.md §4.9)
+        const bounceType = String(
+          (payload.data as { bounce_type?: string; type?: string })?.bounce_type ||
+          (payload.data as { bounce_type?: string; type?: string })?.type ||
+          ''
+        ).toLowerCase();
+
+        // Resend flags permanent/hard bounces; soft bounces (transient/full) must not kill account
+        const isHardBounce =
+          bounceType.includes('permanent') ||
+          bounceType.includes('hard') ||
+          (!bounceType.includes('transient') && !bounceType.includes('soft'));
+
+        if (existing.kind === 'EMAIL_VERIFICATION' && isHardBounce) {
+          await User.updateOne(
+            { _id: existing.userId },
+            { $set: { emailBouncedAt: eventDate } }
+          );
+        }
       } else if (incomingStatus === 'COMPLAINED') {
         updateSet.complainedAt = eventDate;
       }

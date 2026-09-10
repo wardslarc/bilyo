@@ -58,6 +58,16 @@ export async function verifyPasswordStep(
       return { ok: false, error: 'Invalid email or password' };
     }
 
+    // Check email verification gate (SIGNUP_VERIFICATION_PLAN.md §4.8)
+    if (!user.emailVerifiedAt) {
+      const { setSignupChallengeCookie } = await import('../lib/signup-challenge.ts');
+      await setSignupChallengeCookie(user._id.toString(), user.email);
+      return {
+        ok: false,
+        error: 'Please verify your email address before signing in.',
+      };
+    }
+
     // Check account suspension (§5.8)
     if (user.suspendedAt || user.deletionRequestedAt) {
       return {
