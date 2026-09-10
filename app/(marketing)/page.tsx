@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { QuotePreview } from "@/components/marketing/quote-preview";
 import { PricingSection } from "@/components/marketing/pricing-section";
-import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { QUOTATION_FOOTER } from "@/lib/documents";
 
@@ -299,8 +298,6 @@ export default function LandingPage() {
           </Link>
         </div>
       </div>
-
-      <SiteFooter />
     </>
   );
 }

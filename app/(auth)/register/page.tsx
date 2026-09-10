@@ -209,7 +209,26 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      <div className="mt-6 text-center text-xs text-[var(--color-muted)]">
+      {/* Consent at signup — this is what makes the Terms binding (Terms §1). */}
+      <p className="mt-5 text-center text-xs leading-relaxed text-[var(--color-muted)]">
+        By creating an account you agree to our{' '}
+        <Link
+          href="/terms"
+          className="font-medium text-[var(--color-ink)] underline transition-colors hover:text-[var(--color-brass)]"
+        >
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link
+          href="/privacy"
+          className="font-medium text-[var(--color-ink)] underline transition-colors hover:text-[var(--color-brass)]"
+        >
+          Privacy Policy
+        </Link>
+        .
+      </p>
+
+      <div className="mt-5 border-t border-[var(--color-line)] pt-5 text-center text-xs text-[var(--color-muted)]">
         Already have an account?{' '}
         <Link
           href="/login"

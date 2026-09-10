@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BilyoMark } from "@/components/marketing/bilyo-mark";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 const FOOTER_LINKS = [
   { href: "#features", label: "Features" },
@@ -36,8 +37,12 @@ export function SiteFooter() {
         </div>
 
         <div className="border-paper/10 mt-6 flex flex-col gap-2 border-t pt-5 text-sm lg:mt-7 lg:flex-row lg:items-center lg:justify-between lg:pt-6">
-          {/* TODO: replace with the real support address before launch. */}
-          <span>[SUPPORT EMAIL]</span>
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="hover:text-brass transition-colors"
+          >
+            {SUPPORT_EMAIL}
+          </a>
           <span>
             © {new Date().getFullYear()} Bilyo · Built in the Philippines
           </span>

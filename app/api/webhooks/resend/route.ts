@@ -126,6 +126,15 @@ export async function POST(req: NextRequest) {
         updateSet.complainedAt = eventDate;
       }
 
+      // Suppression rows must outlive the 12-month retention window (Privacy
+      // Policy §9). lib/email/send.ts reads BOUNCED/COMPLAINED rows before every
+      // send to decide whether an address is suppressed, so letting these expire
+      // would silently re-enable sending to an address that already rejected us.
+      // purgeAt: null is inert to the TTL index — see models/email-message.ts.
+      if (incomingStatus === 'BOUNCED' || incomingStatus === 'COMPLAINED') {
+        updateSet.purgeAt = null;
+      }
+
       await EmailMessage.findByIdAndUpdate(existing._id, {
         $set: updateSet,
       });

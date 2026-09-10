@@ -251,6 +251,8 @@ export interface IEmailMessage {
   deliveredAt?: Date | null;
   bouncedAt?: Date | null;
   complainedAt?: Date | null;
+  /** TTL marker — null means this row is kept indefinitely. See models/email-message.ts. */
+  purgeAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

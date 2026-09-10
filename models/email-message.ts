@@ -87,6 +87,21 @@ const EmailMessageSchema = new Schema<IEmailMessage>(
       type: Date,
       default: null,
     },
+    /**
+     * When this row becomes eligible for automatic deletion (Privacy Policy §9:
+     * email delivery records are kept 12 months).
+     *
+     * Deliberately NOT set for rows that must outlive that window. MongoDB's TTL
+     * monitor ignores documents where the indexed field is missing or is not a
+     * Date, so unsetting purgeAt makes a row permanent. The Resend webhook does
+     * exactly that on a bounce or complaint, because lib/email/send.ts reads
+     * those rows before every send to decide whether an address is suppressed —
+     * expiring them would silently re-enable sending to a dead address.
+     */
+    purgeAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -105,6 +120,11 @@ EmailMessageSchema.index(
 );
 EmailMessageSchema.index({ idempotencyKey: 1 }, { unique: true });
 EmailMessageSchema.index({ toEmail: 1, status: 1 });
+
+// TTL: delete a row once purgeAt has passed. Rows whose purgeAt is null (or
+// absent) never expire — that is how bounce and complaint suppressions are kept
+// indefinitely. See the purgeAt field comment above.
+EmailMessageSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 
 export const EmailMessage: Model<IEmailMessage> =
   mongoose.models.EmailMessage ||
