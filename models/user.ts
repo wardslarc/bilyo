@@ -23,6 +23,18 @@ const UserSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
+    emailVerificationSentAt: {
+      type: Date,
+      default: null,
+    },
+    emailVerificationSends: {
+      type: Number,
+      default: 0,
+    },
+    emailBouncedAt: {
+      type: Date,
+      default: null,
+    },
 
 
     // MFA (§5.11)
@@ -111,6 +123,7 @@ UserSchema.index({ mfaPendingExpiresAt: 1 }, { sparse: true });
 UserSchema.index({ role: 1 });
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ suspendedAt: 1 }, { sparse: true });
+UserSchema.index({ emailVerifiedAt: 1, createdAt: 1 });
 
 export const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

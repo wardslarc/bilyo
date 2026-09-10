@@ -9,6 +9,9 @@ export interface IUser {
   passwordHash: string;
   name: string;
   emailVerifiedAt?: Date | null;
+  emailVerificationSentAt?: Date | null;
+  emailVerificationSends?: number;
+  emailBouncedAt?: Date | null;
 
   // MFA (§5.11)
   mfaEnabledAt?: Date | null;
@@ -211,7 +214,8 @@ export type EmailMessageKind =
   | 'QUOTATION_SENT'
   | 'QUOTATION_RESPONDED'
   | 'PASSWORD_RESET'
-  | 'ACCESS_EXPIRING';
+  | 'ACCESS_EXPIRING'
+  | 'EMAIL_VERIFICATION';
 
 export type EmailMessageStatus =
   | 'SKIPPED'
@@ -251,5 +255,22 @@ export interface IWebhookReceipt {
   svixId: string;
   receivedAt: Date;
   createdAt: Date;
+}
+
+// Verification Token (SIGNUP_VERIFICATION_PLAN.md §3.1)
+export interface IVerificationToken {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  purpose: 'EMAIL_VERIFY';
+  tokenHash: string;
+  expiresAt: Date;
+  codeHash: string;
+  codeExpiresAt: Date;
+  attempts: number;
+  codeInvalidAt?: Date | null;
+  usedAt?: Date | null;
+  grantedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 

@@ -20,6 +20,7 @@ const EmailMessageSchema = new Schema<IEmailMessage>(
         'QUOTATION_RESPONDED',
         'PASSWORD_RESET',
         'ACCESS_EXPIRING',
+        'EMAIL_VERIFICATION',
       ],
       required: true,
     },
