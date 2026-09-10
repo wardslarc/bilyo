@@ -5,6 +5,15 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '../lib/mongodb.ts';
 import { User } from '../models/user.ts';
 import { PasswordResetToken } from '../models/password-reset-token.ts';
+import { VerificationToken } from '../models/verification-token.ts';
+import { isDisposableDomain } from '../lib/email/disposable-domains.ts';
+import { domainAcceptsMail } from '../lib/email/dns-check.ts';
+import {
+  setSignupChallengeCookie,
+  getSignupChallengeFromCookies,
+} from '../lib/signup-challenge.ts';
+import { renderEmailVerificationEmail } from '../lib/email/templates/email-verification.ts';
+import { sendEmail } from '../lib/email/send.ts';
 import {
   registerSchema,
   forgotPasswordSchema,
@@ -13,14 +22,77 @@ import {
 import type { ActionResult } from '@/types';
 
 /**
+ * Issues a 6-digit code and 32-byte magic link token for email verification (SIGNUP_VERIFICATION_PLAN.md §4.3).
+ * Code expires in 15 minutes; link expires in 24 hours.
+ */
+export async function issueVerificationCredential(user: {
+  _id: import('mongoose').Types.ObjectId | string;
+  name: string;
+  email: string;
+}): Promise<void> {
+  const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const codeHash = await bcrypt.hash(code, 10);
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+  const codeExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15m
+
+  await VerificationToken.create({
+    userId: user._id,
+    purpose: 'EMAIL_VERIFY',
+    tokenHash,
+    codeHash,
+    expiresAt,
+    codeExpiresAt,
+    attempts: 0,
+  });
+
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: { emailVerificationSentAt: new Date() },
+      $inc: { emailVerificationSends: 1 },
+    }
+  );
+
+  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  const verifyUrl = `${appUrl}/verify-email/${token}`;
+
+  try {
+    const { subject, html, text } = renderEmailVerificationEmail({
+      userName: user.name,
+      code,
+      verifyUrl,
+    });
+
+    const sendRes = await sendEmail({
+      userId: user._id,
+      kind: 'EMAIL_VERIFICATION',
+      toEmail: user.email,
+      idempotencyKey: `email-verify:${tokenHash}`,
+      subject,
+      html,
+      text,
+    });
+
+    if (process.env.NODE_ENV !== 'production' && sendRes.ok && sendRes.skipped) {
+      console.log(`[DEV EMAIL VERIFICATION] To: ${user.email} | Code: ${code} | Link: ${verifyUrl}`);
+    }
+  } catch (err) {
+    console.error('[actions/auth] Verification email dispatch error:', err);
+  }
+}
+
+/**
  * Server Action for User Registration (§8.1, M1-T02).
- * Validates with Zod, checks email uniqueness, hashes with bcrypt cost 10,
- * assigns role 'USER', plan 'FREE', planSource 'DEFAULT'.
- * Never logs raw passwords. Duplicate email returns field error, never 500.
+ * Validates with Zod, checks disposable blocklist (Gate 2), checks DNS MX (Gate 3),
+ * checks email uniqueness, hashes with bcrypt cost 10, creates user with emailVerifiedAt: null,
+ * issues verification credential, sets signup challenge cookie.
  */
 export async function registerUser(
   input: unknown
-): Promise<ActionResult<{ userId: string }>> {
+): Promise<ActionResult<{ userId: string; pendingVerification?: boolean }>> {
   const parseResult = registerSchema.safeParse(input);
 
   if (!parseResult.success) {
@@ -39,6 +111,29 @@ export async function registerUser(
   }
 
   const { name, email, password } = parseResult.data;
+
+  // Gate 2: Disposable-domain blocklist (§4.1)
+  if (isDisposableDomain(email)) {
+    return {
+      ok: false,
+      error: 'Disposable email addresses are not accepted. Please use a permanent email address.',
+      fieldErrors: {
+        email: 'Disposable email addresses are not accepted',
+      },
+    };
+  }
+
+  // Gate 3: DNS MX lookup on domain (§4.2)
+  const mxVerdict = await domainAcceptsMail(email);
+  if (mxVerdict === 'NO_MX') {
+    return {
+      ok: false,
+      error: 'We cannot find this email domain. Please check for typos.',
+      fieldErrors: {
+        email: 'We cannot find this email domain. Please check for typos.',
+      },
+    };
+  }
 
   try {
     await dbConnect();
@@ -62,18 +157,30 @@ export async function registerUser(
       throw new Error('Failed to generate valid bcrypt hash');
     }
 
-    // Create user with default role
+    // Create user with emailVerifiedAt: null (Gate 4 pending)
     const newUser = await User.create({
       name,
       email,
       passwordHash,
       role: 'USER',
+      emailVerifiedAt: null,
     });
+
+    // Issue verification code + magic link
+    await issueVerificationCredential({
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+    });
+
+    // Set signed signup challenge cookie for /verify-email
+    await setSignupChallengeCookie(newUser._id.toString(), newUser.email);
 
     return {
       ok: true,
       data: {
         userId: newUser._id.toString(),
+        pendingVerification: true,
       },
     };
   } catch (error) {
@@ -82,6 +189,94 @@ export async function registerUser(
     return {
       ok: false,
       error: 'An unexpected error occurred while creating your account. Please try again.',
+    };
+  }
+}
+
+/**
+ * Server Action to resend a verification code (§4.7).
+ * Enforces 60s cooldown, 5-send lifetime cap, and hard stop on bounced address.
+ * Burns prior codes while keeping prior links alive.
+ */
+export async function resendVerification(): Promise<
+  ActionResult<{ success: boolean; cooldownSeconds?: number }>
+> {
+  try {
+    await dbConnect();
+    const challenge = await getSignupChallengeFromCookies();
+    if (!challenge?.userId) {
+      return {
+        ok: false,
+        error: 'Verification session expired. Please sign in or register again.',
+      };
+    }
+
+    const user = await User.findById(challenge.userId);
+    if (!user) {
+      return {
+        ok: false,
+        error: 'Account not found. Please register again.',
+      };
+    }
+
+    if (user.emailVerifiedAt) {
+      return {
+        ok: true,
+        data: { success: true },
+      };
+    }
+
+    // Hard stop if email hard bounced
+    if (user.emailBouncedAt) {
+      return {
+        ok: false,
+        error: 'We were unable to deliver email to this address. Please register with a different email.',
+      };
+    }
+
+    // Lifetime cap: max 5 sends (§4.7)
+    if ((user.emailVerificationSends || 0) >= 5) {
+      return {
+        ok: false,
+        error: 'Maximum verification attempts reached. Please contact support at support@bilyoapp.com',
+      };
+    }
+
+    // Cooldown: 60 seconds
+    if (user.emailVerificationSentAt) {
+      const elapsed = Date.now() - user.emailVerificationSentAt.getTime();
+      if (elapsed < 60_000) {
+        const remaining = Math.ceil((60_000 - elapsed) / 1000);
+        return {
+          ok: false,
+          error: `Please wait ${remaining}s before requesting a new code.`,
+        };
+      }
+    }
+
+    // Burn prior codes while leaving prior links alive (§4.7)
+    await VerificationToken.updateMany(
+      { userId: user._id, purpose: 'EMAIL_VERIFY', usedAt: null, codeInvalidAt: null },
+      { $set: { codeInvalidAt: new Date() } }
+    );
+
+    await issueVerificationCredential({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+    });
+
+    await setSignupChallengeCookie(user._id.toString(), user.email);
+
+    return {
+      ok: true,
+      data: { success: true },
+    };
+  } catch (error) {
+    console.error('[actions/auth] resendVerification error:', error);
+    return {
+      ok: false,
+      error: 'An unexpected error occurred while resending the verification code.',
     };
   }
 }
