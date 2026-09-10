@@ -13,6 +13,10 @@ export class MfaRequiredError extends CredentialsSignin {
   code = 'mfa_required';
 }
 
+export class EmailNotVerifiedError extends CredentialsSignin {
+  code = 'email_not_verified';
+}
+
 // Valid cost-10 dummy hash for timing attack mitigation when email is unknown (§8.10, M1-T03)
 const DUMMY_HASH = '$2a$10$6iTTYhZTDeaLrFMbocue6.gz2JAFZ6MDEmHW6mdSWBrO5tKKowGoS';
 
@@ -41,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           await dbConnect();
           const user = await User.findById(verified.userId);
-          if (!user || user.suspendedAt || user.deletionRequestedAt) {
+          if (!user || user.suspendedAt || user.deletionRequestedAt || !user.emailVerifiedAt) {
             return null;
           }
 
@@ -76,6 +80,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) {
           return null;
+        }
+
+        // Reject unverified email addresses (SIGNUP_VERIFICATION_PLAN.md §4.8)
+        if (!user.emailVerifiedAt) {
+          throw new EmailNotVerifiedError();
         }
 
         // Reject suspended or deletion-requested accounts (§5.8, M1-T05)
