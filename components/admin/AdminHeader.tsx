@@ -12,14 +12,15 @@ export function AdminHeader({ adminEmail }: AdminHeaderProps) {
   const pathname = usePathname();
 
   const navItems = [
+    { label: 'Overview', href: '/admin' },
     { label: 'Users', href: '/admin/users' },
     { label: 'Lookup', href: '/admin/lookup' },
     { label: 'Audit Log', href: '/admin/audit' },
   ];
 
   const isActive = (href: string) => {
-    if (href === '/admin/users' && (pathname === '/admin' || pathname === '/admin/users')) {
-      return true;
+    if (href === '/admin') {
+      return pathname === '/admin';
     }
     return pathname.startsWith(href);
   };
@@ -30,7 +31,7 @@ export function AdminHeader({ adminEmail }: AdminHeaderProps) {
         {/* Left branding and nav */}
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2.5">
-            <Link href="/admin/users" className="flex items-center gap-2">
+            <Link href="/admin" className="flex items-center gap-2" title="Admin Home">
               <span className="font-extrabold text-xl tracking-tight text-white">
                 Bilyo<span className="text-indigo-400">app.com</span>
               </span>
@@ -88,9 +89,10 @@ export function AdminHeader({ adminEmail }: AdminHeaderProps) {
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard"
-              className="text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              className="text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1.5"
             >
-              Exit to App →
+              <span>Exit to App</span>
+              <span>→</span>
             </Link>
             <SignOutButton className="text-xs font-medium text-slate-400 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors" />
           </div>
@@ -98,23 +100,32 @@ export function AdminHeader({ adminEmail }: AdminHeaderProps) {
       </div>
 
       {/* Mobile navigation */}
-      <div className="md:hidden border-t border-slate-800 px-4 py-2 flex items-center gap-2 overflow-x-auto bg-slate-900">
-        {navItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
-                active
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
+      <div className="md:hidden border-t border-slate-800 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto bg-slate-900">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {navItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
+                  active
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+        <Link
+          href="/dashboard"
+          className="text-xs font-medium text-indigo-300 hover:text-white px-2.5 py-1 rounded bg-indigo-950/60 border border-indigo-800/60 whitespace-nowrap flex items-center gap-1 shrink-0"
+        >
+          <span>App</span>
+          <span>→</span>
+        </Link>
       </div>
     </header>
   );
