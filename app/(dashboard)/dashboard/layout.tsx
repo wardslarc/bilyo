@@ -3,9 +3,12 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireUser, assertNotSuspended, AuthGuardError } from '@/lib/auth-guards';
 import { getUnseenAttentionCount } from '@/lib/metrics';
+import { accessState } from '@/lib/access';
 import SignOutButton from '@/components/auth/SignOutButton';
-
+import { AccessBanner } from '@/components/dashboard/AccessBanner';
+import { TrialWallOverlay } from '@/components/dashboard/TrialWallOverlay';
 import { DashboardNav } from '@/components/dashboard/DashboardNav';
+import { getUserUsageSnapshot } from '@/actions/notify-interest';
 
 export default async function DashboardLayout({
   children,
@@ -13,9 +16,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   let user;
+  let userDoc;
   try {
     user = await requireUser();
-    await assertNotSuspended(user.id);
+    userDoc = await assertNotSuspended(user.id);
   } catch (error) {
     if (error instanceof AuthGuardError) {
       if (error.code === 'ACCOUNT_SUSPENDED') {
@@ -35,6 +39,17 @@ export default async function DashboardLayout({
   }
 
   const isAdmin = user.role === 'ADMIN';
+  const access = accessState(userDoc);
+  const betaEndsAt = process.env.BETA_ENDS_AT || null;
+
+  let usageSnapshot = { quotationsSent: 0, quotationsAccepted: 0, acceptedValueCentavos: 0 };
+  if (access.status === 'EXPIRED_TRIAL') {
+    try {
+      usageSnapshot = await getUserUsageSnapshot(user.id);
+    } catch (err) {
+      console.error('Usage snapshot query failed:', (err as Error).message);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
@@ -89,6 +104,22 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
+
+      <AccessBanner
+        status={access.status}
+        accessUntil={access.accessUntil ? access.accessUntil.toISOString() : null}
+        daysLeft={access.daysLeft}
+        betaEndsAt={betaEndsAt}
+      />
+
+      {access.status === 'EXPIRED_TRIAL' && (
+        <TrialWallOverlay
+          status={access.status}
+          quotationsSent={usageSnapshot.quotationsSent}
+          quotationsAccepted={usageSnapshot.quotationsAccepted}
+          acceptedValueCentavos={usageSnapshot.acceptedValueCentavos}
+        />
+      )}
 
       {/* Main content body */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">

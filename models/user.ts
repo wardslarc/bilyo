@@ -118,6 +118,16 @@ const UserSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
+
+    // Access & Trial (§6.10, ACCESS_BILLING_PLAN.md §3.3)
+    accessUntil: {
+      type: Date,
+      default: null,
+    },
+    firstPaidAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -130,6 +140,7 @@ UserSchema.index({ role: 1 });
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ suspendedAt: 1 }, { sparse: true });
 UserSchema.index({ emailVerifiedAt: 1, createdAt: 1 });
+UserSchema.index({ accessUntil: 1 }, { sparse: true });
 
 export const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

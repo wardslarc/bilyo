@@ -39,8 +39,25 @@ export interface IUser {
   // Session Invalidation
   sessionsValidFrom?: Date | null;
 
+  // Access & Trial (§6.10, ACCESS_BILLING_PLAN.md §3.3)
+  accessUntil?: Date | null;
+  firstPaidAt?: Date | null;
+
   createdAt: Date;
   updatedAt: Date;
+}
+
+export type AccessStatus =
+  | 'BETA'
+  | 'TRIAL'
+  | 'ACTIVE'
+  | 'EXPIRED_TRIAL'
+  | 'EXPIRED_PAID';
+
+export interface AccessState {
+  status: AccessStatus;
+  accessUntil: Date | null;
+  daysLeft: number;
 }
 
 // Supported Currencies
@@ -292,5 +309,30 @@ export interface IRateLimit {
   count: number;
   expiresAt: Date;
   createdAt: Date;
+}
+
+// Interests & Willingness-To-Pay Survey (ACCESS_BILLING_PLAN.md §3.4, ACCESS_ROLLOUT_PLAN.md A5, A6)
+export type InterestSource = 'PRICING_NOTIFY' | 'TRIAL_WALL';
+export type InterestPassType = 'D30' | 'D90' | 'Y1';
+export type TrialWallAnswer = 'WOULD_PAY_LOWER' | 'NOT_NOW' | 'WOULD_NOT_PAY';
+
+export interface IUsageSnapshot {
+  quotationsSent: number;
+  quotationsAccepted: number;
+  acceptedValueCentavos: number;
+}
+
+export interface IInterest {
+  _id: Types.ObjectId;
+  userId?: Types.ObjectId | null;
+  email: string;
+  source: InterestSource;
+  passType?: InterestPassType | null;
+  answer?: TrialWallAnswer | null;
+  suggestedPriceCentavos?: number | null;
+  comment?: string | null;
+  usageSnapshot: IUsageSnapshot;
+  createdAt: Date;
+  updatedAt: Date;
 }
 

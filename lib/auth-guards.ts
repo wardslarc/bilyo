@@ -71,9 +71,13 @@ export async function requireUser(): Promise<AuthenticatedUser> {
  * Always re-reads the database to catch suspensions mid-session.
  * Throws typed error 'ACCOUNT_SUSPENDED' if suspendedAt or deletionRequestedAt is set.
  */
+import { accessState } from './access.ts';
+
 export async function assertNotSuspended(userId: string, authTime?: number | null) {
   await dbConnect();
-  const user = await User.findById(userId).select('suspendedAt deletionRequestedAt sessionsValidFrom');
+  const user = await User.findById(userId).select(
+    'suspendedAt deletionRequestedAt sessionsValidFrom accessUntil firstPaidAt'
+  );
   if (!user) {
     throw new AuthGuardError('User not found', 'UNAUTHORIZED');
   }
@@ -93,4 +97,30 @@ export async function assertNotSuspended(userId: string, authTime?: number | nul
   }
 
   return user;
+}
+
+/**
+ * Asserts that the user's access status permits creating or sending quotations (§6.10, ACCESS_ROLLOUT_PLAN.md A4).
+ * If ACCESS_ENFORCED is false or unset, no check is performed.
+ * Only blocks EXPIRED_TRIAL and EXPIRED_PAID.
+ * Draft updates, reads, exports, and PDF downloads never call this guard.
+ */
+export async function assertAccessActive(userId: string): Promise<void> {
+  if (process.env.ACCESS_ENFORCED !== 'true') {
+    return;
+  }
+
+  await dbConnect();
+  const user = await User.findById(userId).select('accessUntil firstPaidAt').lean();
+  if (!user) {
+    throw new AuthGuardError('User not found', 'UNAUTHORIZED');
+  }
+
+  const { status } = accessState(user);
+  if (status === 'EXPIRED_TRIAL' || status === 'EXPIRED_PAID') {
+    throw new AuthGuardError(
+      'Your quotation access has expired. Please select a pass to continue sending.',
+      'ACCESS_EXPIRED'
+    );
+  }
 }

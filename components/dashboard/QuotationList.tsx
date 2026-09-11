@@ -93,6 +93,10 @@ export function QuotationList({ initialQuotations }: QuotationListProps) {
       if (!res.ok) {
         setActionError(res.error);
         setActionSuccess(null);
+        if (res.error?.includes('access has expired')) {
+          sessionStorage.removeItem('bilyo_trial_wall_dismissed');
+          window.dispatchEvent(new CustomEvent('bilyo:show-trial-wall'));
+        }
         return;
       }
       setActionError(null);

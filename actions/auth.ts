@@ -433,9 +433,20 @@ export async function verifySignupCode(
 
     // Code matched! Mark emailVerifiedAt on user and usedAt on token
     const verifiedAt = new Date();
+    const userUpdateFields: Record<string, unknown> = {
+      emailVerifiedAt: verifiedAt,
+    };
+
+    // Trial assignment (§6.10, ACCESS_ROLLOUT_PLAN.md A2)
+    if (process.env.TRIAL_ENABLED === 'true' && user.accessUntil == null) {
+      const trialDays = Number.parseInt(process.env.TRIAL_DAYS || '14', 10);
+      const safeTrialDays = Number.isFinite(trialDays) && trialDays > 0 ? trialDays : 14;
+      userUpdateFields.accessUntil = new Date(verifiedAt.getTime() + safeTrialDays * 86400000);
+    }
+
     await User.updateOne(
       { _id: user._id },
-      { $set: { emailVerifiedAt: verifiedAt } }
+      { $set: userUpdateFields }
     );
 
     await VerificationToken.updateOne(
