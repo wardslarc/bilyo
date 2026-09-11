@@ -22,6 +22,7 @@ import {
   resetPasswordSchema,
 } from '../lib/validation/auth.ts';
 import { getClientIp, enforceRateLimits } from '../lib/rate-limit.ts';
+import { LEGAL_VERSION } from '../lib/site.ts';
 import type { ActionResult } from '@/types';
 
 /**
@@ -183,13 +184,17 @@ export async function registerUser(
       throw new Error('Failed to generate valid bcrypt hash');
     }
 
-    // Create user with emailVerifiedAt: null (Gate 4 pending)
+    // Create user with emailVerifiedAt: null (Gate 4 pending).
+    // Terms §1: the accepted version comes from LEGAL_VERSION on the server,
+    // not from the request, so the record cannot be forged by the caller.
     const newUser = await User.create({
       name,
       email,
       passwordHash,
       role: 'USER',
       emailVerifiedAt: null,
+      acceptedTermsVersion: LEGAL_VERSION,
+      acceptedTermsAt: new Date(),
     });
 
     // Issue verification code + magic link

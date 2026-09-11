@@ -13,14 +13,18 @@ export default function RegisterPage() {
     name: '',
     email: '',
     password: '',
+    acceptedTerms: false,
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
     if (fieldErrors[name]) {
       setFieldErrors((prev) => {
         const next = { ...prev };
@@ -180,6 +184,55 @@ export default function RegisterPage() {
           )}
         </div>
 
+        {/*
+          Consent at signup — this is what makes the Terms binding (Terms §1).
+          A checkbox, not a notice: assent has to be an affirmative act we can
+          point at later, and the version accepted is stamped server-side.
+        */}
+        <div className="pt-1">
+          <label
+            htmlFor="acceptedTerms"
+            className="flex cursor-pointer items-start gap-2.5"
+          >
+            <input
+              id="acceptedTerms"
+              name="acceptedTerms"
+              type="checkbox"
+              checked={formData.acceptedTerms}
+              onChange={handleChange}
+              className={`mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border accent-[var(--color-ink)] ${
+                fieldErrors.acceptedTerms
+                  ? 'border-red-400'
+                  : 'border-[var(--color-line)]'
+              }`}
+            />
+            <span className="text-xs leading-relaxed text-[var(--color-muted)]">
+              I have read and agree to the{' '}
+              <Link
+                href="/terms"
+                target="_blank"
+                className="font-medium text-[var(--color-ink)] underline transition-colors hover:text-[var(--color-brass)]"
+              >
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link
+                href="/privacy"
+                target="_blank"
+                className="font-medium text-[var(--color-ink)] underline transition-colors hover:text-[var(--color-brass)]"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+          {fieldErrors.acceptedTerms && (
+            <p className="mt-1.5 text-xs font-medium text-red-600">
+              {fieldErrors.acceptedTerms}
+            </p>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={isPending}
@@ -214,25 +267,6 @@ export default function RegisterPage() {
           )}
         </button>
       </form>
-
-      {/* Consent at signup — this is what makes the Terms binding (Terms §1). */}
-      <p className="mt-5 text-center text-xs leading-relaxed text-[var(--color-muted)]">
-        By creating an account you agree to our{' '}
-        <Link
-          href="/terms"
-          className="font-medium text-[var(--color-ink)] underline transition-colors hover:text-[var(--color-brass)]"
-        >
-          Terms of Service
-        </Link>{' '}
-        and{' '}
-        <Link
-          href="/privacy"
-          className="font-medium text-[var(--color-ink)] underline transition-colors hover:text-[var(--color-brass)]"
-        >
-          Privacy Policy
-        </Link>
-        .
-      </p>
 
       <div className="mt-5 border-t border-[var(--color-line)] pt-5 text-center text-xs text-[var(--color-muted)]">
         Already have an account?{' '}

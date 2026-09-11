@@ -12,6 +12,11 @@ export const registerSchema = z.object({
     .toLowerCase()
     .email({ message: 'Please enter a valid email address' }),
   password: strongPasswordSchema,
+  // Terms §1: assent must be an affirmative act, not an inference from the
+  // presence of a link. The same schema drives the checkbox and the action.
+  acceptedTerms: z.boolean().refine((value) => value === true, {
+    message: 'Please accept the Terms of Service and Privacy Policy to continue',
+  }),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

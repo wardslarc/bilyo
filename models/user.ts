@@ -128,6 +128,20 @@ const UserSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
+
+    // Terms acceptance (Terms §1, §14)
+    // Which version of the Terms the user accepted, and when. Stamped from
+    // LEGAL_VERSION server-side — never from the client — so a later dispute
+    // resolves against a document we can reproduce. Null on accounts created
+    // before this shipped.
+    acceptedTermsVersion: {
+      type: String,
+      default: null,
+    },
+    acceptedTermsAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

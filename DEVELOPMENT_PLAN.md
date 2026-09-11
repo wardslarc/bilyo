@@ -899,6 +899,18 @@ comparison; a credit ledger retrofitted onto live data is a weekend you do not h
   *Accept:* a signed-in user's click records without retyping their email; a duplicate click is
   idempotent; the count is visible in `/admin`.
 
+- [x] **P5-T04 · Consent capture at signup** (0.5h)
+  *Files:* `types/index.ts` · `models/user.ts` · `lib/validation/auth.ts` · `actions/auth.ts` ·
+  `app/(auth)/register/page.tsx`
+  *Do:* the Terms said "by creating an account you agree", with a link and nothing recorded — no
+  proof of which version a user saw, and nothing for Terms §14's "continuing to use Bilyo means you
+  accept the updated terms" to stand on. Replace the notice with a **required checkbox** driven by
+  `registerSchema`, and stamp `acceptedTermsVersion` / `acceptedTermsAt` on the user at creation.
+  The version comes from `LEGAL_VERSION` **server-side**, never from the request.
+  *Accept:* registration is refused, client and server, unless the box is ticked; a created user
+  carries the version and timestamp; accounts created before this ship keep `null` and are not
+  backfilled — we have no proof for them and inventing one is worse than the gap.
+
 ---
 
 ### P6 — Notifications and reminders (5–7 hrs) · *only after Gate 1 passes*

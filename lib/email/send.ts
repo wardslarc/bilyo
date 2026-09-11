@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
-import connectDB from '@/lib/mongodb';
-import { EmailMessage } from '@/models/email-message';
+import connectDB from '../mongodb.ts';
+import { EmailMessage } from '../../models/email-message.ts';
 import type { EmailMessageKind, EmailMessageStatus } from '@/types';
 import { getResendClient, isDryRun, getEmailFrom } from './client.ts';
 import { canSendTo, type CanSendContext, type SuppressionReason } from './suppression.ts';
