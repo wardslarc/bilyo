@@ -21,6 +21,7 @@ export function DashboardNav({ unseenCount, isAdmin }: DashboardNavProps) {
     },
     { label: 'Quotations', href: '/dashboard/quotations' },
     { label: 'Clients', href: '/dashboard/clients' },
+    { label: 'Access', href: '/dashboard/access' },
     { label: 'Settings', href: '/dashboard/settings' },
     { label: 'Account', href: '/dashboard/account' },
   ];

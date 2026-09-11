@@ -15,6 +15,11 @@ export default auth((req) => {
   const isLoggedIn = Boolean(req.auth?.user?.id);
   const userRole = req.auth?.user?.role;
 
+  // Redirect authenticated users away from auth pages to /dashboard
+  if (isLoggedIn && (pathname === '/login' || pathname === '/register')) {
+    return NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin));
+  }
+
   // Guard /dashboard/*
   if (pathname.startsWith('/dashboard')) {
     if (!isLoggedIn) {
@@ -46,6 +51,8 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
+    '/login',
+    '/register',
     '/dashboard',
     '/dashboard/:path*',
     '/admin',

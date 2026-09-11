@@ -11,22 +11,23 @@ export const metadata = {
 
 export default async function PricingPage() {
   const session = await auth();
+  const isLoggedIn = Boolean(session?.user?.id);
 
   return (
     <>
-      <HeaderBand />
+      <HeaderBand isLoggedIn={isLoggedIn} />
 
       <main className="flex-1 py-12 lg:py-16">
         <div className="mx-auto w-full max-w-360 px-5 lg:px-30">
           <div className="mb-6">
             <Link
-              href="/"
+              href={isLoggedIn ? '/dashboard' : '/'}
               className="text-muted hover:text-text inline-flex items-center text-xs transition-colors"
             >
-              ← Back to Home
+              &larr; {isLoggedIn ? 'Back to Dashboard' : 'Back to Home'}
             </Link>
           </div>
-          <PricingSection userEmail={session?.user?.email} />
+          <PricingSection userEmail={session?.user?.email} isLoggedIn={isLoggedIn} />
         </div>
       </main>
     </>
