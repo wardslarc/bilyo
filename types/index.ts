@@ -43,6 +43,10 @@ export interface IUser {
   accessUntil?: Date | null;
   firstPaidAt?: Date | null;
 
+  // Terms acceptance — proof of assent, stamped server-side at signup (Terms §1, §14)
+  acceptedTermsVersion?: string | null;
+  acceptedTermsAt?: Date | null;
+
   createdAt: Date;
   updatedAt: Date;
 }

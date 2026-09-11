@@ -24,6 +24,7 @@ describe('actions/auth.ts - registerUser', () => {
       name: 'A', // min 2
       email: 'not-an-email',
       password: '123', // min 8
+      acceptedTerms: false,
     });
 
     assert.strictEqual(invalidResult.ok, false);
@@ -31,14 +32,16 @@ describe('actions/auth.ts - registerUser', () => {
     assert.ok(invalidResult.fieldErrors?.name);
     assert.ok(invalidResult.fieldErrors?.email);
     assert.ok(invalidResult.fieldErrors?.password);
+    assert.ok(invalidResult.fieldErrors?.acceptedTerms);
   });
 
-  test('creates a user with normalized email, bcrypt cost 10, role USER', async () => {
+  test('creates a user with normalized email, bcrypt cost 10, role USER, and accepted terms', async () => {
     const mixedCaseEmail = `Register.${Date.now()}@Example.COM`;
     const result = await registerUser({
       name: 'Test Registrant',
       email: mixedCaseEmail,
       password: 'StrongPassword123!',
+      acceptedTerms: true,
     });
 
     assert.strictEqual(result.ok, true);
@@ -52,6 +55,8 @@ describe('actions/auth.ts - registerUser', () => {
     assert.strictEqual(userInDb.name, 'Test Registrant');
     assert.strictEqual(userInDb.email, mixedCaseEmail.toLowerCase().trim());
     assert.strictEqual(userInDb.role, 'USER');
+    assert.strictEqual(userInDb.acceptedTermsVersion, '1.0');
+    assert.ok(userInDb.acceptedTermsAt instanceof Date);
 
     // Stored hash must start with $2 and not be plain password
     assert.ok(userInDb.passwordHash.startsWith('$2'));
@@ -66,6 +71,7 @@ describe('actions/auth.ts - registerUser', () => {
       name: 'User One',
       email: duplicateEmail,
       password: 'Password123!',
+      acceptedTerms: true,
     });
     assert.strictEqual(first.ok, true);
     if (first.ok) createdUserIds.push(first.data.userId);
@@ -75,6 +81,7 @@ describe('actions/auth.ts - registerUser', () => {
       name: 'User Two',
       email: duplicateEmail.toUpperCase(),
       password: 'AnotherPassword123!',
+      acceptedTerms: true,
     });
 
     assert.strictEqual(second.ok, false);
