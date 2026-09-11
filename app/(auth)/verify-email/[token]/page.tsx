@@ -125,6 +125,19 @@ export default async function VerifyEmailTokenPage({ params }: VerifyEmailTokenP
 
   // 4. Valid and unexpired: consume token and mark user verified
   const verifiedAt = new Date();
+
+  if (process.env.TRIAL_ENABLED === 'true') {
+    const trialDays = Number.parseInt(process.env.TRIAL_DAYS || '14', 10);
+    const safeTrialDays = Number.isFinite(trialDays) && trialDays > 0 ? trialDays : 14;
+    const accessUntilDate = new Date(verifiedAt.getTime() + safeTrialDays * 86400000);
+
+    // Only assign trial if user does not already have an accessUntil set
+    await User.updateOne(
+      { _id: tokenDoc.userId, accessUntil: null },
+      { $set: { emailVerifiedAt: verifiedAt, accessUntil: accessUntilDate } }
+    );
+  }
+
   await User.updateOne(
     { _id: tokenDoc.userId },
     { $set: { emailVerifiedAt: verifiedAt } }

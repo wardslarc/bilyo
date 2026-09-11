@@ -1,6 +1,7 @@
 import dbConnect from '../mongodb.ts';
 import { User } from '../../models/user.ts';
 import { Quotation } from '../../models/quotation.ts';
+import { Interest } from '../../models/interest.ts';
 import { requireAdmin } from './guard.ts';
 
 export interface PlatformMetrics {
@@ -13,6 +14,8 @@ export interface PlatformMetrics {
   acceptanceRate: number; // e.g. 75.5 for 75.5%
   suspendedCount: number;
   publicLinksDisabledCount: number;
+  pricingNotifyCount: number;
+  trialWallSurveyCount: number;
   generatedAt: string;
 }
 
@@ -51,6 +54,8 @@ async function fetchPlatformMetricsInternal(): Promise<PlatformMetrics> {
     activeQuotationUserIds,
     suspendedCount,
     publicLinksDisabledCount,
+    pricingNotifyCount,
+    trialWallSurveyCount,
   ] = await Promise.all([
     // 1. Total users
     User.countDocuments(),
@@ -77,6 +82,10 @@ async function fetchPlatformMetricsInternal(): Promise<PlatformMetrics> {
     // 6. Security & moderation counts
     User.countDocuments({ suspendedAt: { $ne: null } }),
     User.countDocuments({ publicLinksDisabledAt: { $ne: null } }),
+
+    // 7. Gate 3 & Pricing interest indicators (§3.4, A5, A6)
+    Interest.countDocuments({ source: 'PRICING_NOTIFY' }),
+    Interest.countDocuments({ source: 'TRIAL_WALL' }),
   ]);
 
   const acceptanceRate = computeAcceptanceRate(quotesSent30d, quotesAccepted30d);
@@ -91,6 +100,8 @@ async function fetchPlatformMetricsInternal(): Promise<PlatformMetrics> {
     acceptanceRate,
     suspendedCount,
     publicLinksDisabledCount,
+    pricingNotifyCount,
+    trialWallSurveyCount,
     generatedAt: now.toISOString(),
   };
 }

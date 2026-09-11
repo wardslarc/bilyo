@@ -2,12 +2,16 @@ import Link from 'next/link';
 import { HeaderBand } from '@/components/marketing/header-band';
 import { PricingSection } from '@/components/marketing/pricing-section';
 
+import { auth } from '@/lib/auth';
+
 export const metadata = {
   title: 'Quotation Access Plan · Bilyo',
   description: 'Simple, transparent quotation access for Philippine service businesses. Free during beta.',
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const session = await auth();
+
   return (
     <>
       <HeaderBand />
@@ -22,7 +26,7 @@ export default function PricingPage() {
               ← Back to Home
             </Link>
           </div>
-          <PricingSection />
+          <PricingSection userEmail={session?.user?.email} />
         </div>
       </main>
     </>

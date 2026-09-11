@@ -130,6 +130,47 @@ export function PlatformMetricsTiles({ metrics }: PlatformMetricsTilesProps) {
         </div>
       </div>
 
+      {/* Gate 3 & Commercial Interest Banner (§3.4, ACCESS_ROLLOUT_PLAN.md A5, A6) */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-lg font-bold">
+            🚦
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Gate 3 Readiness & Commercial Intent
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-bold">
+                Instrument
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Tracking user responses to determine when to activate Stage 3 GCash rails.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 sm:gap-8 shrink-0">
+          <div>
+            <span className="text-[11px] text-slate-500 block uppercase tracking-wider font-semibold">
+              Pricing Notifies
+            </span>
+            <span className="text-lg font-extrabold text-slate-900 font-mono">
+              {(metrics.pricingNotifyCount || 0).toLocaleString()}
+            </span>
+          </div>
+          <div>
+            <span className="text-[11px] text-slate-500 block uppercase tracking-wider font-semibold">
+              Trial Surveys
+            </span>
+            <span className="text-lg font-extrabold text-slate-900 font-mono">
+              {(metrics.trialWallSurveyCount || 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Moderation Status Banner */}
       {(metrics.suspendedCount > 0 || metrics.publicLinksDisabledCount > 0) && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-800">

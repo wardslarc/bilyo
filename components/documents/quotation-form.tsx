@@ -371,6 +371,10 @@ export function QuotationForm({ initialQuotation, business }: QuotationFormProps
 
       if (!res.ok) {
         setGeneralError(res.error || 'Failed to save quotation');
+        if (res.error?.includes('access has expired')) {
+          sessionStorage.removeItem('bilyo_trial_wall_dismissed');
+          window.dispatchEvent(new CustomEvent('bilyo:show-trial-wall'));
+        }
         if (res.fieldErrors) {
           setFieldErrors(res.fieldErrors);
         }

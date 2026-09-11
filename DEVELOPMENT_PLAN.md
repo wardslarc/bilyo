@@ -875,7 +875,7 @@ user would pick Bilyo over a Word template.
 Add the plumbing while it is cheap, leave it inert. `accessUntil` is one nullable timestamp and one
 comparison; a credit ledger retrofitted onto live data is a weekend you do not have.
 
-- [ ] **P5-T01 · `accessUntil` + `lib/access.ts`** (1.5h)
+- [x] **P5-T01 · `accessUntil` + `lib/access.ts`** (1.5h)
   *Files:* `models/user.ts` · `lib/access.ts` · `tests/access.test.ts`
   *Do:* nullable `accessUntil`, and a pure synchronous
   `accessState(user): { status: 'BETA'|'ACTIVE'|'EXPIRED', accessUntil, daysLeft }` — no DB, no
@@ -883,14 +883,14 @@ comparison; a credit ledger retrofitted onto live data is a weekend you do not h
   *Accept:* `null` is unlimited; an `accessUntil` one second in the past reads `EXPIRED` with no job
   having run; the function is covered by tests including the Manila day boundary.
 
-- [ ] **P5-T02 · Beta banner** (0.5h)
+- [x] **P5-T02 · Beta banner** (0.5h)
   *Files:* `app/(dashboard)/layout.tsx` · `components/dashboard/BetaBanner.tsx`
   *Do:* the §6.10 banner text, with the date from `BETA_ENDS_AT` in env so moving it is a config
   change. Dismissible per session, not permanently.
   *Accept:* the date renders in `Asia/Manila` long form; the banner never covers the primary CTA on
   a 390px screen.
 
-- [ ] **P5-T03 · Pricing page + Notify me** (1.5h)
+- [x] **P5-T03 · Pricing page + Notify me** (1.5h)
   *Files:* `app/(marketing)/pricing/page.tsx` · `components/marketing/pricing-section.tsx` ·
   `actions/notify-interest.ts` · `models/interest.ts`
   *Do:* heading **Quotation Access Plan**, the three passes, "free during beta" stated plainly, and
@@ -910,7 +910,7 @@ comparison; a credit ledger retrofitted onto live data is a weekend you do not h
 - [ ] **P6-T03 · "Your quotation was accepted"** (1.5h) — fires from the same action that writes
   the response, after the write, failure-tolerant: a dead mailer must never roll back an acceptance.
 - [ ] **P6-T04 · Password reset by email** (1h) — the existing token flow finally emails its link.
-- [ ] **P6-T05 · Access expiry reminders** (2h) — 7 days and 1 day before `accessUntil`, once each,
+- [x] **P6-T05 · Access expiry reminders** (2h) — 7 days and 1 day before `accessUntil`, once each,
   idempotent by `{userId, accessUntil, kind}`. **This is the retention mechanism** (§6.10), not a
   nice-to-have. Inert while every `accessUntil` is null.
 

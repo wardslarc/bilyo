@@ -4,7 +4,7 @@ import dbConnect from '../lib/mongodb.ts';
 import { Quotation } from '../models/quotation.ts';
 import { Customer } from '../models/customer.ts';
 import { Business } from '../models/business.ts';
-import { requireUser, assertNotSuspended, AuthGuardError } from '../lib/auth-guards.ts';
+import { requireUser, assertNotSuspended, assertAccessActive, AuthGuardError } from '../lib/auth-guards.ts';
 import {
   quotationSchema,
   type QuotationInput,
@@ -163,6 +163,7 @@ export async function createQuotation(
   try {
     const user = await requireUser();
     await assertNotSuspended(user.id);
+    await assertAccessActive(user.id);
 
     const parseResult = quotationSchema.safeParse(input);
     if (!parseResult.success) {
@@ -423,6 +424,7 @@ export async function sendQuotation(id: string): Promise<ActionResult<Serialized
   try {
     const user = await requireUser();
     const userDoc = await assertNotSuspended(user.id);
+    await assertAccessActive(user.id);
 
     await dbConnect();
 

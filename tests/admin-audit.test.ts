@@ -52,6 +52,7 @@ describe('Admin Shell & Audit Primitive (M7-T01)', () => {
         'PUBLIC_LINKS_DISABLE',
         'PUBLIC_LINKS_ENABLE',
         'MFA_RESET',
+        'SUPPORT_LOOKUP',
       ];
 
       const schemaType = AdminAuditLog.schema.path('action') as unknown as { enumValues: string[] };

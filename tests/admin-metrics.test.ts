@@ -46,6 +46,8 @@ describe('Platform Metrics & Aggregations (P1-T06)', () => {
         acceptanceRate: 0,
         suspendedCount: 0,
         publicLinksDisabledCount: 0,
+        pricingNotifyCount: 0,
+        trialWallSurveyCount: 0,
         generatedAt: new Date().toISOString(),
       };
 
