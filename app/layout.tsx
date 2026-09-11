@@ -25,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bilyo — Turn quotations into confirmed sales",
+  title: "Bilyo — Send a quotation. Get a clear yes or no.",
   description:
     "Send quotations as a link your client accepts on their phone in one tap. Built for Philippine service businesses.",
 };
