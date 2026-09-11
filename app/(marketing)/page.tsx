@@ -97,13 +97,12 @@ export default function LandingPage() {
               </div>
 
               <h1 className="font-display text-[40px] leading-[1.06] font-bold tracking-tight text-balance lg:text-[62px] lg:leading-[1.04]">
-                Quotations your clients can accept with one tap.
+                Send a quotation. Get a clear yes or no.
               </h1>
 
               <p className="text-paper/75 max-w-135 text-[17px] leading-relaxed lg:text-xl">
-                Build a quotation and send it as a link your client opens on their
-                phone — or a clean PDF. Fast approvals, clear confirmations, and
-                a pipeline you can track.
+                Create a professional quotation, send it as a link, and know
+                when your client accepts.
               </p>
 
               <div className="flex w-full flex-col gap-3 pt-1 lg:w-auto lg:flex-row lg:items-center lg:gap-4 lg:pt-2">
