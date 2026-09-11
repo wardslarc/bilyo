@@ -93,7 +93,7 @@ export function TrialWall({
               <span className="text-[10px] text-neutral-400 block mt-0.5">₱6.67/day</span>
             </div>
             <Link
-              href="/pricing"
+              href="/dashboard/access"
               className="mt-3 py-1 px-2 text-[11px] font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-md transition-colors"
             >
               Choose →
@@ -114,7 +114,7 @@ export function TrialWall({
               <span className="text-[10px] text-neutral-400 block mt-0.5">₱5.56/day</span>
             </div>
             <Link
-              href="/pricing"
+              href="/dashboard/access"
               className="mt-3 py-1 px-2 text-[11px] font-semibold bg-amber-400 hover:bg-amber-300 text-neutral-950 rounded-md transition-colors"
             >
               Choose →
@@ -132,7 +132,7 @@ export function TrialWall({
               <span className="text-[10px] text-neutral-400 block mt-0.5">₱4.66/day</span>
             </div>
             <Link
-              href="/pricing"
+              href="/dashboard/access"
               className="mt-3 py-1 px-2 text-[11px] font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-md transition-colors"
             >
               Choose →

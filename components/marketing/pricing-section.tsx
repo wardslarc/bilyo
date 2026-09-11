@@ -78,7 +78,13 @@ function CheckIcon() {
   );
 }
 
-export function PricingSection({ userEmail }: { userEmail?: string | null }) {
+export function PricingSection({
+  userEmail,
+  isLoggedIn = false,
+}: {
+  userEmail?: string | null;
+  isLoggedIn?: boolean;
+}) {
   const [emailInput, setEmailInput] = useState('');
   const [loadingPass, setLoadingPass] = useState<InterestPassType | null>(null);
   const [notifiedPasses, setNotifiedPasses] = useState<Record<string, boolean>>({});
@@ -220,14 +226,14 @@ export function PricingSection({ userEmail }: { userEmail?: string | null }) {
 
               <div className="pt-4 mt-auto border-t border-neutral-100 dark:border-neutral-800 flex flex-col gap-2.5">
                 <Link
-                  href="/register"
+                  href={isLoggedIn ? '/dashboard/access' : '/register'}
                   className={`w-full h-11 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
                     pass.featured
                       ? 'bg-amber-400 text-neutral-950 hover:bg-amber-300'
                       : 'bg-neutral-900 text-white hover:bg-neutral-800'
                   }`}
                 >
-                  Start free in beta
+                  {isLoggedIn ? 'Manage in Dashboard →' : 'Start free in beta'}
                 </Link>
 
                 {isNotified ? (

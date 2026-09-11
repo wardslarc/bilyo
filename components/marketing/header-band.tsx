@@ -7,11 +7,17 @@ import { SiteHeader } from "@/components/marketing/site-header";
  * so the band runs on behind the headline. Every other marketing page wants the
  * band to stop at the header, which is what this does.
  */
-export function HeaderBand({ children }: { children?: React.ReactNode }) {
+export function HeaderBand({
+  children,
+  isLoggedIn = false,
+}: {
+  children?: React.ReactNode;
+  isLoggedIn?: boolean;
+}) {
   return (
     <div className="bg-ink text-paper">
       <div className="mx-auto w-full max-w-360 px-5 lg:px-30">
-        <SiteHeader />
+        <SiteHeader isLoggedIn={isLoggedIn} />
         {children}
       </div>
     </div>

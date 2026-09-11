@@ -1,4 +1,6 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import LoginForm from '@/components/auth/LoginForm';
 import BackToBilyo from '@/components/auth/BackToBilyo';
 
@@ -16,7 +18,12 @@ function LoginFormFallback() {
   );
 }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await auth();
+  if (session?.user?.id) {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="space-y-3">
       <BackToBilyo />

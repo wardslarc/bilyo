@@ -11,7 +11,7 @@ const NAV_LINKS = [
  * Sits inside the dark hero band, so it is styled for an ink ground.
  * The small-screen menu is a native <details> disclosure — no client JS.
  */
-export function SiteHeader() {
+export function SiteHeader({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   return (
     <header className="flex h-17 items-center justify-between lg:h-21">
       <Link href="/" className="text-brass flex items-center gap-2">
@@ -32,28 +32,48 @@ export function SiteHeader() {
             {link.label}
           </Link>
         ))}
-        <Link
-          href="/login"
-          className="text-paper/70 hover:text-paper text-base transition-colors"
-        >
-          Log in
-        </Link>
-        <Link
-          href="/register"
-          className="bg-brass font-display text-ink flex h-11.5 items-center justify-center rounded-md px-5.5 text-base font-semibold transition-opacity hover:opacity-90"
-        >
-          Start free
-        </Link>
+        {isLoggedIn ? (
+          <Link
+            href="/dashboard"
+            className="bg-brass font-display text-ink flex h-11.5 items-center justify-center rounded-md px-5.5 text-base font-semibold transition-opacity hover:opacity-90"
+          >
+            Dashboard &rarr;
+          </Link>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              className="text-paper/70 hover:text-paper text-base transition-colors"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/register"
+              className="bg-brass font-display text-ink flex h-11.5 items-center justify-center rounded-md px-5.5 text-base font-semibold transition-opacity hover:opacity-90"
+            >
+              Start free
+            </Link>
+          </>
+        )}
       </nav>
 
       {/* Small-screen nav */}
       <div className="flex items-center gap-3.5 lg:hidden">
-        <Link
-          href="/login"
-          className="text-paper/70 flex h-11 items-center text-base"
-        >
-          Log in
-        </Link>
+        {isLoggedIn ? (
+          <Link
+            href="/dashboard"
+            className="bg-brass font-display text-ink flex h-9.5 items-center justify-center rounded-md px-3.5 text-xs font-semibold"
+          >
+            Dashboard
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="text-paper/70 flex h-11 items-center text-base"
+          >
+            Log in
+          </Link>
+        )}
         <details className="relative">
           <summary className="border-paper/20 text-paper flex size-11 cursor-pointer list-none items-center justify-center rounded-md border [&::-webkit-details-marker]:hidden">
             <span className="sr-only">Open menu</span>
@@ -81,12 +101,21 @@ export function SiteHeader() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/register"
-              className="bg-brass font-display text-ink flex h-11 items-center justify-center rounded-md px-3 text-base font-semibold"
-            >
-              Start free
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="bg-brass font-display text-ink flex h-11 items-center justify-center rounded-md px-3 text-base font-semibold"
+              >
+                Go to Dashboard &rarr;
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="bg-brass font-display text-ink flex h-11 items-center justify-center rounded-md px-3 text-base font-semibold"
+              >
+                Start free
+              </Link>
+            )}
           </div>
         </details>
       </div>

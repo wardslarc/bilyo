@@ -54,7 +54,7 @@ export function AccessBanner({
       Bilyo is free during beta{formattedBetaEnds ? ` until ${formattedBetaEnds}` : ''}. Beta accounts get 50% off their first pass.
     </>
   );
-  let ctaHref = '/pricing';
+  let ctaHref = '/dashboard/access';
   let ctaText = 'View plans →';
 
   if (status === 'TRIAL') {
@@ -66,7 +66,7 @@ export function AccessBanner({
         {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left in your trial. Quotations are unlimited.
       </>
     );
-    ctaHref = '/pricing';
+    ctaHref = '/dashboard/access';
     ctaText = 'View passes →';
   } else if (status === 'ACTIVE') {
     bgClass = 'bg-emerald-50 border-emerald-200 text-emerald-900';
@@ -77,7 +77,7 @@ export function AccessBanner({
         Access until {formattedAccessUntil}.
       </>
     );
-    ctaHref = '/pricing';
+    ctaHref = '/dashboard/access';
     ctaText = 'Manage access →';
   } else if (status === 'EXPIRED_TRIAL') {
     bgClass = 'bg-rose-50 border-rose-200 text-rose-900';
@@ -88,7 +88,7 @@ export function AccessBanner({
         Your 14-day trial has ended. Creating and sending quotations is paused.
       </>
     );
-    ctaHref = '/pricing';
+    ctaHref = '/dashboard/access';
     ctaText = 'Choose a pass →';
   } else if (status === 'EXPIRED_PAID') {
     bgClass = 'bg-rose-50 border-rose-200 text-rose-900';
@@ -99,7 +99,7 @@ export function AccessBanner({
         Your quotation access expired on {formattedAccessUntil}.
       </>
     );
-    ctaHref = '/pricing';
+    ctaHref = '/dashboard/access';
     ctaText = 'Renew pass →';
   }
 
