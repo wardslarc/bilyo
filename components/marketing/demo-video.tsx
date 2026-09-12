@@ -37,7 +37,8 @@ export function DemoVideo() {
     if (motionQuery.matches) return;
 
     if (!("IntersectionObserver" in window)) {
-      queueMicrotask(() => setShowVideo(true));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowVideo(true);
       return;
     }
 
