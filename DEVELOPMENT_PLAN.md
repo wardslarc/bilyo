@@ -935,7 +935,7 @@ comparison; a credit ledger retrofitted onto live data is a weekend you do not h
   access goes up** — a donation ask running alongside a published price list is what makes the
   "gift, not payment" position arguable.
 
-- [ ] **P5-T06 · Withhold the pass prices until payment is reachable** (0.5h)
+- [x] **P5-T06 · Withhold the pass prices until payment is reachable** (0.5h)
   *Files:* `components/marketing/pricing-section.tsx`
   *Do:* the pricing page publishes a ₱200 / ₱500 / ₱1,700 ladder that nobody can actually buy, and a
   published price beside the P5-T05 donation ask undermines Terms §10. Withhold the amounts without
