@@ -3,19 +3,23 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import dbConnect from '../lib/mongodb.ts';
 import { User } from '../models/user.ts';
+import { RateLimit } from '../models/rate-limit.ts';
 import { registerUser } from '../actions/auth.ts';
+import { LEGAL_VERSION } from '../lib/site.ts';
 
 describe('actions/auth.ts - registerUser', () => {
   const createdUserIds: string[] = [];
 
   before(async () => {
     await dbConnect();
+    await RateLimit.deleteMany({ key: { $regex: '^rate:register:' } });
   });
 
   after(async () => {
     if (createdUserIds.length > 0) {
       await User.deleteMany({ _id: { $in: createdUserIds } });
     }
+    await RateLimit.deleteMany({ key: { $regex: '^rate:register:' } });
     await mongoose.disconnect();
   });
 
@@ -55,7 +59,9 @@ describe('actions/auth.ts - registerUser', () => {
     assert.strictEqual(userInDb.name, 'Test Registrant');
     assert.strictEqual(userInDb.email, mixedCaseEmail.toLowerCase().trim());
     assert.strictEqual(userInDb.role, 'USER');
-    assert.strictEqual(userInDb.acceptedTermsVersion, '1.0');
+    // Assert against the constant, not a literal: the stored version has to
+    // track LEGAL_VERSION, so a legal-page bump must not break this test.
+    assert.strictEqual(userInDb.acceptedTermsVersion, LEGAL_VERSION);
     assert.ok(userInDb.acceptedTermsAt instanceof Date);
 
     // Stored hash must start with $2 and not be plain password

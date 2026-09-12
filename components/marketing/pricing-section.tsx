@@ -9,6 +9,15 @@ type Pass = {
   id: InterestPassType;
   name: string;
   blurb: string;
+  /**
+   * Deliberately NOT rendered while paid access is unreachable (P5-T06).
+   *
+   * The ladder is kept here rather than deleted: these are decided numbers, and
+   * restoring them is a one-line change in the card below once a payment
+   * method exists. Nothing else on this page may state or imply an amount —
+   * a published price sitting beside the donation ask is what makes the
+   * "gift, not payment" position in Terms §10 arguable.
+   */
   price: string;
   period: string;
   badge?: string;
@@ -51,11 +60,11 @@ const PASSES: Pass[] = [
     blurb: 'For established service businesses. Best value.',
     price: '₱1,700',
     period: '365 days',
-    badge: 'SAVE 30%',
+    badge: 'BEST VALUE',
     features: [
       'Everything in 90-Day Access',
-      'Lowest cost per day (₱4.66/day)',
-      '12 months for the price of 8.5',
+      'Lowest cost per day of the three passes',
+      'The longest runway from a single top-up',
       'Export client and quotation data anytime',
     ],
   },
@@ -196,17 +205,22 @@ export function PricingSection({
                 )}
               </div>
 
-              <div className="flex items-baseline gap-1.5 my-4">
-                <span className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-                  {pass.price}
+              {/*
+                Duration is the headline while prices are withheld (P5-T06).
+                `pass.price` stays in the data, unrendered, until paid access
+                is reachable.
+              */}
+              <div className="my-4">
+                <span className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+                  {pass.period}
                 </span>
-                <span
-                  className={`text-sm ${
+                <p
+                  className={`mt-1.5 text-sm ${
                     pass.featured ? 'text-neutral-400' : 'text-neutral-500'
                   }`}
                 >
-                  / {pass.period}
-                </span>
+                  Price to be announced
+                </p>
               </div>
 
               <ul className="space-y-3 my-6 text-xs sm:text-sm flex-1">

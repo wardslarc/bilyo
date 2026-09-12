@@ -191,7 +191,10 @@ export type AdminAuditAction =
   | 'PUBLIC_LINKS_DISABLE'
   | 'PUBLIC_LINKS_ENABLE'
   | 'MFA_RESET'
-  | 'SUPPORT_LOOKUP';
+  | 'SUPPORT_LOOKUP'
+  | 'DONATION_QR_SET'
+  | 'DONATION_QR_CLEAR'
+  | 'DONATION_TOGGLE';
 
 // Admin Audit Log (Append-only)
 export interface IAdminAuditLog {
@@ -340,3 +343,15 @@ export interface IInterest {
   updatedAt: Date;
 }
 
+
+// Donation settings (AGENTS.md §4.9) — platform content, admin-managed, user-owned by nobody
+export interface IDonationSetting {
+  _id: Types.ObjectId;
+  key: 'DONATION';
+  qrUrl?: string | null;
+  qrUploadedAt?: Date | null;
+  enabledAt?: Date | null;
+  updatedByUserId?: Types.ObjectId | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

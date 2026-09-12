@@ -11,3 +11,4 @@ export { WebhookReceipt } from './webhook-receipt';
 export { VerificationToken } from './verification-token';
 export { RateLimit } from './rate-limit';
 export { Interest } from './interest';
+export { DonationSetting } from './donation-setting';

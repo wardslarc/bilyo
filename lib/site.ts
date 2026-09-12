@@ -18,8 +18,8 @@ export const LEGAL_VENUE = 'Cavite, Philippines';
  * Update this whenever a material change ships, and email registered users
  * 14 days before it takes effect (Terms §14).
  */
-export const LEGAL_EFFECTIVE_DATE = 'September 10, 2026';
-export const LEGAL_VERSION = '1.0';
+export const LEGAL_EFFECTIVE_DATE = 'September 11, 2026';
+export const LEGAL_VERSION = '1.1';
 
 /** Retention windows promised by the Privacy Policy (§9), enforced in code. */
 export const CLOSED_ACCOUNT_PURGE_DAYS = 30;

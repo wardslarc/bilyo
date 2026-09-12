@@ -15,7 +15,11 @@ export type AdminAuditAction =
   | 'PUBLIC_LINKS_DISABLE'
   | 'PUBLIC_LINKS_ENABLE'
   | 'MFA_RESET'
-  | 'SUPPORT_LOOKUP';
+  | 'SUPPORT_LOOKUP'
+  // Donation QR (AGENTS.md §4.9) — platform content, no target user
+  | 'DONATION_QR_SET'
+  | 'DONATION_QR_CLEAR'
+  | 'DONATION_TOGGLE';
 
 export interface RecordAuditParams {
   action: AdminAuditAction;
