@@ -33,6 +33,7 @@ const CONTENTS = [
   { href: "#acceptable-use", label: "Acceptable use" },
   { href: "#not-a-party", label: "Quotes are between you and your client" },
   { href: "#access", label: "Bilyo Access and payment" },
+  { href: "#donations", label: "Donations" },
   { href: "#termination", label: "Suspension and termination" },
   { href: "#disclaimers", label: "Disclaimers" },
   { href: "#liability", label: "Limitation of liability" },
@@ -315,7 +316,38 @@ export default function TermsPage() {
           </List>
         </Clause>
 
-        <Clause id="termination" n="10" title="Suspension and termination">
+        <Clause id="donations" n="10" title="Donations">
+          <p>
+            Bilyo is free to use. If we display a contribution QR code, any
+            amount you send through it is a voluntary gift, not payment for the
+            service.
+          </p>
+          <List>
+            <li>
+              No amount is required, suggested or expected, and the QR has no
+              amount attached to it.
+            </li>
+            <li>
+              A contribution grants no additional features, access, priority,
+              storage, support or entitlement of any kind. Nothing in your
+              account changes whether you send one or not.
+            </li>
+            <li>
+              Contributions are non-refundable, and they are not credited
+              against any future Bilyo Access pass.
+            </li>
+            <li>
+              The transfer happens entirely within GCash. We do not receive,
+              see or store any record of who sent what.
+            </li>
+          </List>
+          <p>
+            We may stop displaying the QR code, or stop accepting contributions,
+            at any time and without notice.
+          </p>
+        </Clause>
+
+        <Clause id="termination" n="11" title="Suspension and termination">
           <p>
             You may stop using Bilyo at any time and delete your account from
             Account &rsaquo; Settings.
@@ -340,7 +372,7 @@ export default function TermsPage() {
           </p>
         </Clause>
 
-        <Clause id="disclaimers" n="11" title="Disclaimers">
+        <Clause id="disclaimers" n="12" title="Disclaimers">
           <p>
             Bilyo is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo;.
             To the fullest extent Philippine law allows, we disclaim all
@@ -356,7 +388,7 @@ export default function TermsPage() {
           </p>
         </Clause>
 
-        <Clause id="liability" n="12" title="Limitation of liability">
+        <Clause id="liability" n="13" title="Limitation of liability">
           <p>
             To the fullest extent Philippine law allows, we are not liable for
             indirect, incidental, special or consequential loss, or for lost
@@ -375,7 +407,7 @@ export default function TermsPage() {
           </p>
         </Clause>
 
-        <Clause id="indemnity" n="13" title="Indemnity">
+        <Clause id="indemnity" n="14" title="Indemnity">
           <p>
             You agree to indemnify us against claims, losses and reasonable costs
             arising from your content, from your use of Bilyo in breach of these
@@ -384,7 +416,7 @@ export default function TermsPage() {
           </p>
         </Clause>
 
-        <Clause id="changes" n="14" title="Changes to these terms">
+        <Clause id="changes" n="15" title="Changes to these terms">
           <p>
             We may update these terms. If a change materially affects your rights,
             we will email your registered address at least 14 days before it takes
@@ -394,7 +426,7 @@ export default function TermsPage() {
           </p>
         </Clause>
 
-        <Clause id="law" n="15" title="Governing law">
+        <Clause id="law" n="16" title="Governing law">
           <p>
             These terms are governed by the laws of the Republic of the
             Philippines. Any dispute will be brought before the proper courts of{" "}
@@ -403,7 +435,7 @@ export default function TermsPage() {
           </p>
         </Clause>
 
-        <Clause id="contact" n="16" title="Contact">
+        <Clause id="contact" n="17" title="Contact">
           <p>
             Questions about these terms: <Mail />.
           </p>

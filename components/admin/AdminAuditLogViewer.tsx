@@ -62,6 +62,18 @@ const ACTION_LABELS: Record<AdminAuditAction, { label: string; color: string }> 
     label: 'MFA Reset',
     color: 'bg-amber-50 text-amber-700 border-amber-200',
   },
+  DONATION_QR_SET: {
+    label: 'Donation QR Set',
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  },
+  DONATION_QR_CLEAR: {
+    label: 'Donation QR Cleared',
+    color: 'bg-rose-50 text-rose-700 border-rose-200',
+  },
+  DONATION_TOGGLE: {
+    label: 'Donation Toggle',
+    color: 'bg-purple-50 text-purple-700 border-purple-200',
+  },
 };
 
 export function AdminAuditLogViewer({
@@ -169,6 +181,9 @@ export function AdminAuditLogViewer({
               <option value="PUBLIC_LINKS_ENABLE">Enable Public Links</option>
               <option value="PUBLIC_LINK_REVOKE">Revoke Public Link</option>
               <option value="MFA_RESET">MFA Reset</option>
+              <option value="DONATION_QR_SET">Donation QR Set</option>
+              <option value="DONATION_QR_CLEAR">Donation QR Cleared</option>
+              <option value="DONATION_TOGGLE">Donation Toggle</option>
             </select>
           </div>
 

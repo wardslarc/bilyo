@@ -39,6 +39,14 @@ export default async function AdminHomePage() {
       badge: 'M7-T01',
       icon: '🛡️',
     },
+    {
+      title: 'Donation QR',
+      href: '/admin/donations',
+      description:
+        'Upload or replace the GCash QR shown on the public support page, and switch the donation ask on or off.',
+      badge: 'P5-T05',
+      icon: '🎁',
+    },
   ];
 
   return (

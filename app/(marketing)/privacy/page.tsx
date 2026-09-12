@@ -297,7 +297,7 @@ export default function PrivacyPage() {
             <Row>
               <Cell lead>Vercel Blob</Cell>
               <Cell>File storage</Cell>
-              <Cell>Business logos</Cell>
+              <Cell>Business logos, and our own contribution QR image</Cell>
             </Row>
             <Row>
               <Cell lead>Resend</Cell>

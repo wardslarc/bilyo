@@ -166,6 +166,76 @@ export async function uploadBusinessLogo(
 }
 
 /**
+ * Uploads a validated donation QR image (AGENTS.md §4.9).
+ * Same storage strategy as the business logo above — Vercel Blob when a token
+ * is configured, a local static file otherwise — but under its own prefix, so
+ * a platform asset is never mistaken for a user's logo during cleanup.
+ *
+ * There is one of these at a time, and it is replaced rather than accumulated:
+ * the caller deletes the previous URL after a successful upload.
+ */
+export async function uploadDonationQr(
+  buffer: Buffer,
+  mimeType: AllowedMimeType,
+  extension: AllowedExtension
+): Promise<string> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const fileName = `${crypto.randomUUID()}.${extension}`;
+
+  if (token && token.trim().length > 0) {
+    const blob = await put(`donation/${fileName}`, buffer, {
+      access: 'public',
+      contentType: mimeType,
+      token,
+    });
+    return blob.url;
+  }
+
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'donation');
+  await fs.mkdir(uploadsDir, { recursive: true });
+
+  const filePath = path.join(uploadsDir, fileName);
+  await fs.writeFile(filePath, buffer);
+
+  const baseUrl =
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'http://localhost:3000';
+  return `${baseUrl}/uploads/donation/${fileName}`;
+}
+
+/**
+ * Deletes a previously stored donation QR from Vercel Blob or local storage.
+ */
+export async function deleteDonationQr(qrUrl: string): Promise<void> {
+  if (!qrUrl) return;
+
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+  if (token && qrUrl.includes('public.blob.vercel-storage.com')) {
+    try {
+      await del(qrUrl, { token });
+      return;
+    } catch (err) {
+      console.error(
+        'Failed to delete donation QR from Vercel Blob store:',
+        (err as Error).message
+      );
+    }
+  }
+
+  try {
+    const url = new URL(qrUrl);
+    if (url.pathname.startsWith('/uploads/donation/')) {
+      const localPath = path.join(process.cwd(), 'public', url.pathname);
+      await fs.unlink(localPath);
+    }
+  } catch {
+    // Ignore if not local or unparseable
+  }
+}
+
+/**
  * Deletes a previously stored business logo from Vercel Blob or local storage.
  */
 export async function deleteBusinessLogo(logoUrl: string): Promise<void> {

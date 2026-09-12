@@ -159,8 +159,14 @@ which requires **both** `session.user.role === 'ADMIN'` **and** the email in the
 allowlist. Cross-user queries are allowed **only** inside `actions/admin/**` and `lib/admin/**`.
 Admin is **read-only over user content** — the complete list of admin writes is suspend, unsuspend,
 revoke a public code, disable/enable a user's public links, reset a user's MFA, approve or reject a
-top-up, and append an audit entry. Every admin action *and* every view of an identified user's data
-appends an append-only `AdminAuditLog` row. A non-admin hitting `/admin/*` gets a **404, not a 403**.
+top-up, **set or clear the donation QR, enable or disable the donation ask**, and append an audit
+entry. Every admin action *and* every view of an identified user's data appends an append-only
+`AdminAuditLog` row. A non-admin hitting `/admin/*` gets a **404, not a 403**.
+
+The donation QR is the one admin write that touches **platform** content rather than a user's — a
+single `DonationSetting` row that nobody owns. That is the only reason it is permitted here, and it
+is not a precedent for admin editing anything a user owns. Adding a further admin write means
+amending this list and `DEVELOPMENT_PLAN.md` §6.9 in the same commit, not working around them.
 
 ### 4.10 MFA is optional, and its secrets are still radioactive
 TOTP is opt-in from Account → Security (`DEVELOPMENT_PLAN.md` §6.11). The parameters are fixed at

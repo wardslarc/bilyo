@@ -28,6 +28,11 @@ const AdminAuditLogSchema = new Schema<IAdminAuditLog>(
         'PUBLIC_LINKS_ENABLE',
         'MFA_RESET',
         'SUPPORT_LOOKUP',
+        // Donation QR (AGENTS.md §4.9) — must stay in step with
+        // lib/admin/audit.ts's AdminAuditAction union
+        'DONATION_QR_SET',
+        'DONATION_QR_CLEAR',
+        'DONATION_TOGGLE',
       ],
       required: true,
     },

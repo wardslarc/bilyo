@@ -53,6 +53,9 @@ describe('Admin Shell & Audit Primitive (M7-T01)', () => {
         'PUBLIC_LINKS_ENABLE',
         'MFA_RESET',
         'SUPPORT_LOOKUP',
+        'DONATION_QR_SET',
+        'DONATION_QR_CLEAR',
+        'DONATION_TOGGLE',
       ];
 
       const schemaType = AdminAuditLog.schema.path('action') as unknown as { enumValues: string[] };

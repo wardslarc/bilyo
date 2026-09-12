@@ -290,7 +290,10 @@ Quotation:  DRAFT → SENT → VIEWED → ACCEPTED | DECLINED
 - Cross-user queries are allowed **only** inside `actions/admin/**` and `lib/admin/**`.
 - Admin is **read-only over user content**. The complete list of admin writes: suspend, unsuspend,
   revoke a public code, disable/enable a user's public links, reset a user's MFA, **approve or reject
-  a top-up**, and append an audit row.
+  a top-up**, **set or clear the donation QR, enable or disable the donation ask** (P5-T05), and
+  append an audit row.
+- The donation QR is the only admin write over **platform** content — one `DonationSetting` row that
+  no user owns. It is not a precedent for admin editing user-owned records.
 - Every admin action *and* every view of an identified user's data appends an append-only
   `AdminAuditLog` row.
 - `PLAN_OVERRIDE_SET` / `PLAN_OVERRIDE_CLEAR` are replaced by `ACCESS_GRANT` / `TOPUP_APPROVE` /
@@ -910,6 +913,45 @@ comparison; a credit ledger retrofitted onto live data is a weekend you do not h
   *Accept:* registration is refused, client and server, unless the box is ticked; a created user
   carries the version and timestamp; accounts created before this ship keep `null` and are not
   backfilled — we have no proof for them and inventing one is worse than the gap.
+
+- [x] **P5-T05 · Donation QR, admin-managed** (2h)
+  *Files:* `models/donation-setting.ts` · `lib/donation.ts` · `lib/admin/donation.ts` ·
+  `lib/validation/donation.ts` · `lib/blob.ts` · `actions/admin/donation.ts` ·
+  `app/(admin)/admin/donations/page.tsx` · `components/admin/DonationQrManager.tsx` ·
+  `app/(marketing)/support/page.tsx` · `components/marketing/site-footer.tsx` ·
+  `app/(marketing)/terms/page.tsx` · `app/(marketing)/privacy/page.tsx` · `lib/site.ts` ·
+  `models/admin-audit-log.ts` · `lib/admin/audit.ts` · `types/index.ts` · `tests/donation.test.ts`
+  *Do:* accept voluntary contributions during beta, before any payment gateway exists. A GCash QR
+  with **no amount attached** — never a phone number or a real name — uploaded from
+  `/admin/donations` into Vercel Blob, stored on one `DonationSetting` row, rendered on `/support`
+  and as one footer line. Upload and go-live are separate switches; switching off keeps the image.
+  Terms §10 states the position in writing: a gift, not payment, granting nothing.
+  *Why it is a gift and not revenue:* nothing is given in return — no feature, tier, badge or
+  priority. That is what keeps it outside "doing business unregistered", so **any** benefit attached
+  to a contribution breaks the whole basis and must not be added.
+  *Accept:* the ask renders nowhere until a QR exists **and** the switch is on; `/support` 404s when
+  off; a disabled QR's URL never reaches a public page; every write appends an `AdminAuditLog` row;
+  a non-admin gets 404 on `/admin/donations`; renders at 390px. **The ask comes down before paid
+  access goes up** — a donation ask running alongside a published price list is what makes the
+  "gift, not payment" position arguable.
+
+- [ ] **P5-T06 · Withhold the pass prices until payment is reachable** (0.5h)
+  *Files:* `components/marketing/pricing-section.tsx`
+  *Do:* the pricing page publishes a ₱200 / ₱500 / ₱1,700 ladder that nobody can actually buy, and a
+  published price beside the P5-T05 donation ask undermines Terms §10. Withhold the amounts without
+  losing the Gate 3 instrument: the duration becomes the card's headline, the price line reads
+  **"Price to be announced"**, and the per-pass **Notify me** buttons keep recording
+  `InterestPassType` exactly as before — so the question survives, only the purchase path is hidden.
+  *Do not:* delete the `price` values from `PASSES`. They are decided numbers; they stay in the data,
+  unrendered, so restoring them is a one-line change in the card.
+  *Also:* the `SAVE 30%` badge becomes `BEST VALUE`, and the two Y1 features that quoted
+  `₱4.66/day` and "the price of 8.5" are reworded — a page that withholds prices must not leak one
+  in a feature bullet.
+  *Accept:* `grep -n "₱" components/marketing/pricing-section.tsx` returns only the three unrendered
+  `price:` lines in `PASSES`; a Notify me click still records the pass type and is still visible in
+  `/admin`; renders at 390px.
+  *Reverse this task* — not P5-T05 — when paid access launches: prices come back, and the donation
+  ask comes down.
 
 ---
 
