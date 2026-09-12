@@ -52,6 +52,11 @@ Consequences that follow from that rule, and that the rest of this document exis
 | **E2** | Client accepts or declines | Owner | P6-T03 | 1 |
 | **E3** | Password reset requested | User | P6-T04 | 2 |
 | **E4** | `accessUntil` 7 days / 1 day out | Owner | P6-T05 | 3 (inert until P7) |
+| **E6** | A new user completes email verification | Operator (`ADMIN_EMAILS`) | P6-T06 | 2 |
+
+**E6 is internal.** It is the only email in this table whose recipient is not a user, so it carries
+no unsubscribe affordance and no suppression of its own beyond the shared bounce/complaint gate.
+It fires on *verified*, never on *register*: an unverified row is noise, and the reaper deletes it.
 
 **Deliberately not built:** an email to the owner on `VIEWED`. A quote viewed three times in an
 afternoon would send three emails' worth of anxiety for zero decisions. The timeline already
@@ -66,12 +71,15 @@ lib/email/
   client.ts          Resend client singleton + transport selection
   send.ts            sendEmail() — the ONLY place resend.emails.send is called
   suppression.ts     canSendTo() — pure, testable gate
+  recipients.ts      parseAdminEmails() — pure allowlist parsing
+  admin-alerts.ts    notifyAdminOfSignup() — E6, operator-facing
   status.ts          status precedence ladder — pure, testable
   templates/
     quotation-sent.ts       E1
     quotation-responded.ts  E2
     password-reset.ts       E3
     access-expiring.ts      E4
+    admin-signup-alert.ts   E6
   templates/layout.ts       shared shell + §2.3 footer
 models/email-message.ts     the outbox ledger  ← the load-bearing piece
 models/webhook-receipt.ts   svix-id dedupe, TTL indexed

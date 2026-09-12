@@ -16,6 +16,7 @@ import {
 } from '../lib/signup-challenge.ts';
 import { renderEmailVerificationEmail } from '../lib/email/templates/email-verification.ts';
 import { sendEmail } from '../lib/email/send.ts';
+import { notifyAdminOfSignup } from '../lib/email/admin-alerts.ts';
 import {
   registerSchema,
   forgotPasswordSchema,
@@ -460,6 +461,10 @@ export async function verifySignupCode(
     );
 
     await clearSignupChallengeCookie();
+
+    // Operator alert (§12 P6-T06), after the write and failure-tolerant:
+    // a dead mailer must never cost the user their verified signup.
+    await notifyAdminOfSignup(user._id.toString(), { verifiedAt });
 
     const signupSessionToken = signSignupSessionToken(
       user._id.toString(),
