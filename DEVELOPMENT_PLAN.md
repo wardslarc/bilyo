@@ -967,6 +967,11 @@ comparison; a credit ledger retrofitted onto live data is a weekend you do not h
 - [x] **P6-T05 · Access expiry reminders** (2h) — 7 days and 1 day before `accessUntil`, once each,
   idempotent by `{userId, accessUntil, kind}`. **This is the retention mechanism** (§6.10), not a
   nice-to-have. Inert while every `accessUntil` is null.
+- [x] **P6-T06 · Operator alert on a new signup** (1h) — fires on **email verified**, not on
+  register, so bots and typo'd addresses never reach the inbox. Recipients are `ADMIN_EMAILS`, the
+  same allowlist the console is gated by. Idempotent by `{userId, recipient}` through the outbox, so
+  the code-entry path and the magic-link path cannot double-send. Failure-tolerant: a dead mailer
+  must never cost a user their verified signup. Replaces having to poll `/admin/users`.
 
 ---
 
@@ -1080,7 +1085,7 @@ Manual before every deploy: the §9.2 flow on a real phone, from a real Messenge
 MONGODB_URI=
 AUTH_SECRET=
 APP_URL=
-ADMIN_EMAILS=                  # comma-separated allowlist
+ADMIN_EMAILS=                  # comma-separated allowlist; also the operator alert list (P6-T06)
 MFA_ENCRYPTION_KEY=            # 32-byte hex, AES-256-GCM
 BLOB_READ_WRITE_TOKEN=         # Vercel Blob, logos
 BETA_ENDS_AT=                  # ISO date shown in the beta banner        (P5)

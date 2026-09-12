@@ -21,6 +21,7 @@ const EmailMessageSchema = new Schema<IEmailMessage>(
         'PASSWORD_RESET',
         'ACCESS_EXPIRING',
         'EMAIL_VERIFICATION',
+        'ADMIN_SIGNUP',
       ],
       required: true,
     },

@@ -248,7 +248,8 @@ export type EmailMessageKind =
   | 'QUOTATION_RESPONDED'
   | 'PASSWORD_RESET'
   | 'ACCESS_EXPIRING'
-  | 'EMAIL_VERIFICATION';
+  | 'EMAIL_VERIFICATION'
+  | 'ADMIN_SIGNUP';
 
 export type EmailMessageStatus =
   | 'SKIPPED'

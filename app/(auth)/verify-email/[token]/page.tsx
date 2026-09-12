@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models/user';
 import { VerificationToken } from '@/models/verification-token';
+import { notifyAdminOfSignup } from '@/lib/email/admin-alerts';
 
 export const metadata: Metadata = {
   title: 'Verifying Email | Bilyo',
@@ -147,6 +148,11 @@ export default async function VerifyEmailTokenPage({ params }: VerifyEmailTokenP
     { _id: tokenDoc._id },
     { $set: { usedAt: verifiedAt } }
   );
+
+  // Operator alert (§12 P6-T06). Must run before redirect(), which throws to
+  // unwind. Idempotent per {user, recipient}, so the code-entry path landing
+  // here too cannot double-send. Never throws.
+  await notifyAdminOfSignup(tokenDoc.userId.toString(), { verifiedAt });
 
   // Link clicked in browser redirects to login with verified banner (§4.5)
   redirect('/login?verified=1');
