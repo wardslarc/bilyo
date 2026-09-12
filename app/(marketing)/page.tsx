@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DemoVideo } from "@/components/marketing/demo-video";
 import { QuotePreview } from "@/components/marketing/quote-preview";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -166,6 +167,29 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* ---------- Demo clip ---------- */}
+      <section
+        id="demo"
+        className="border-line bg-paper-sunk scroll-mt-4 border-b"
+      >
+        <div className="mx-auto w-full max-w-360 px-5 py-12 lg:px-30 lg:py-20">
+          <div className="flex flex-col items-center gap-3 pb-7 text-center lg:gap-4 lg:pb-10">
+            <div className="flex items-center gap-2.5 lg:gap-3">
+              <span className="bg-brass h-0.5 w-6 lg:w-8" />
+              <span className="font-display text-brass-ink text-[13px] font-semibold tracking-[0.12em] uppercase lg:text-sm lg:tracking-[0.14em]">
+                See it in action
+              </span>
+              <span className="bg-brass h-0.5 w-6 lg:w-8" />
+            </div>
+            <h2 className="font-display max-w-140 text-3xl leading-tight font-bold tracking-tight text-balance lg:text-[38px]">
+              Ten seconds, sent to accepted.
+            </h2>
+          </div>
+
+          <DemoVideo />
+        </div>
+      </section>
+
       {/* ---------- Features ---------- */}
       <section
         id="features"
@@ -176,7 +200,8 @@ export default function LandingPage() {
             Everything a quotation needs to turn into a confirmed sale.
           </h2>
           <p className="text-muted text-base leading-relaxed lg:mb-1.5 lg:w-82.5">
-            Bilyo does one job: getting the quotation from you to your client and closing it smoothly.
+            Bilyo does one job: getting the quotation from you to your client
+            and closing it smoothly.
           </p>
         </div>
 
@@ -286,7 +311,8 @@ export default function LandingPage() {
               Your next quotation takes about a minute.
             </h2>
             <p className="text-paper/70 text-base lg:text-[17px]">
-              Free during beta, no credit card required. Bring one client and see how fast they confirm.
+              Free during beta, no credit card required. Bring one client and
+              see how fast they confirm.
             </p>
           </div>
           <Link
